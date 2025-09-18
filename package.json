@@ -1,0 +1,20 @@
+{
+  "name": "resales",
+  "version": "1.0.0",
+  "description": "WordPress plugin E2E suite",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "playwright install --with-deps",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:real": "playwright test --project=chromium",
+    "test:report": "playwright show-report --port 9324"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@axe-core/playwright": "^4.10.2",
+    "@types/node": "^24.3.0",
+    "dotenv": "^16.4.5",
+    "cross-env": "^7.0.3"
+  }
+}

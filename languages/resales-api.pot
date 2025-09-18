@@ -1,0 +1,88 @@
+# Copyright (C) 2025 Dev Team
+# This file is distributed under the same license as the Resales API plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Resales API 3.2.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/resales-api\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-09-03T14:01:36+02:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: resales-api\n"
+
+#. Plugin Name of the plugin
+#: resales.php
+msgid "Resales API"
+msgstr ""
+
+#. Description of the plugin
+#: resales.php
+msgid "Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP)."
+msgstr ""
+
+#. Author of the plugin
+#: resales.php
+msgid "Dev Team"
+msgstr ""
+
+#: includes/class-resales-single.php:295
+msgid "Ref. no."
+msgstr ""
+
+#: includes/class-resales-single.php:296
+msgid "Price"
+msgstr ""
+
+#: includes/class-resales-single.php:297
+#: includes/class-resales-single.php:325
+msgid "Location"
+msgstr ""
+
+#: includes/class-resales-single.php:298
+msgid "Area"
+msgstr ""
+
+#: includes/class-resales-single.php:299
+msgid "Type"
+msgstr ""
+
+#: includes/class-resales-single.php:300
+msgid "Bedrooms"
+msgstr ""
+
+#: includes/class-resales-single.php:301
+msgid "Bathrooms"
+msgstr ""
+
+#: includes/class-resales-single.php:302
+msgid "Plot size"
+msgstr ""
+
+#: includes/class-resales-single.php:303
+msgid "Built size"
+msgstr ""
+
+#: includes/class-resales-single.php:304
+msgid "Terrace"
+msgstr ""
+
+#: includes/class-resales-single.php:308
+msgid "Features"
+msgstr ""
+
+#: includes/class-resales-single.php:324
+msgid "Description"
+msgstr ""
+
+#: includes/class-resales-single.php:353
+msgid "Contact"
+msgstr ""
+
+#: includes/class-resales-single.php:355
+#: includes/class-resales-single.php:362
+msgid "Contact form coming soon."
+msgstr ""

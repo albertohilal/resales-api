@@ -1,0 +1,132 @@
+/* Swiper.js CDN */
+@import url('https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');
+
+.property-gallery .swiper {
+  width: 600px;
+  height: 400px;
+  margin: 0 auto;
+  position: relative;
+}
+.property-gallery .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  width: 600px;
+  height: 400px;
+}
+.property-gallery .swiper-slide img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+.property-gallery .swiper-button-next,
+.property-gallery .swiper-button-prev {
+  color: #333;
+  background: rgba(255,255,255,0.8);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  top: 50%;
+  transform: translateY(-50%);
+  position: absolute;
+  z-index: 10;
+}
+ .property-gallery .swiper-button-next {
+  right: -50px;
+ }
+ .property-gallery .swiper-button-prev {
+  left: -50px;
+ }
+/* Asegura que la paginación esté visible y con buen contraste */
+.swiper-pagination {
+  position: relative !important;
+  left: 0;
+  right: 0;
+  margin: -8px auto 0 auto;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  padding: 6px 0 2px 0;
+  border-radius: 0 0 8px 8px;
+  width: calc(100% - 0px);
+  min-height: 28px;
+}
+
+.swiper-pagination-bullet {
+  background: #222 !important;
+  opacity: 0.5;
+  width: 10px;
+  height: 10px;
+  margin: 0 4px !important;
+  border-radius: 50%;
+  transition: background 0.2s, opacity 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.swiper-pagination-bullet-active {
+  background: var(--color-gold-dark, #bfa046) !important;
+  opacity: 1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* Asegura que las flechas de Swiper sean visibles siempre */
+.swiper-button-next, .swiper-button-prev {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  color: #333 !important;
+  background: rgba(255,255,255,0.85) !important;
+  border: 1px solid #ddd !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+/* Aumenta el tamaño del icono de flecha */
+.swiper-button-next:after, .swiper-button-prev:after {
+  font-size: 22px !important;
+  color: #333 !important;
+}
+
+/* --- Fix flechas visibles dentro del carrusel en cards --- */
+.property-gallery.swiper { 
+  position: relative; /* asegurar contexto para pos. absoluta */
+  overflow: visible;  /* por si algún wrapper recorta */
+}
+
+/* botones dentro del cuadro, centrados verticalmente */
+.property-gallery.swiper .swiper-button-next,
+.property-gallery.swiper .swiper-button-prev {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  color: #333;
+  z-index: 20;           /* por encima de overlays */
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* pegadas a los bordes internos (no -50px afuera) */
+.property-gallery.swiper .swiper-button-prev { left: 8px; }
+.property-gallery.swiper .swiper-button-next { right: 8px; }
+
+/* icono más grande y visible */
+.property-gallery.swiper .swiper-button-next:after,
+.property-gallery.swiper .swiper-button-prev:after {
+  font-size: 22px !important;
+  color: #333 !important;
+}
+

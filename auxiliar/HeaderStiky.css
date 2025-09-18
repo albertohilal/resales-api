@@ -1,0 +1,178 @@
+/* =========================
+   LUSSO — HEADER (REFactor)
+   1 solo logo negro (se invierte arriba)
+   Banda blanca = logo + 3px + 3px
+========================= */
+
+/* --- Tokens --- */
+:root{
+  --logo-h: 1.75rem;                    /* ALTO DEL LOGO en pantalla (ajústalo si tu logo mide distinto) */
+  --air: 3px;                           /* 3px arriba y 3px abajo */
+  --header-h: calc(var(--logo-h) + 2*var(--air));
+
+  --wrap-max: 1200px;
+  --c-white: #fff;
+  --c-black: #0d0d0d;
+  --c-gray-alt: #dcdcdc;
+  --c-gray-dark: #404040;
+  --c-gold: #d3af37;
+}
+
+/* --- Base tipográfica (por si faltara) --- */
+html{ font-size:100%; }
+body{ font-family:'Inter', sans-serif; }
+
+/* --- HEADER: caja exacta y fondo controlado por ::before --- */
+.lusso-header{
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h) !important;      /* altura exacta = logo + 6px */
+  z-index: 9999;
+  box-sizing: border-box;
+
+  /* El color/blur/ssombra los maneja ::before */
+  background: transparent !important;
+  isolation: isolate;                       /* stacking context para el ::before */
+}
+body.admin-bar .lusso-header{ top: 2rem; }  /* compensa admin-bar de WP */
+
+/* Fondo del header (exactamente la altura del header) */
+.lusso-header::before{
+  content:"";
+  position:absolute; inset: 0;             /* ocupa 100% del header */
+  background: transparent;                  /* transparente arriba */
+  box-shadow: none;
+  transition: background .25s ease, box-shadow .25s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+/* En scroll: blanco 70% y sombra suave */
+body.lg-scrolled .lusso-header::before{
+  background: rgba(255,255,255,.7);
+  box-shadow: 0 .4rem .7rem rgba(0,0,0,.06);
+}
+
+/* --- Layout interno: ocupa toda la altura y centra verticalmente --- */
+.lusso-header .elementor-container,
+.lusso-header .e-con{
+  height: 100% !important;
+  max-width: var(--wrap-max); margin-inline: auto;
+  display: flex; align-items: center; gap: 1.25rem;
+  padding: 0 !important;                   /* nada de padding que rompa la métrica */
+}
+.lusso-header .elementor-widget,
+.lusso-header nav,
+.lusso-header img{ min-width: 0; }
+.lusso-header .elementor-widget-nav-menu{ margin-left: auto; }
+
+/* --- LOGO único (archivo negro) --- */
+.lusso-header .logo-unico{
+  display:block;
+  height: var(--logo-h) !important;
+  width: auto;
+  filter: brightness(0) invert(1);          /* arriba se ve blanco */
+  transition: filter .25s ease;
+}
+body.lg-scrolled .lusso-header .logo-unico{ filter: none; }  /* vuelve a negro */
+
+/* --- Menú / Links (alineados exactamente al alto del logo) --- */
+.lusso-header .elementor-nav-menu--main .elementor-item,
+.lusso-header .elementor-menu-toggle{
+  line-height: var(--logo-h) !important;   /* centra verticalmente */
+  padding: 0 !important;                   /* sin padding vertical extra */
+  font-weight: 500;
+  color: #fff !important;                  /* arriba blanco */
+  transition: color .18s ease, text-decoration-color .18s ease;
+}
+.lusso-header .elementor-nav-menu--main .menu-item{ margin-left: 1.25rem; }
+.lusso-header .elementor-nav-menu--main .menu-item:first-child{ margin-left: 0; }
+
+.lusso-header .elementor-nav-menu--main .elementor-item:hover,
+.lusso-header .elementor-nav-menu--main .elementor-item:focus{
+  color: var(--c-gold) !important;
+  text-decoration: underline;
+  text-underline-offset: .2rem;
+  text-decoration-thickness: .125rem;
+}
+
+/* En scroll: textos oscuros */
+body.lg-scrolled .lusso-header .elementor-nav-menu--main .elementor-item,
+body.lg-scrolled .lusso-header .elementor-menu-toggle{
+  color: var(--c-black) !important;
+}
+
+/* Dropdown nativo Elementor */
+.lusso-header .elementor-nav-menu--dropdown{
+  background: var(--c-white) !important;
+  border-top: 1px solid var(--c-gray-alt);
+}
+.lusso-header .elementor-nav-menu--dropdown a{ color: var(--c-gray-dark); }
+.lusso-header .elementor-nav-menu--dropdown a:hover{
+  background:#f8f8f8; color: var(--c-black);
+}
+
+/* CTA opcional (añade clase 'lr-btn' al item del menú) */
+.lusso-header .elementor-nav-menu--main a.lr-btn{
+  border: .0625rem solid var(--c-gold);
+  padding: 0 .9rem;                        /* sin padding vertical; ya lo alinea line-height */
+  font-weight: 600;
+  color: var(--c-black) !important;
+}
+.lusso-header .elementor-nav-menu--main a.lr-btn:hover{
+  background: var(--c-gold); color: var(--c-white) !important;
+}
+
+/* Mobile */
+@media (max-width:62rem){
+  .lusso-header .elementor-nav-menu--main .menu-item{ margin-left: 0; }
+  .lusso-header .elementor-menu-toggle{
+    width: 2.25rem;                       /* caja cómoda, pero */
+    height: var(--logo-h) !important;     /* …alineada al alto del logo */
+  }
+  .lusso-header .elementor-nav-menu--dropdown .elementor-item{
+    color: var(--c-black) !important;
+  }
+}
+
+/* Accesibilidad */
+.lusso-header a:focus,
+.lusso-header .elementor-menu-toggle:focus{
+  outline: .125rem solid var(--c-gold);
+  outline-offset: .125rem;
+}
+/* ====== Alineación vertical simétrica (aire exacto) ====== */
+:root{
+  --logo-h: 1.75rem;                 /* alto real del logo en pantalla */
+  --air: 3px;                         /* 3px arriba y 3px abajo */
+  --header-h: calc(var(--logo-h) + 2 * var(--air));
+}
+
+/* El header mide exactamente logo + 6px y ese alto INCLUYE el padding */
+.lusso-header{
+  height: var(--header-h) !important;
+  padding-block: var(--air) !important;   /* mismo aire arriba/abajo */
+  box-sizing: border-box !important;      /* la altura incluye el padding */
+  display: flex; align-items: center;     /* centra contenido */
+}
+
+/* El fondo blanco ocupa el 100% del header (incluye el padding) */
+.lusso-header::before{ inset: 0 !important; }
+
+/* Contenedor interno: no agrega padding que rompa la métrica */
+.lusso-header .elementor-container,
+.lusso-header .e-con{
+  height: 100% !important;
+  padding: 0 !important;
+  display: flex; align-items: center;
+}
+
+/* Logo y enlaces “miden” como el logo y quedan centrados */
+.lusso-header .logo-unico{
+  height: var(--logo-h) !important;
+  width: auto; display: block;
+}
+.lusso-header .elementor-nav-menu--main .elementor-item,
+.lusso-header .elementor-menu-toggle{
+  line-height: var(--logo-h) !important;
+  height: var(--logo-h) !important;      /* asegura simetría en todos los navegadores */
+  padding: 0 !important;
+}
