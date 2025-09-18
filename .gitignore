@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+
+# Composer vendor
+vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# WordPress plugin zips
+*.zip
+
+# Env files
+.env
+
+# Build output
+dist/
+build/
+
+# Others
+*.bak
+*.tmp
