@@ -18,6 +18,9 @@ Thumbs.db
 # WordPress plugin zips
 *.zip
 
+# Folder for versioned plugin zips
+builds/
+
 # Env files
 .env
 

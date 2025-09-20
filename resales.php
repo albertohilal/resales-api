@@ -46,6 +46,7 @@ add_action('plugins_loaded', function () {
     // Inicializar
     if (class_exists('Resales_Settings'))  Resales_Settings::instance();
     if (class_exists('Lusso_Resales_Shortcodes')) new Lusso_Resales_Shortcodes();
+    if (class_exists('Resales_Shortcodes')) new Resales_Shortcodes();
     if (class_exists('Resales_Single'))     Resales_Single::instance();
     if (is_admin() && class_exists('Resales_Admin')) Resales_Admin::instance();
 });

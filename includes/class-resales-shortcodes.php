@@ -177,12 +177,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
     /* ---- HTML helpers ---- */
 
     private function render_card($p, $imgs, $debug=false) {
-      $has = count($imgs);
-      $first = $has ? esc_url($imgs[0]['Url']) : '';
-      $ref   = esc_html($p['Reference'] ?? '');
-      $area = isset($p['Area']) ? esc_html($p['Area']) : '';
-      $subarea = isset($p['SubArea']) ? esc_html($p['SubArea']) : '';
-      $location = trim($area . ($subarea ? ', ' . $subarea : ''));
+  $has = count($imgs);
+  $first = $has ? esc_url($imgs[0]['Url']) : '';
+  $ref   = esc_html($p['Reference'] ?? '');
+  $detail_url = esc_url( add_query_arg(['ref' => $ref], home_url('/property/')) );
+  $area = isset($p['Area']) ? esc_html($p['Area']) : '';
+  $subarea = isset($p['SubArea']) ? esc_html($p['SubArea']) : '';
+  $location = trim($area . ($subarea ? ', ' . $subarea : ''));
       // Descripción: primera oración del segundo párrafo
       $desc = '';
       if (isset($p['Description']) && is_string($p['Description'])) {
@@ -229,7 +230,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         <?php if ($has >= 2): ?>
         <div class="swiper-pagination" style="position:relative;left:0;right:0;margin:-8px auto 0 auto;z-index:10;display:flex;justify-content:center;align-items:center;background:#fff;padding:6px 0 2px 0;border-radius:0 0 8px 8px;width:calc(100% - 0px);"></div>
         <?php endif; ?>
-        <div class="lr-card__bar" style="display:flex;flex-direction:column;gap:0.5rem;text-decoration:none;">
+        <a href="<?php echo $detail_url; ?>" class="lr-card__bar" style="display:flex;flex-direction:column;gap:0.5rem;text-decoration:none;" aria-label="Ver detalles de la propiedad <?php echo $ref; ?>">
           <div style="color:#666;font-size:0.875rem;line-height:1.2;">
             <?php echo $location; ?>
           </div>
@@ -256,7 +257,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
             }
             ?>
           </div>
-        </div>
+        </a>
         <?php if ($debug): ?>
           <details class="lr-card__debug"><summary>Debug imágenes (<?php echo (int)$has; ?>)</summary><pre><?php echo esc_html(print_r($imgs, true)); ?></pre></details>
         <?php endif; ?>

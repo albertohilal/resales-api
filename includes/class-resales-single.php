@@ -35,121 +35,181 @@ final class Resales_Shortcodes {
         if (!$this->settings['p2'])     $this->settings['p2']     = get_option('resales_api_p2', '');
         if (!$this->settings['api_id']) $this->settings['api_id'] = get_option('resales_api_id', '');
 
-        add_shortcode('lusso_properties', [$this, 'shortcode_properties']);
+    add_shortcode('lusso_properties', [$this, 'shortcode_properties']); // Listado
+    add_shortcode('resales_property', [$this, 'shortcode_property_detail']); // Detalle
     }
 
     /**
      * Shortcode [lusso_properties]
      */
+    // Shortcode para el listado (sin cambios)
     public function shortcode_properties($atts) {
+        // ...existing code...
+    }
+
+    // Shortcode para el detalle: [resales_property ref="R123456"] o ?ref=R123456
+    public function shortcode_property_detail($atts) {
+        $a = shortcode_atts([
+            'ref' => '',
+            'debug' => '0',
+        ], $atts, 'resales_property');
+
+        if (!empty($a['api_id'])) {
+            $this->settings['api_id'] = $a['api_id'];
+        }
+
+        if (empty($this->settings['p1']) || empty($this->settings['p2']) || empty($this->settings['api_id'])) {
+            return '<div class="resales-error">Resales API: faltan credenciales p1/p2/api_id.</div>';
+        }
+
+        // 1. Obtener ref desde URL o atributo
+        $ref = isset($_GET['ref']) ? sanitize_text_field($_GET['ref']) : '';
+        if (empty($ref) && !empty($a['ref'])) {
+            $ref = sanitize_text_field($a['ref']);
+        }
+        if (empty($ref)) {
+            return '<div class="resales-error">Missing ref</div>';
+        }
+
+        // 2. Llamar a PropertyDetails
+        $url = 'https://webapi.resales-online.com/V6/PropertyDetails';
+        $args = [
+            'p1'        => $this->settings['p1'],
+            'p2'        => $this->settings['p2'],
+            'P_APIid'   => $this->settings['api_id'],
+            'P_Lang'    => $this->settings['lang'],
+            'p_output'  => 'JSON',
+            'P_RefId'   => $ref,
+        ];
+        $resp = wp_remote_get(add_query_arg($args, $url), ['timeout' => 25]);
+        if (is_wp_error($resp)) {
+            return '<div class="resales-error">HTTP error en PropertyDetails: ' . esc_html($resp->get_error_message()) . '</div>';
+        }
+        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        if (!is_array($json) || empty($json['Property'])) {
+            return '<div class="resales-error">Propiedad no encontrada</div>';
+        }
+        $p = $json['Property'];
+
+        // 3. Renderizar detalle
+        $area = esc_html($p['Area'] ?? '');
+        $subarea = esc_html($p['SubLocation'] ?? '');
+        $location = trim($area . ($subarea ? ', ' . $subarea : ''));
+        $ref = esc_html($p['Reference'] ?? '');
+        $title = esc_html($ref);
+        $desc = esc_html($p['Description'] ?? '');
+        $beds = esc_html($p['Bedrooms'] ?? '');
+        $baths = esc_html($p['Bathrooms'] ?? '');
+        $built = esc_html($p['Built'] ?? '');
+        $terrace = esc_html($p['Terrace'] ?? '');
+        $img = '';
+        if (!empty($p['Images']['Image'])) {
+            $imgData = is_array($p['Images']['Image']) && isset($p['Images']['Image'][0]) ? $p['Images']['Image'][0] : $p['Images']['Image'];
+            $img = esc_url($imgData['Url'] ?? '');
+        }
+
+        ob_start();
+        ?>
+        <div class="resales-single">
+            <div class="resales-single__header">
+                <h1 class="resales-single__title"><?php echo $title; ?></h1>
+                <div class="resales-single__location"><?php echo $location; ?></div>
+            </div>
+            <?php if ($img): ?>
+                <div class="resales-single__image"><img src="<?php echo $img; ?>" alt="<?php echo $title; ?>" style="max-width:100%;height:auto;"></div>
+            <?php endif; ?>
+            <div class="resales-single__desc" style="margin:1em 0;">
+                <?php echo nl2br($desc); ?>
+            </div>
+            <div class="resales-single__data" style="display:flex;gap:2em;flex-wrap:wrap;">
+                <?php if ($beds): ?><span><strong><?php echo $beds; ?></strong> dormitorios</span><?php endif; ?>
+                <?php if ($baths): ?><span><strong><?php echo $baths; ?></strong> baños</span><?php endif; ?>
+                <?php if ($built): ?><span><strong><?php echo $built; ?></strong> m² construidos</span><?php endif; ?>
+                <?php if ($terrace): ?><span><strong><?php echo $terrace; ?></strong> m² terraza</span><?php endif; ?>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
 
         $a = shortcode_atts([
-            'results'          => '12',
-            'page'             => '1',
-            'api_id'           => '',     // opcional; si no viene usa ajustes
-            'strict_min'       => '0',    // mantiene tu flag si ya lo usabas
-            'gallery_fallback' => '1',    // 1 => usa PropertyDetails si Search no trae imágenes
-            'max_imgs'         => '6',    // cap de imágenes por card
-            'debug'            => '0',
+            'ref' => '',
+            'debug' => '0',
         ], $atts, 'lusso_properties');
 
         if (!empty($a['api_id'])) {
             $this->settings['api_id'] = $a['api_id'];
         }
 
-        // Comprobaciones mínimas
         if (empty($this->settings['p1']) || empty($this->settings['p2']) || empty($this->settings['api_id'])) {
             return '<div class="resales-error">Resales API: faltan credenciales p1/p2/api_id.</div>';
         }
 
-        // 1) Llamada mínima a SearchProperties (sin p_images aquí; lo gobierna el filtro)
-        $page    = max(1, (int)$a['page']);
-        $results = max(1, (int)$a['results']);
-
-        $cache_key = sprintf('ros_sp_nd_es_%s_%s_%s_%s',
-            $this->settings['api_id'],
-            $this->settings['lang'],
-            $page,
-            $results
-        );
-
-        $payload = get_transient($cache_key);
-        if ($payload === false) {
-            $payload = $this->call_min_search($page, $results);
-            // cachea 10 minutos
-            set_transient($cache_key, $payload, 10 * MINUTE_IN_SECONDS);
+        // 1. Obtener ref desde URL o atributo
+        $ref = isset($_GET['ref']) ? sanitize_text_field($_GET['ref']) : '';
+        if (empty($ref) && !empty($a['ref'])) {
+            $ref = sanitize_text_field($a['ref']);
+        }
+        if (empty($ref)) {
+            return '<div class="resales-error">Missing ref</div>';
         }
 
-        $html_debug = '';
-        if ($a['debug'] == '1') {
-            $html_debug .= $this->render_debug_box($payload, $a);
+        // 2. Llamar a PropertyDetails
+        $url = 'https://webapi.resales-online.com/V6/PropertyDetails';
+        $args = [
+            'p1'        => $this->settings['p1'],
+            'p2'        => $this->settings['p2'],
+            'P_APIid'   => $this->settings['api_id'],
+            'P_Lang'    => $this->settings['lang'],
+            'p_output'  => 'JSON',
+            'P_RefId'   => $ref,
+        ];
+        $resp = wp_remote_get(add_query_arg($args, $url), ['timeout' => 25]);
+        if (is_wp_error($resp)) {
+            return '<div class="resales-error">HTTP error en PropertyDetails: ' . esc_html($resp->get_error_message()) . '</div>';
         }
-
-        // 2) Render cards
-        $items = $payload['Properties']['Property'] ?? [];
-        if (empty($items)) {
-            return $html_debug . '<div class="resales-empty">No hay resultados para mostrar.</div>';
+        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        if (!is_array($json) || empty($json['Property'])) {
+            return '<div class="resales-error">Propiedad no encontrada</div>';
         }
+        $p = $json['Property'];
 
-        // Normaliza: si trae 1 solo registro como objeto, pásalo a array
-        if ($this->is_assoc($items)) {
-            $items = [$items];
+        // 3. Renderizar detalle
+        $area = esc_html($p['Area'] ?? '');
+        $subarea = esc_html($p['SubLocation'] ?? '');
+        $location = trim($area . ($subarea ? ', ' . $subarea : ''));
+        $ref = esc_html($p['Reference'] ?? '');
+        $title = esc_html($ref);
+        $desc = esc_html($p['Description'] ?? '');
+        $beds = esc_html($p['Bedrooms'] ?? '');
+        $baths = esc_html($p['Bathrooms'] ?? '');
+        $built = esc_html($p['Built'] ?? '');
+        $terrace = esc_html($p['Terrace'] ?? '');
+        $img = '';
+        if (!empty($p['Images']['Image'])) {
+            $imgData = is_array($p['Images']['Image']) && isset($p['Images']['Image'][0]) ? $p['Images']['Image'][0] : $p['Images']['Image'];
+            $img = esc_url($imgData['Url'] ?? '');
         }
 
         ob_start();
-        echo $html_debug;
         ?>
-        <div class="resales-grid resales-grid--props" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;">
-            <?php foreach ($items as $p): ?>
-                <?php
-                $imgs   = $this->ro_get_property_images($p, $a['gallery_fallback'] === '1');
-                if (!empty($imgs)) {
-                    $imgs = array_slice($imgs, 0, max(1,(int)$a['max_imgs']));
-                }
-                $title  = $this->build_title($p);
-                $price  = $this->build_price($p);
-                $ref    = !empty($p['Reference']) ? esc_html($p['Reference']) : '';
-                ?>
-                <article class="resales-card" style="border:1px solid #eaeaea;border-radius:14px;overflow:hidden;background:#fff;">
-                    <div class="resales-card__media" style="aspect-ratio:16/10;background:#f2f2f2;position:relative;">
-                        <?php if (!empty($imgs)): ?>
-                            <?php if (count($imgs) > 1): ?>
-                                <div class="resales-card__slider" style="position:absolute;inset:0;display:flex;overflow:hidden;">
-                                    <?php foreach ($imgs as $img): ?>
-                                        <div style="flex:0 0 100%;position:relative;">
-                                            <img src="<?php echo esc_url($img['url']); ?>"
-                                                 alt="<?php echo esc_attr($title); ?>"
-                                                 style="width:100%;height:100%;object-fit:cover;display:block;">
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <!-- Si usas Swiper, inicialízalo fuera; aquí mantenemos HTML simple -->
-                            <?php else: ?>
-                                <img src="<?php echo esc_url($imgs[0]['url']); ?>"
-                                     alt="<?php echo esc_attr($title); ?>"
-                                     style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <?php echo $this->placeholder_svg(); ?>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="resales-card__body" style="padding:16px 18px;">
-                        <div class="resales-card__title" style="font-weight:600;margin-bottom:6px;">
-                            <?php echo esc_html($title); ?>
-                        </div>
-                        <div class="resales-card__meta" style="color:#666;font-size:13px;margin-bottom:8px;">
-                            <?php if ($ref): ?>
-                                Ref: <?php echo $ref; ?>
-                            <?php endif; ?>
-                            <?php echo $this->build_beds_baths($p); ?>
-                        </div>
-                        <div class="resales-card__price" style="font-weight:700;">
-                            <?php echo esc_html($price); ?>
-                        </div>
-                    </div>
-                </article>
-            <?php endforeach; ?>
+        <div class="resales-single">
+            <div class="resales-single__header">
+                <h1 class="resales-single__title"><?php echo $title; ?></h1>
+                <div class="resales-single__location"><?php echo $location; ?></div>
+            </div>
+            <?php if ($img): ?>
+                <div class="resales-single__image"><img src="<?php echo $img; ?>" alt="<?php echo $title; ?>" style="max-width:100%;height:auto;"></div>
+            <?php endif; ?>
+            <div class="resales-single__desc" style="margin:1em 0;">
+                <?php echo nl2br($desc); ?>
+            </div>
+            <div class="resales-single__data" style="display:flex;gap:2em;flex-wrap:wrap;">
+                <?php if ($beds): ?><span><strong><?php echo $beds; ?></strong> dormitorios</span><?php endif; ?>
+                <?php if ($baths): ?><span><strong><?php echo $baths; ?></strong> baños</span><?php endif; ?>
+                <?php if ($built): ?><span><strong><?php echo $built; ?></strong> m² construidos</span><?php endif; ?>
+                <?php if ($terrace): ?><span><strong><?php echo $terrace; ?></strong> m² terraza</span><?php endif; ?>
+            </div>
         </div>
         <?php
         return ob_get_clean();
