@@ -1,71 +1,66 @@
-functions.php
-package.json
-playwright.config.ts
-README.md
-resales.php
-single-property.php
-test-gallery-root.php
-test-gallery-standalone.php
-test-gallery.php
-test-resales-api.php
-TESTS.md
-assets/
-  css/
-    lusso-resales-detail.css
-    lusso-resales-OLD.css
-    lusso-resales.css
-    resales.css
-    swiper-gallery.css
-  js/
-    swiper-init.js
-auxiliar/
-  2025-09-12_Paleta Colores.jpg
-  DetallesPropiedad.jpg
-  HeaderStiky.css
-  HeaderStiky.js
-  lussogroup.es_properties_ (5).png
-  Tarjeta-Muestra.jpg
-  Tarjetas.jpg
-  wp-config-NO.php
-  wp-config.php
-  www.marbella-ev.com_developments.png
-docs/
-  troubleshooting.md
-includes/
-  class-resales-admin.php
-  class-resales-client.php
-  class-resales-settings.php
-  class-resales-shortcodes-backup-1.php
-  class-resales-shortcodes-backup.php
-  class-resales-shortcodes.php
-  class-resales-single.php
-  gallery-helper.php
-languages/
-  resales-api-es.mo
-  resales-api-es.po
-  resales-api.pot
-playwright-report/
-  index.html
-  data/
-    7538c1e01385f7de6f50c881687fb3464bb9bbc4.md
-    7d80210ffc20bc2300b0825b4350a35c62bc4d2d.webm
-    b709dba4ab0820222ae8538aa929b18454d3a6c1.webm
-    e20027a7dc2bb1a27655da290e6b250134173777.png
-templates/
-  single-development.php
-test-results/
-  properties-Properties-Card-9193f--varias-imágenes-si-existen-chromium/
-    error-context.md
-    test-failed-1.png
-    video.webm
-  properties-Properties-Tarj-221ef-gen-título-y-un-CTA-visible-chromium/
-    error-context.md
-    test-failed-1.png
-    video.webm
-tests/
-  accessibility.spec.ts
-  developments.spec.ts
-  properties.spec.ts
-  README.md
-  responsive.spec.ts
-  smoke.spec.ts
+.
+├── assets
+│   ├── css
+│   │   ├── lusso-resales.css
+│   │   ├── lusso-resales-detail.css
+│   │   ├── lusso-resales-OLD.css
+│   │   ├── resales.css
+│   │   └── swiper-gallery.css
+│   └── js
+│       └── swiper-init.js
+├── auxiliar
+│   ├── 2025-09-12_Paleta Colores.jpg
+│   ├── DetallesPropiedad.jpg
+│   ├── HeaderStiky.css
+│   ├── HeaderStiky.js
+│   ├── lussogroup.es_properties_ (5).png
+│   ├── lussogroup.es_properties_01.png
+│   ├── Tarjeta-Muestra.jpg
+│   ├── Tarjetas.jpg
+│   ├── tree.txt
+│   ├── wp-config-NO.php
+│   ├── wp-config.php
+│   └── www.marbella-ev.com_developments.png
+├── docs
+│   └── troubleshooting.md
+├── .env
+├── .env.example
+├── functions.php
+├── .gitignore
+├── includes
+│   ├── class-resales-admin.php
+│   ├── class-resales-client.php
+│   ├── class-resales-settings.php
+│   ├── class-resales-shortcodes-01.php
+│   ├── class-resales-shortcodes-backup-1.php
+│   ├── class-resales-shortcodes-backup.php
+│   ├── class-resales-shortcodes.php
+│   ├── class-resales-single.php
+│   └── gallery-helper.php
+├── languages
+│   ├── resales-api-es.mo
+│   ├── resales-api-es.po
+│   └── resales-api.pot
+├── package.json
+├── package-lock.json
+├── playwright.config.ts
+├── README.md
+├── RESALES-API-wp.zip
+├── resales.php
+├── single-property.php
+├── templates
+│   └── single-development.php
+├── test-gallery.php
+├── test-gallery-root.php
+├── test-gallery-standalone.php
+├── test-resales-api.php
+├── tests
+│   ├── accessibility.spec.ts
+│   ├── developments.spec.ts
+│   ├── properties.spec.ts
+│   ├── README.md
+│   ├── responsive.spec.ts
+│   └── smoke.spec.ts
+└── TESTS.md
+
+9 directories, 54 files

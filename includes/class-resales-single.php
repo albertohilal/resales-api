@@ -1,400 +1,361 @@
 <?php
 /**
- * Plugin file: class-resales-shortcodes.php
- * Shortcode principal: [lusso_properties]
- * Enfocado en New Developments. Independiente del código de single (detalles).
+ * Single Property (Resales Online V6)
+ * File: includes/class-resales-single.php
  */
 
-if (!defined('ABSPATH')) exit;
+if ( ! defined('ABSPATH') ) { exit; }
 
-if (!class_exists('Resales_Shortcodes')):
+if ( ! class_exists('Resales_Single') ) {
 
-final class Resales_Shortcodes {
+class Resales_Single {
 
-    /** @var array */
-    private $settings = [
-        'p1'      => '',
-        'p2'      => '',
-        'api_id'  => '',
-        'lang'    => '1', // 1=ES, etc.
-    ];
+	/** @var self */
+	private static $instance;
 
-    /** Constructor */
-    public function __construct() {
-        // Carga creds desde ajustes (ajústalo si tu opción tiene otro nombre/estructura)
-        $opt = get_option('resales_api_settings');
-        if (is_array($opt)) {
-            $this->settings['p1']     = $opt['p1']     ?? '';
-            $this->settings['p2']     = $opt['p2']     ?? '';
-            $this->settings['api_id'] = $opt['api_id'] ?? ($opt['P_ApiId'] ?? '');
-            $this->settings['lang']   = $opt['lang']   ?? '1';
-        }
+	/** @var array Ajustes normalizados */
+	private $opts = [];
 
-        // Fallback suave si tus claves están guardadas en otra opción
-        if (!$this->settings['p1'])     $this->settings['p1']     = get_option('resales_api_p1', '');
-        if (!$this->settings['p2'])     $this->settings['p2']     = get_option('resales_api_p2', '');
-        if (!$this->settings['api_id']) $this->settings['api_id'] = get_option('resales_api_id', '');
+	/** Singleton */
+	public static function instance() {
+		if ( ! self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
 
-    add_shortcode('lusso_properties', [$this, 'shortcode_properties']); // Listado
-    add_shortcode('resales_property', [$this, 'shortcode_property_detail']); // Detalle
-    }
+	private function __construct() {
+		// Carga ajustes al iniciar (pero sin romper si aún no existen)
+		$this->opts = $this->load_options();
 
-    /**
-     * Shortcode [lusso_properties]
-     */
-    // Shortcode para el listado (sin cambios)
-    public function shortcode_properties($atts) {
-        // ...existing code...
-    }
+		// Shortcodes (alias compatibles)
+		add_shortcode('resales_property', [ $this, 'render_shortcode' ]);
+		add_shortcode('resales_single',   [ $this, 'render_shortcode' ]);
+	}
 
-    // Shortcode para el detalle: [resales_property ref="R123456"] o ?ref=R123456
-    public function shortcode_property_detail($atts) {
-        $a = shortcode_atts([
-            'ref' => '',
-            'debug' => '0',
-        ], $atts, 'resales_property');
+	/**
+	 * Intenta leer los ajustes desde varias opciones posibles del plugin.
+	 * También admite CONSTANTES como plan B.
+	 */
+	private function load_options() {
+		$possible_option_names = [
+			'resales_api_settings',   // más probable
+			'resales_api',            // alternativa común
+			'resales_settings',
+			'resales_options',
+			'resales',                // safety
+		];
 
-        if (!empty($a['api_id'])) {
-            $this->settings['api_id'] = $a['api_id'];
-        }
+		$raw = [];
+		foreach ( $possible_option_names as $name ) {
+			$tmp = get_option($name);
+			if ( is_array($tmp) && ! empty($tmp) ) {
+				$raw = array_merge($raw, $tmp);
+			}
+		}
 
-        if (empty($this->settings['p1']) || empty($this->settings['p2']) || empty($this->settings['api_id'])) {
-            return '<div class="resales-error">Resales API: faltan credenciales p1/p2/api_id.</div>';
-        }
+		// Normalizar claves (indistintamente p1/P1, p_apiid/P_ApiId, etc.)
+		$norm = function($key) {
+			$key = str_replace('-', '_', $key);
+			$key = strtolower($key);
+			return $key;
+		};
 
-        // 1. Obtener ref desde URL o atributo
-        $ref = isset($_GET['ref']) ? sanitize_text_field($_GET['ref']) : '';
-        if (empty($ref) && !empty($a['ref'])) {
-            $ref = sanitize_text_field($a['ref']);
-        }
-        if (empty($ref)) {
-            return '<div class="resales-error">Missing ref</div>';
-        }
+		$out = [];
+		foreach ( (array) $raw as $k => $v ) {
+			$out[ $norm($k) ] = is_string($v) ? trim($v) : $v;
+		}
 
-        // 2. Llamar a PropertyDetails
-        $url = 'https://webapi.resales-online.com/V6/PropertyDetails';
-        $args = [
-            'p1'        => $this->settings['p1'],
-            'p2'        => $this->settings['p2'],
-            'P_APIid'   => $this->settings['api_id'],
-            'P_Lang'    => $this->settings['lang'],
-            'p_output'  => 'JSON',
-            'P_RefId'   => $ref,
-        ];
-        $resp = wp_remote_get(add_query_arg($args, $url), ['timeout' => 25]);
-        if (is_wp_error($resp)) {
-            return '<div class="resales-error">HTTP error en PropertyDetails: ' . esc_html($resp->get_error_message()) . '</div>';
-        }
-        $json = json_decode(wp_remote_retrieve_body($resp), true);
-        if (!is_array($json) || empty($json['Property'])) {
-            return '<div class="resales-error">Propiedad no encontrada</div>';
-        }
-        $p = $json['Property'];
+		// Fallback a CONSTANTES (si existen)
+		$const_map = [
+			'p1'                 => 'RESALES_API_P1',
+			'p2'                 => 'RESALES_API_P2',
+			'p_apiid'            => 'RESALES_API_APIID',
+			'p_agency_filterid'  => 'RESALES_API_AGENCY_FILTERID',
+			'p_lang'             => 'RESALES_API_LANG',
+			'p_sandbox'          => 'RESALES_API_SANDBOX',
+			'timeout'            => 'RESALES_API_TIMEOUT',
+		];
+		foreach ($const_map as $key => $const) {
+			if ( ! isset($out[$key]) && defined($const) ) {
+				$out[$key] = constant($const);
+			}
+		}
 
-        // 3. Renderizar detalle
-        $area = esc_html($p['Area'] ?? '');
-        $subarea = esc_html($p['SubLocation'] ?? '');
-        $location = trim($area . ($subarea ? ', ' . $subarea : ''));
-        $ref = esc_html($p['Reference'] ?? '');
-        $title = esc_html($ref);
-        $desc = esc_html($p['Description'] ?? '');
-        $beds = esc_html($p['Bedrooms'] ?? '');
-        $baths = esc_html($p['Bathrooms'] ?? '');
-        $built = esc_html($p['Built'] ?? '');
-        $terrace = esc_html($p['Terrace'] ?? '');
-        $img = '';
-        if (!empty($p['Images']['Image'])) {
-            $imgData = is_array($p['Images']['Image']) && isset($p['Images']['Image'][0]) ? $p['Images']['Image'][0] : $p['Images']['Image'];
-            $img = esc_url($imgData['Url'] ?? '');
-        }
+		// Valores por defecto razonables
+		if ( empty($out['p_lang']) )    { $out['p_lang'] = '2'; }     // 2=ES
+		if ( ! isset($out['p_sandbox']) ) { $out['p_sandbox'] = false; }
+		if ( empty($out['timeout']) )   { $out['timeout'] = 20; }
 
-        ob_start();
-        ?>
-        <div class="resales-single">
-            <div class="resales-single__header">
-                <h1 class="resales-single__title"><?php echo $title; ?></h1>
-                <div class="resales-single__location"><?php echo $location; ?></div>
-            </div>
-            <?php if ($img): ?>
-                <div class="resales-single__image"><img src="<?php echo $img; ?>" alt="<?php echo $title; ?>" style="max-width:100%;height:auto;"></div>
-            <?php endif; ?>
-            <div class="resales-single__desc" style="margin:1em 0;">
-                <?php echo nl2br($desc); ?>
-            </div>
-            <div class="resales-single__data" style="display:flex;gap:2em;flex-wrap:wrap;">
-                <?php if ($beds): ?><span><strong><?php echo $beds; ?></strong> dormitorios</span><?php endif; ?>
-                <?php if ($baths): ?><span><strong><?php echo $baths; ?></strong> baños</span><?php endif; ?>
-                <?php if ($built): ?><span><strong><?php echo $built; ?></strong> m² construidos</span><?php endif; ?>
-                <?php if ($terrace): ?><span><strong><?php echo $terrace; ?></strong> m² terraza</span><?php endif; ?>
-            </div>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
+		// Log útil (sin exponer p2)
+		if ( defined('WP_DEBUG') && WP_DEBUG ) {
+			$mask = function($s){ return $s ? substr($s,0,4).'•••' : ''; };
+			error_log('[Resales API] Opciones detectadas → p1=' . ($out['p1'] ?? '')
+				. ' p2=' . $mask($out['p2'] ?? '')
+				. ' P_ApiId=' . ($out['p_apiid'] ?? '')
+				. ' P_Agency_FilterId=' . ($out['p_agency_filterid'] ?? '')
+				. ' Lang=' . ($out['p_lang'] ?? ''));
+		}
 
-        $a = shortcode_atts([
-            'ref' => '',
-            'debug' => '0',
-        ], $atts, 'lusso_properties');
+		return $out;
+	}
 
-        if (!empty($a['api_id'])) {
-            $this->settings['api_id'] = $a['api_id'];
-        }
+	/** Construye URL para la función V6 */
+	private function build_url( $function, array $params = [] ) {
+		$base = 'https://webapi.resales-online.com/V6/' . $function;
 
-        if (empty($this->settings['p1']) || empty($this->settings['p2']) || empty($this->settings['api_id'])) {
-            return '<div class="resales-error">Resales API: faltan credenciales p1/p2/api_id.</div>';
-        }
+		$commons = [
+			'p1'       => $this->opts['p1']     ?? '',
+			'p2'       => $this->opts['p2']     ?? '',
+			'p_output' => 'JSON',
+			'P_Lang'   => $this->opts['p_lang'] ?? '2',
+		];
 
-        // 1. Obtener ref desde URL o atributo
-        $ref = isset($_GET['ref']) ? sanitize_text_field($_GET['ref']) : '';
-        if (empty($ref) && !empty($a['ref'])) {
-            $ref = sanitize_text_field($a['ref']);
-        }
-        if (empty($ref)) {
-            return '<div class="resales-error">Missing ref</div>';
-        }
+		// Uno de estos dos es obligatorio según la doc (si tu filtro usa alias, deja P_ApiId vacío y pon P_Agency_FilterId)
+		if ( ! empty($this->opts['p_apiid']) ) {
+			$commons['P_ApiId'] = $this->opts['p_apiid'];
+		} elseif ( ! empty($this->opts['p_agency_filterid']) ) {
+			$commons['P_Agency_FilterId'] = $this->opts['p_agency_filterid'];
+		}
 
-        // 2. Llamar a PropertyDetails
-        $url = 'https://webapi.resales-online.com/V6/PropertyDetails';
-        $args = [
-            'p1'        => $this->settings['p1'],
-            'p2'        => $this->settings['p2'],
-            'P_APIid'   => $this->settings['api_id'],
-            'P_Lang'    => $this->settings['lang'],
-            'p_output'  => 'JSON',
-            'P_RefId'   => $ref,
-        ];
-        $resp = wp_remote_get(add_query_arg($args, $url), ['timeout' => 25]);
-        if (is_wp_error($resp)) {
-            return '<div class="resales-error">HTTP error en PropertyDetails: ' . esc_html($resp->get_error_message()) . '</div>';
-        }
-        $json = json_decode(wp_remote_retrieve_body($resp), true);
-        if (!is_array($json) || empty($json['Property'])) {
-            return '<div class="resales-error">Propiedad no encontrada</div>';
-        }
-        $p = $json['Property'];
+		if ( ! empty($this->opts['p_sandbox']) ) {
+			$commons['p_sandbox'] = 'true';
+		}
 
-        // 3. Renderizar detalle
-        $area = esc_html($p['Area'] ?? '');
-        $subarea = esc_html($p['SubLocation'] ?? '');
-        $location = trim($area . ($subarea ? ', ' . $subarea : ''));
-        $ref = esc_html($p['Reference'] ?? '');
-        $title = esc_html($ref);
-        $desc = esc_html($p['Description'] ?? '');
-        $beds = esc_html($p['Bedrooms'] ?? '');
-        $baths = esc_html($p['Bathrooms'] ?? '');
-        $built = esc_html($p['Built'] ?? '');
-        $terrace = esc_html($p['Terrace'] ?? '');
-        $img = '';
-        if (!empty($p['Images']['Image'])) {
-            $imgData = is_array($p['Images']['Image']) && isset($p['Images']['Image'][0]) ? $p['Images']['Image'][0] : $p['Images']['Image'];
-            $img = esc_url($imgData['Url'] ?? '');
-        }
+		$q = array_filter( array_merge( $commons, $params ), static function($v){
+			return $v !== '' && $v !== null;
+		});
 
-        ob_start();
-        ?>
-        <div class="resales-single">
-            <div class="resales-single__header">
-                <h1 class="resales-single__title"><?php echo $title; ?></h1>
-                <div class="resales-single__location"><?php echo $location; ?></div>
-            </div>
-            <?php if ($img): ?>
-                <div class="resales-single__image"><img src="<?php echo $img; ?>" alt="<?php echo $title; ?>" style="max-width:100%;height:auto;"></div>
-            <?php endif; ?>
-            <div class="resales-single__desc" style="margin:1em 0;">
-                <?php echo nl2br($desc); ?>
-            </div>
-            <div class="resales-single__data" style="display:flex;gap:2em;flex-wrap:wrap;">
-                <?php if ($beds): ?><span><strong><?php echo $beds; ?></strong> dormitorios</span><?php endif; ?>
-                <?php if ($baths): ?><span><strong><?php echo $baths; ?></strong> baños</span><?php endif; ?>
-                <?php if ($built): ?><span><strong><?php echo $built; ?></strong> m² construidos</span><?php endif; ?>
-                <?php if ($terrace): ?><span><strong><?php echo $terrace; ?></strong> m² terraza</span><?php endif; ?>
-            </div>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
+		return $base . '?' . http_build_query($q);
+	}
 
-    /**
-     * Llamada mínima a SearchProperties para New Developments (solo p1, p2, P_APIid).
-     * El filtro en la consola de Resales controla: imágenes devueltas, tamaños, etc.
-     */
-    private function call_min_search(int $page, int $results): array {
-        $url  = 'https://webapi.resales-online.com/V6/SearchProperties';
-        $args = [
-            'p1'        => $this->settings['p1'],
-            'p2'        => $this->settings['p2'],
-            'P_APIid'   => $this->settings['api_id'],
-            'P_Lang'    => $this->settings['lang'],
-            // Solo New Developments (tal como veníamos trabajando):
-            'p_new_devs'=> 'only',
-            // paginado y orden (opcional, para consistencia visual):
-            'P_PageSize'=> $results,
-            'P_PageNo'  => $page,
-            'P_SortType'=> 3, // por ejemplo: más recientes
-        ];
-        $resp = wp_remote_get(add_query_arg($args, $url), ['timeout' => 25]);
-        if (is_wp_error($resp)) return [];
-        $json = json_decode(wp_remote_retrieve_body($resp), true);
-        return is_array($json) ? $json : [];
-    }
+	/** Llama a PropertyDetails con P_RefId o P_Id */
+	private function fetch_details( $ref = '', $id = '' ) {
 
-    /**
-     * Normaliza imágenes desde SearchProperties y, si está activado,
-     * hace fallback a PropertyDetails cuando no hay ninguna.
-     */
-    private function ro_get_property_images(array $p, bool $use_fallback = true): array {
-        $imgs = [];
+		// Validación de credenciales (obligatorias) según la doc: p1 y p2. 
+		if ( empty($this->opts['p1']) || empty($this->opts['p2']) ) {
+			return $this->error_box('Missing API credentials (p1/p2).');
+		}
 
-        // a) SearchProperties → Images.Image (puede llegar objeto único)
-        if (!empty($p['Images']['Image'])) {
-            $raw  = $p['Images']['Image'];
-            $list = $this->is_assoc($raw) ? [$raw] : $raw;
-            foreach ($list as $i) {
-                if (empty($i['Url'])) continue;
-                $imgs[] = [
-                    'url'   => $i['Url'],
-                    'order' => isset($i['Order']) ? (int)$i['Order'] : 9999,
-                    'size'  => $i['Size'] ?? '',
-                ];
-            }
-        }
-        // b) Algunos entornos devuelven MainImage
-        elseif (!empty($p['MainImage'])) {
-            $imgs[] = ['url' => $p['MainImage'], 'order' => 1, 'size' => 'Main'];
-        }
+		$params = [];
+		if ( $ref )        { $params['P_RefId'] = $ref; }
+		elseif ( $id )     { $params['P_Id']    = $id; }
+		else {
+			return $this->error_box('Reference or ID is required to show the property.');
+		}
 
-        // c) Fallback a PropertyDetails para ND/propiedades con 0 imágenes en Search
-        if ($use_fallback && empty($imgs) && !empty($p['Reference'])) {
-            $pd = $this->ro_get_property_details_cached($p['Reference']);
-            if (!empty($pd['Property']['Images']['Image'])) {
-                $raw  = $pd['Property']['Images']['Image'];
-                $list = $this->is_assoc($raw) ? [$raw] : $raw;
-                foreach ($list as $i) {
-                    if (empty($i['Url'])) continue;
-                    $imgs[] = [
-                        'url'   => $i['Url'],
-                        'order' => isset($i['Order']) ? (int)$i['Order'] : 9999,
-                        'size'  => $i['Size'] ?? '',
-                    ];
-                }
-            }
-        }
+		$url = $this->build_url('PropertyDetails', $params);
 
-        // Orden por 'Order'
-        usort($imgs, fn($a,$b) => $a['order'] <=> $b['order']);
+		// Petición
+		$args = [
+			'timeout' => intval($this->opts['timeout'] ?? 20),
+			'headers' => [ 'Accept' => 'application/json' ],
+		];
 
-        return $imgs;
-    }
+		$response = wp_remote_get( $url, $args );
 
-    /**
-     * Llama PropertyDetails con caché 10 min.
-     */
-    private function ro_get_property_details_cached(string $reference): array {
-        $key = 'ros_pd_' . md5($reference . '|' . $this->settings['api_id']);
-        $cached = get_transient($key);
-        if ($cached !== false) return $cached;
+		if ( is_wp_error($response) ) {
+			return $this->error_box( 'Request error: ' . $response->get_error_message() );
+		}
 
-        $url  = 'https://webapi.resales-online.com/V6/PropertyDetails';
-        $args = [
-            'p1'        => $this->settings['p1'],
-            'p2'        => $this->settings['p2'],
-            'P_APIid'   => $this->settings['api_id'],
-            'Reference' => $reference,
-            'P_Lang'    => $this->settings['lang'],
-        ];
+		$code = (int) wp_remote_retrieve_response_code($response);
+		$body = wp_remote_retrieve_body($response);
 
-        $resp = wp_remote_get(add_query_arg($args, $url), ['timeout' => 25]);
-        $json = is_wp_error($resp) ? [] : json_decode(wp_remote_retrieve_body($resp), true);
-        if (!is_array($json)) $json = [];
+		if ( $code !== 200 ) {
+			// Mensajes útiles (401 suele ser credenciales/filtro) — ver “Common Parameters List” y requisitos. 
+			return $this->error_box( sprintf('Unexpected response (%d) from Resales Online.', $code) );
+		}
 
-        set_transient($key, $json, 10 * MINUTE_IN_SECONDS);
-        return $json;
-    }
+		$data = json_decode($body, true);
+		if ( ! is_array($data) ) {
+			return $this->error_box('Invalid JSON returned by API.');
+		}
 
-    /* ===========================
-     * Helpers de Render
-     * =========================== */
+		// Transacción fallida o sin propiedad
+		if ( isset($data['transaction']['status']) && $data['transaction']['status'] !== 'success' ) {
+			$msg = !empty($data['transaction']['message']) ? $data['transaction']['message'] : 'Transaction not successful.';
+			return $this->error_box( esc_html($msg) );
+		}
 
-    private function build_title(array $p): string {
-        $type = '';
-        if (!empty($p['PropertyType']['NameType'])) {
-            $type = $p['PropertyType']['NameType'];
-        } elseif (!empty($p['PropertyType']['Type'])) {
-            $type = $p['PropertyType']['Type'];
-        }
-        $cat = '';
-        if (!empty($p['PropertyType']['Type'])) {
-            $cat = $p['PropertyType']['Type'];
-        }
-        $parts = array_filter([$type, $cat ? '— '.$cat : '']);
-        return trim(implode(' ', $parts));
-    }
+		$prop = $data['Property'] ?? null;
+		if ( empty($prop) || ! is_array($prop) ) {
+			$apiMsg = '';
+			if (isset($data['transaction']['message'])) {
+				$apiMsg = esc_html($data['transaction']['message']);
+			}
+			$fallback = $apiMsg ?: 'Property not found or temporarily unavailable.';
+			return $this->error_box($fallback);
+		}
 
-    private function build_beds_baths(array $p): string {
-        // Para ND vienen como rangos: "1 - 3", "1 - 2"
-        $beds  = !empty($p['Bedrooms'])  ? ' ' . trim($p['Bedrooms'])  . ' bed'  : '';
-        $baths = !empty($p['Bathrooms']) ? ' ' . trim($p['Bathrooms']) . ' bath' : '';
-        if ($beds || $baths) {
-            return ' · ' . trim($beds . ' ' . $baths);
-        }
-        return '';
-    }
+		// Render mínimo (estructura: galería + datos). Adapta a tu CSS.
+		return $this->render_view($prop);
+	}
 
-    private function build_price(array $p): string {
-        // Price puede llegar como rango (p.ej. "EUR 230000 - 420000")
-        if (!empty($p['Price'])) {
-            $val = trim($p['Price']);
-            // añade moneda si hace falta (habitualmente viene con EUR)
-            return $val;
-        }
-        return __('Price on request', 'resales');
-    }
+	/** Shortcode [resales_property ref="Rxxxxx"] o [resales_property id="12345"] */
+	public function render_shortcode( $atts = [] ) {
+		$atts = shortcode_atts([
+			'ref' => '',
+			'id'  => '',
+		], $atts, 'resales_property');
 
-    private function placeholder_svg(): string {
-        // Un placeholder liviano con texto “No image”
-        return '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#efefef;color:#9a9a9a;font-size:14px;">No image</div>';
-    }
+		// Si no viene por atributo, leemos ?ref o ?id del URL (case-insensitive)
+		if ( empty($atts['ref']) ) {
+			$try = isset($_GET['ref']) ? $_GET['ref'] : ( $_GET['Ref'] ?? '' );
+			if ( is_string($try) ) { $atts['ref'] = trim($try); }
+		}
+		if ( empty($atts['id']) ) {
+			$try = isset($_GET['id']) ? $_GET['id'] : ( $_GET['Id'] ?? '' );
+			if ( is_string($try) ) { $atts['id'] = trim($try); }
+		}
 
-    private function render_debug_box(array $payload, array $atts): string {
-        ob_start();
-        $status = $payload['transaction']['status'] ?? '';
-        $incoming = $payload['transaction']['incomingIp'] ?? '';
-        $queryInfo = $payload['QueryInfo'] ?? [];
-        ?>
-        <div style="border:1px dashed #bbb;padding:12px;margin-bottom:18px;border-radius:8px;background:#fafafa;">
-            <strong>DEBUG (mínima + ND _PD forzado)</strong><br>
-            HTTP: <?php echo esc_html($status ? '200' : '??'); ?><br>
-            <details style="margin-top:6px;">
-                <summary>Args del shortcode</summary>
-                <pre style="white-space:pre-wrap;"><?php echo esc_html(print_r($atts, true)); ?></pre>
-            </details>
-            <details>
-                <summary>transaction</summary>
-                <pre style="white-space:pre-wrap;"><?php echo esc_html(print_r($payload['transaction'] ?? [], true)); ?></pre>
-            </details>
-            <details>
-                <summary>QueryInfo</summary>
-                <pre style="white-space:pre-wrap;"><?php echo esc_html(print_r($queryInfo, true)); ?></pre>
-            </details>
-            <small>En ND usaremos SIEMPRE PropertyDetails cuando Search no traiga imágenes.</small>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
+		return $this->fetch_details( $atts['ref'], $atts['id'] );
+	}
 
-    /* ===========================
-     * Utils
-     * =========================== */
+	/** Vista mínima (puedes reemplazar por tu plantilla definitiva) */
+	private function render_view( array $p ) {
+		ob_start();
 
-    private function is_assoc($arr): bool {
-        return is_array($arr) && array_keys($arr) !== range(0, count($arr) - 1);
-    }
+		// ...existing code...
+		$title = esc_html( $p['PropertyType']['NameType'] ?? ($p['Reference'] ?? '') );
+		$ref   = esc_html( $p['Reference'] ?? '' );
+		$loc   = esc_html( trim( ($p['Location'] ?? '') . ', ' . ($p['Area'] ?? '') ) );
+		// Lógica para mostrar el precio como 'From (PriceFrom) to (PriceTo)' si existen
+		$price_from = isset($p['PriceFrom']) && $p['PriceFrom'] !== '' ? number_format((float)$p['PriceFrom'], 0, ',', '.') : '';
+		$price_to   = isset($p['PriceTo']) && $p['PriceTo'] !== '' ? number_format((float)$p['PriceTo'], 0, ',', '.') : '';
+		$currency   = $p['Currency'] ?? 'EUR';
+		if ($price_from && $price_to) {
+			$price = esc_html("From $currency $price_from to $currency $price_to");
+		} elseif ($price_from) {
+			$price = esc_html("From $currency $price_from");
+		} elseif (isset($p['Price']) && $p['Price'] !== '') {
+			$price = esc_html($currency . ' ' . number_format((float)$p['Price'], 0, ',', '.'));
+		} else {
+			$price = esc_html(__('Price on request', 'resales-api'));
+		}
+
+		$imgs = [];
+		// Nueva lógica: usar Pictures['Picture'] y PictureURL
+		if (!empty($p['Pictures']['Picture']) && is_array($p['Pictures']['Picture'])) {
+			foreach ($p['Pictures']['Picture'] as $img) {
+				if (!empty($img['PictureURL'])) {
+					$imgs[] = esc_url($img['PictureURL']);
+				}
+			}
+		}
+		// Fallback: si no hay imágenes, intentar Images/MainImage (por compatibilidad)
+		if (empty($imgs)) {
+			if (!empty($p['Images']) && is_array($p['Images'])) {
+				foreach ($p['Images'] as $img) {
+					if (!empty($img['Url'])) { $imgs[] = esc_url($img['Url']); }
+				}
+			} elseif (!empty($p['MainImage'])) {
+				$imgs[] = esc_url($p['MainImage']);
+			}
+		}
+
+	?>
+	<link href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" rel="stylesheet">
+	<div class="property-detail-container" style="width:85vw;max-width:1500px;margin:2em auto;padding:1.2em;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.07);font-family:'Inter',sans-serif;">
+	       <div class="property-detail-flex" style="display: grid; grid-template-columns: 70% 30%; gap:2em; align-items: flex-start;">
+		       <div class="property-gallery" style="width:100%; margin-bottom:0;">
+					<?php
+						require_once __DIR__ . '/gallery-helper.php';
+						render_gallery($imgs, 'detail');
+					?>
+				</div>
+				   <div class="property-info" style="width:100%; margin-top:0;">
+					<h1 style="font-size:2.2em;font-weight:700;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
+					   <div class="property-info-table" style="background:#f8f8f8;border-radius:6px;padding:1.5em 2em;margin-bottom:1.5em;">
+						   <style>
+							   .property-info-table table { width:100%; border-collapse:collapse; font-size:1.1em; }
+							   .property-info-table table, .property-info-table td, .property-info-table tr { border:none !important; }
+							   .property-info-table td { background:#f8f8f8; padding:8px 0; }
+							   .property-info-table td:first-child { font-weight:600; color:#222; }
+						   </style>
+						   <table>
+							   <tbody>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Ref. no.', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $ref; ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Price', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $price; ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Location', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $loc; ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Area', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Area'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Type', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Type'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Bedrooms', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Bedrooms'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Bathrooms', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Bathrooms'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Plot size', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['PlotSize'] ?? ''); ?> m²</td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Built size', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['BuiltSize'] ?? ''); ?> m²</td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Terrace', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Terrace'] ?? ''); ?> m²</td></tr>
+							   </tbody>
+						   </table>
+						   <?php if (!empty($p['Features'])): ?>
+							<div style="margin-top:1.5em;color:#555;"><strong><?php _e('Features', 'resales-api'); ?>:</strong> <?php echo esc_html($p['Features']); ?></div>
+						   <?php endif; ?>
+					   </div>
+				   </div>
+			   </div>
+			   <!-- Nueva sección: detalle y contacto en dos columnas -->
+		   <!-- Segunda sección: dos columnas, tabs a la izquierda y contacto a la derecha -->
+		   <div class="property-detail-contact-section" style="display: grid; grid-template-columns: 65% 35%; gap:2em; margin-top:2em; align-items: start;">
+			   <div>
+				   <style>
+					   .property-tabs { display:flex; border-bottom:2px solid #eee; margin-bottom:1.5em; }
+					   .property-tab { padding:1em 2em; cursor:pointer; font-weight:600; color:#333; background:none; border:none; outline:none; transition:color 0.2s; }
+					   .property-tab.active { color:#1976d2; border-bottom:2px solid #1976d2; }
+					   .property-tab-content { background:#fff; border-radius:8px; box-shadow:0 1px 8px rgba(0,0,0,0.04); padding:2em; min-height:180px; }
+				   </style>
+				   <div class="property-tabs">
+					<button class="property-tab active" id="tab-desc" onclick="showTab('desc')"><?php _e('Description', 'resales-api'); ?></button>
+					<button class="property-tab" id="tab-loc" onclick="showTab('loc')"><?php _e('Location', 'resales-api'); ?></button>
+				   </div>
+				   <div class="property-tab-content" id="tab-content-desc">
+					   <?php echo wpautop( wp_kses_post( $p['Description'] ?? '' ) ); ?>
+				   </div>
+				   <div class="property-tab-content" id="tab-content-loc" style="display:none;">
+					   <iframe src="https://www.google.com/maps?q=<?php echo urlencode($p['Location'] ?? ''); ?>&output=embed" width="100%" height="220" style="border:0;border-radius:6px;" allowfullscreen="" loading="lazy"></iframe>
+					   <div style="margin-top:1em;color:#555;font-size:1em;">
+						   <?php echo esc_html($p['Location'] ?? ''); ?>
+					   </div>
+				   </div>
+				   <script>
+					   function showTab(tab) {
+						   document.getElementById('tab-desc').classList.remove('active');
+						   document.getElementById('tab-loc').classList.remove('active');
+						   document.getElementById('tab-content-desc').style.display = 'none';
+						   document.getElementById('tab-content-loc').style.display = 'none';
+						   if(tab === 'desc') {
+							   document.getElementById('tab-desc').classList.add('active');
+							   document.getElementById('tab-content-desc').style.display = 'block';
+						   } else {
+							   document.getElementById('tab-loc').classList.add('active');
+							   document.getElementById('tab-content-loc').style.display = 'block';
+						   }
+					   }
+				   </script>
+			   </div>
+			   <div class="property-detail-contact" style="background:#f9f9f9;padding:2em;border-radius:8px;box-shadow:0 1px 8px rgba(0,0,0,0.04);">
+				   <h2 style="font-size:1.5em;font-weight:600;margin-bottom:1em;"><?php _e('Contact', 'resales-api'); ?></h2>
+				   <div class="property-contact-placeholder" style="border:1px dashed #aaa; padding:2em; text-align:center; background:#fff; border-radius:6px;">
+					   <em style="color:#888;font-size:1.1em;"><?php _e('Contact form coming soon.', 'resales-api'); ?></em>
+				   </div>
+			   </div>
+		   </div>
+			</div>
+			<!-- Espacio reservado para el formulario de contacto -->
+			   <div class="property-contact-placeholder" style="border:1px dashed #aaa; padding:2em; margin:2em 0; text-align:center; background:#f9f9f9; border-radius:6px;">
+				   <em style="color:#888;font-size:1.1em;"><?php _e('Contact form coming soon.', 'resales-api'); ?></em>
+			   </div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	private function error_box( $msg ) {
+		return '<div class="resales-error" style="color:#c00;margin:20px 0;">'. esc_html($msg) .'</div>';
+	}
 }
 
-endif;
+} // class_exists
 
-// Instancia
-if (class_exists('Resales_Shortcodes')) {
-    new Resales_Shortcodes();
-}
+// Bootstrap
+add_action('init', function(){
+	Resales_Single::instance();
+});
