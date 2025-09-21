@@ -1,0 +1,129 @@
+/* Layout horizontal/apilado para la fila de filtros */
+.lusso-filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+@media (max-width: 700px) {
+  .lusso-filters__row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+/* Estilo para cada grupo de filtro */
+.lusso-filters .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 160px;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+.lusso-filters .filter-group label {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.lusso-filters .filter-group input,
+.lusso-filters .filter-group select {
+  width: 100%;
+  min-width: 0;
+}
+.lusso-filters .filter-group .lusso-filters__submit {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .lusso-filters .filter-group {
+    min-width: 0;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  .lusso-filters .filter-group .lusso-filters__submit {
+    width: 100%;
+  }
+}
+/* Forzar layout horizontal aunque un padre tenga flex column */
+.lusso-filters-form {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+}
+/* Filtros horizontales en desktop, vertical en móvil para .lusso-filters-form */
+.lusso-filters-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+.lusso-filters-form .filter-field {
+  flex: 1 1 160px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.lusso-filters-form .lusso-filters__submit {
+  flex: 0 0 auto;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 700px) {
+  .lusso-filters-form {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .lusso-filters-form .filter-field {
+    min-width: 0;
+    width: 100%;
+  }
+  .lusso-filters-form .lusso-filters__submit {
+    width: 100%;
+  }
+}
+/* ---- Filtros horizontales en /properties ---- */
+.lusso-filters {               /* wrapper del formulario */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+
+.lusso-filters .filter-field { /* cada campo (select/input/button) */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Asegura altura uniforme de controles */
+.lusso-filters select,
+.lusso-filters input[type="number"],
+.lusso-filters input[type="text"],
+.lusso-filters button {
+  height: 40px;
+  line-height: 40px;
+  padding: 0 10px;
+}
+
+/* Dale ancho razonable a selects */
+.lusso-filters select { min-width: 160px; }
+.lusso-filters .filter-price { min-width: 110px; }
+.lusso-filters .filter-submit button { height: 40px; }
+
+/* Responsive: 2 columnas en tablets, 1 en móviles */
+@media (max-width: 992px){
+  .lusso-filters { gap: 10px 12px; }
+  .lusso-filters select { min-width: 140px; }
+}
+@media (max-width: 680px){
+  .lusso-filters { flex-direction: column; align-items: stretch; }
+  .lusso-filters .filter-field { width: 100%; }
+  .lusso-filters select,
+  .lusso-filters input,
+  .lusso-filters button { width: 100%; }
+}
