@@ -19,64 +19,59 @@ class Resales_Filters_Shortcode {
         $action = esc_url( remove_query_arg( ['paged'] ) ); // evita paginación estancada
 
         ob_start(); ?>
-        <form action="<?php echo $action; ?>" method="get" class="lusso-filters" autocomplete="off">
+        <form action="<?php echo $action; ?>" method="get" class="lusso-filters-form" autocomplete="off">
             <div class="lusso-filters__row">
-                <div class="lusso-filters__col">
-                    <label>Area</label>
-                    <select name="area">
-                        <option value="">Todas</option>
-                        <!-- Puedes rellenar dinámicamente con tus áreas -->
-                        <option value="Costa del Sol" <?php selected($area, 'Costa del Sol'); ?>>Costa del Sol</option>
-                        <option value="Málaga" <?php selected($area, 'Málaga'); ?>>Málaga</option>
-                    </select>
+                <div class="filter-field">
+                    <label for="lusso-filter-area">Area
+                        <select id="lusso-filter-area" name="area" class="filter-area">
+                            <option value="">Todas</option>
+                            <option value="Costa del Sol" <?php selected($area, 'Costa del Sol'); ?>>Costa del Sol</option>
+                            <option value="Málaga" <?php selected($area, 'Málaga'); ?>>Málaga</option>
+                        </select>
+                    </label>
                 </div>
-
-                <div class="lusso-filters__col">
-                    <label>Location</label>
-                    <select name="location">
-                        <option value="">Todas</option>
-                        <!-- Rellena dinámicamente si quieres -->
-                        <option value="Manilva" <?php selected($location, 'Manilva'); ?>>Manilva</option>
-                        <option value="Estepona" <?php selected($location, 'Estepona'); ?>>Estepona</option>
-                    </select>
+                <div class="filter-field">
+                    <label for="lusso-filter-location">Location
+                        <select id="lusso-filter-location" name="location" class="filter-location">
+                            <option value="">Todas</option>
+                            <option value="Manilva" <?php selected($location, 'Manilva'); ?>>Manilva</option>
+                            <option value="Estepona" <?php selected($location, 'Estepona'); ?>>Estepona</option>
+                        </select>
+                    </label>
                 </div>
-
-                <div class="lusso-filters__col">
-                    <label>Tipo</label>
-                    <select name="types[]" multiple size="4">
-                        <option value="Apartment"  <?php echo in_array('Apartment',  $types, true) ? 'selected' : ''; ?>>Apartment</option>
-                        <option value="Villa"      <?php echo in_array('Villa',      $types, true) ? 'selected' : ''; ?>>Villa</option>
-                        <option value="Townhouse" <?php echo in_array('Townhouse', $types, true) ? 'selected' : ''; ?>>Townhouse</option>
-                        <option value="Penthouse" <?php echo in_array('Penthouse', $types, true) ? 'selected' : ''; ?>>Penthouse</option>
-                    </select>
+                <div class="filter-field">
+                    <label for="lusso-filter-types">Tipo
+                        <select id="lusso-filter-types" name="types[]" multiple size="4" class="filter-types">
+                            <option value="Apartment"  <?php echo in_array('Apartment',  $types, true) ? 'selected' : ''; ?>>Apartment</option>
+                            <option value="Villa"      <?php echo in_array('Villa',      $types, true) ? 'selected' : ''; ?>>Villa</option>
+                            <option value="Townhouse" <?php echo in_array('Townhouse', $types, true) ? 'selected' : ''; ?>>Townhouse</option>
+                            <option value="Penthouse" <?php echo in_array('Penthouse', $types, true) ? 'selected' : ''; ?>>Penthouse</option>
+                        </select>
+                    </label>
                 </div>
-
-                <div class="lusso-filters__col">
-                    <label>Bedrooms</label>
-                    <select name="beds">
-                        <option value="0" <?php selected($beds, 0); ?>>Todos</option>
-                        <option value="1" <?php selected($beds, 1); ?>>1+</option>
-                        <option value="2" <?php selected($beds, 2); ?>>2+</option>
-                        <option value="3" <?php selected($beds, 3); ?>>3+</option>
-                        <option value="4" <?php selected($beds, 4); ?>>4+</option>
-                    </select>
+                <div class="filter-field">
+                    <label for="lusso-filter-beds">Bedrooms
+                        <select id="lusso-filter-beds" name="beds" class="filter-beds">
+                            <option value="0" <?php selected($beds, 0); ?>>Todos</option>
+                            <option value="1" <?php selected($beds, 1); ?>>1+</option>
+                            <option value="2" <?php selected($beds, 2); ?>>2+</option>
+                            <option value="3" <?php selected($beds, 3); ?>>3+</option>
+                            <option value="4" <?php selected($beds, 4); ?>>4+</option>
+                        </select>
+                    </label>
                 </div>
-
-                <div class="lusso-filters__col">
-                    <label>Price From</label>
-                    <input type="number" name="price_from" min="0" step="1000" value="<?php echo esc_attr($price_from); ?>" />
+                <div class="filter-field">
+                    <label for="lusso-filter-price-from">Price From
+                        <input id="lusso-filter-price-from" type="number" name="price_from" min="0" step="1000" value="<?php echo esc_attr($price_from); ?>" class="filter-price-from" />
+                    </label>
                 </div>
-
-                <div class="lusso-filters__col">
-                    <label>Price To</label>
-                    <input type="number" name="price_to" min="0" step="1000" value="<?php echo esc_attr($price_to); ?>" />
+                <div class="filter-field">
+                    <label for="lusso-filter-price-to">Price To
+                        <input id="lusso-filter-price-to" type="number" name="price_to" min="0" step="1000" value="<?php echo esc_attr($price_to); ?>" class="filter-price-to" />
+                    </label>
                 </div>
             </div>
-
-            <!-- Señal para tu shortcode de tarjetas (opcional):
-                 Puedes usarla si quieres distinguir búsquedas de primera carga: -->
             <input type="hidden" name="do" value="search" />
-
             <button type="submit" class="lusso-filters__submit">Search</button>
         </form>
         <?php
