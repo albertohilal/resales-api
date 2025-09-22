@@ -1,3 +1,119 @@
+.lusso-filters .filter-group{
+  flex: 0 0 auto;
+  min-width: auto;
+  flex-direction: row;
+  overflow: visible;
+}
+.lusso-filters .filter-group:first-child{
+  flex-basis: auto;
+  min-width: unset;
+}
+.lusso-filters .lusso-filter-tag{
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: .5rem .75rem;
+  background: #fff;
+  border: 1px solid var(--color-gray-alt, #dcdcdc);
+  border-radius: 0px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  overflow: visible;
+}
+@supports (width: fit-content){
+  .lusso-filters .lusso-filter-tag{
+    width: fit-content;
+  }
+}
+.lusso-filters .lusso-filters__row{
+  overflow: visible;
+}
+/* El padre NO debe forzar ancho ni dirección en columna */
+.lusso-filters .filter-group{
+  flex: 0 0 auto;
+  flex-direction: row;
+  min-width: auto;
+}
+
+/* Primer grupo por si alguna regla previa lo fijó */
+.lusso-filters .filter-group:first-child{
+  flex-basis: auto;
+  min-width: unset;
+}
+
+/* La “pill” se adapta al contenido y no corta el texto */
+.lusso-filters .lusso-filter-tag{
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: .5rem .75rem;
+  background: #fff;
+  border: 1px solid var(--color-gray-alt, #dcdcdc);
+  border-radius: 9999px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* (Defensivo) evita que ancestros recorten esquinas o contenido */
+.lusso-filters .lusso-filters__row,
+.lusso-filters .filter-group { overflow: visible; }
+.lusso-filters .filter-group{
+  min-width: auto;
+  flex: 0 0 auto;
+  flex-direction: row;
+}
+
+.lusso-filters .lusso-filter-tag{
+  display: inline-flex;
+  align-items: center;
+  padding: .5rem .75rem;
+  height: 38px;
+  background: #fff;
+  border: 1px solid var(--color-gray-alt, #dcdcdc);
+  border-radius: 9999px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: 100%;
+  overflow: visible;
+}
+@supports not (width: fit-content){
+  .lusso-filters .lusso-filter-tag{
+    width: auto;
+  }
+}
+
+.lusso-filters .filter-group:first-child{
+  min-width: unset;
+  flex-basis: auto;
+}
+
+.lusso-filters .filter-group,
+.lusso-filters .lusso-filters__row{
+  overflow: visible;
+}
+.lusso-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: .5rem .75rem;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 9999px;
+  line-height: 1;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
 /* Layout horizontal/apilado para la fila de filtros */
 .lusso-filters__row {
   display: flex;
