@@ -156,6 +156,9 @@ add_action('plugins_loaded', function () {
 
     // Endpoint AJAX ping (diagnóstico)
     require_once plugin_dir_path(__FILE__).'includes/lusso-ping-endpoint.php';
+
+    // Registrar endpoints REST de filtros V6 SIEMPRE
+    require_once plugin_dir_path(__FILE__).'includes/rest-filters-v6.php';
 });
 
 /* ===========================
