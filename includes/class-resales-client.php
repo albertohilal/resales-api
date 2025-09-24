@@ -17,7 +17,7 @@ class Resales_Client {
         $this->base_url = 'https://webapi.resales-online.com/V6/';
     }
 
-    private function request($endpoint, $params = []) {
+    public function request($endpoint, $params = []) {
         $url = $this->base_url . ltrim($endpoint, '/');
 
         $defaults = [

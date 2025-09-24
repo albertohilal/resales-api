@@ -1,4 +1,30 @@
 <?php
+// ===========================
+//  Endpoints AJAX públicos (logueados y no logueados)
+// ===========================
+if (!defined('LUSSO_PLUGIN_DIR')) {
+    define('LUSSO_PLUGIN_DIR', plugin_dir_path(__FILE__));
+}
+add_action('wp_ajax_lusso_ping','lusso_ping');
+add_action('wp_ajax_nopriv_lusso_ping','lusso_ping');
+add_action('wp_ajax_lusso_debug_locations','lusso_debug_locations');
+add_action('wp_ajax_nopriv_lusso_debug_locations','lusso_debug_locations');
+add_action('wp_ajax_lusso_debug_types','lusso_debug_types');
+add_action('wp_ajax_nopriv_lusso_debug_types','lusso_debug_types');
+
+function lusso_ping(){ wp_send_json_success(['ok'=>1]); }
+function lusso_debug_locations(){
+    require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
+    $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
+    $data = lusso_fetch_locations($lang);
+    is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
+}
+function lusso_debug_types(){
+    require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
+    $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
+    $data = lusso_fetch_property_types($lang);
+    is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
+}
 /**
  * Plugin Name: Resales API
  * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
@@ -40,7 +66,24 @@ add_action('wp_enqueue_scripts', function(){
     wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
     wp_enqueue_script('lusso-swiper-init', plugins_url('assets/js/swiper-init.js', __FILE__), ['swiper-js'], '1.0', true);
 
-    // JS para el formulario de filtros (si lo usas)
+    // JS para el formulario de filtros V6 solo en LISTING_PATH y si flag ON
+    $listing_path = getenv('LISTING_PATH') ?: '/properties/';
+    if (get_option('filters_v6_enabled') && is_page() && untrailingslashit($_SERVER['REQUEST_URI']) === untrailingslashit($listing_path)) {
+        wp_enqueue_script(
+            'filters-js',
+            plugins_url('assets/js/filters.js', __FILE__),
+            [],
+            '1.0',
+            true
+        );
+        // Inyectar opciones de dormitorios
+        if (class_exists('Lusso_Resales_Filters_V6')) {
+            $provider = new Lusso_Resales_Filters_V6();
+            wp_localize_script('filters-js', 'LUSSO_BEDROOMS', $provider->get_bedrooms_options());
+        }
+    }
+
+    // JS para el formulario de filtros legacy (si lo usas)
     if (file_exists(plugin_dir_path(__FILE__).'assets/js/lusso-newdevs-filters.js')) {
         wp_enqueue_script(
             'lusso-newdevs-filters',
@@ -89,6 +132,9 @@ add_action('http_api_curl', function($handle){
 /* ===========================
  *  Bootstrap (clases del plugin)
  * =========================== */
+// Incluir SIEMPRE el data layer para exponer los handlers AJAX
+require_once plugin_dir_path(__FILE__).'includes/class-resales-data.php';
+
 add_action('plugins_loaded', function () {
     // Núcleo
     resales_api_require('includes/class-resales-client.php');
@@ -107,6 +153,9 @@ add_action('plugins_loaded', function () {
     if (class_exists('Resales_Single'))     Resales_Single::instance();
     if (class_exists('Resales_Filters_Shortcode')) new Resales_Filters_Shortcode(); // SOLO filtros
     if (is_admin() && class_exists('Resales_Admin')) Resales_Admin::instance();
+
+    // Endpoint AJAX ping (diagnóstico)
+    require_once plugin_dir_path(__FILE__).'includes/lusso-ping-endpoint.php';
 });
 
 /* ===========================
