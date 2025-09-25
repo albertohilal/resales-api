@@ -1,3 +1,34 @@
+// === Settings API: Flag Filtros V6 (API) habilitados ===
+add_action('admin_init', function () {
+    // Registrar opción (entero 0/1)
+    register_setting('general', 'resales_filters_v6_enabled', array(
+        'type'              => 'integer',
+        'sanitize_callback' => function ($v) { return $v ? 1 : 0; },
+        'default'           => 0,
+        'show_in_rest'      => false,
+    ));
+
+    // Campo en la página "Ajustes → Generales"
+    add_settings_field(
+        'resales_filters_v6_enabled',
+        __('Filtros V6 (API) habilitados', 'resales'),
+        function () {
+            $val = (int) get_option('resales_filters_v6_enabled', 0);
+            echo '<label for="resales_filters_v6_enabled">';
+            echo '<input type="checkbox" id="resales_filters_v6_enabled" name="resales_filters_v6_enabled" value="1" ' . checked(1, $val, false) . ' />';
+            echo ' ' . esc_html__('Activar filtros V6 desde API', 'resales');
+            echo '</label>';
+        },
+        'general'
+    );
+});
+
+// === Activación: asegurar opción con default 0 ===
+register_activation_hook(__FILE__, function () {
+    if (get_option('resales_filters_v6_enabled', null) === null) {
+        add_option('resales_filters_v6_enabled', 0);
+    }
+});
 <?php
 // ===========================
 //  Endpoints AJAX públicos (logueados y no logueados)
@@ -68,7 +99,8 @@ add_action('wp_enqueue_scripts', function(){
 
     // JS para el formulario de filtros V6 solo en LISTING_PATH y si flag ON
     $listing_path = getenv('LISTING_PATH') ?: '/properties/';
-    if (get_option('filters_v6_enabled') && is_page() && untrailingslashit($_SERVER['REQUEST_URI']) === untrailingslashit($listing_path)) {
+    $filters_v6_enabled = (bool) get_option('resales_filters_v6_enabled', 0);
+    if ($filters_v6_enabled && is_page() && untrailingslashit($_SERVER['REQUEST_URI']) === untrailingslashit($listing_path)) {
         wp_enqueue_script(
             'filters-js',
             plugins_url('assets/js/filters.js', __FILE__),
