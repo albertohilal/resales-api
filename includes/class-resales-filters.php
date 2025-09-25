@@ -1,5 +1,6 @@
 
 <?php
+
 if (!defined('ABSPATH')) exit;
 
 class Resales_Filters_Shortcode {
@@ -8,15 +9,14 @@ class Resales_Filters_Shortcode {
     }
 
     public function render($atts = []) {
-
-    // Lee valores actuales de la URL para mantener selección al recargar
-    $area       = isset($_GET['area'])        ? sanitize_text_field($_GET['area']) : '';
-    $location   = isset($_GET['location'])    ? sanitize_text_field($_GET['location']) : '';
-    $beds       = isset($_GET['beds'])        ? intval($_GET['beds']) : 0;
-    $price_from = isset($_GET['price_from'])  ? intval($_GET['price_from']) : 0;
-    $price_to   = isset($_GET['price_to'])    ? intval($_GET['price_to']) : 0;
-    $types      = isset($_GET['types'])       ? (array) $_GET['types'] : [];
-    $filters_v6_enabled = get_option('resales_filters_v6_enabled');
+        // Lee valores actuales de la URL para mantener selección al recargar
+        $area       = isset($_GET['area'])        ? sanitize_text_field($_GET['area']) : '';
+        $location   = isset($_GET['location'])    ? sanitize_text_field($_GET['location']) : '';
+        $beds       = isset($_GET['beds'])        ? intval($_GET['beds']) : 0;
+        $price_from = isset($_GET['price_from'])  ? intval($_GET['price_from']) : 0;
+        $price_to   = isset($_GET['price_to'])    ? intval($_GET['price_to']) : 0;
+        $types      = isset($_GET['types'])       ? (array) $_GET['types'] : [];
+        $filters_v6_enabled = get_option('resales_filters_v6_enabled');
 
         // Acción: enviamos a la misma URL con método GET
         $action = esc_url( remove_query_arg( ['paged'] ) ); // evita paginación estancada
@@ -147,26 +147,6 @@ class Resales_Filters_Shortcode {
     }
 }
 
-add_action('admin_init', function() {
-    register_setting('general', 'filters_v6_enabled', [
-        'type' => 'boolean',
-        'sanitize_callback' => function($value) {
-            return $value === '1' ? true : false;
-        },
-        'default' => false
-    ]);
-    add_settings_field(
-        'filters_v6_enabled',
-        'Filtros V6 (API) habilitados',
-        function() {
-            $value = get_option('filters_v6_enabled', false);
-            echo '<input type="checkbox" name="filters_v6_enabled" value="1" ' . checked($value, true, false) . '> Activar filtros V6 desde API';
-        },
-        'general',
-        'default'
-    );
-});
-
 /**
  * Lusso Resales Filters - Provider V6 (Etapa 1)
  * - Whitelist de Áreas con orden fijo y normalización robusta
@@ -183,56 +163,3 @@ if (!defined('LUSSO_AREA_WHITELIST')) {
     ]));
 }
 
-class Lusso_Resales_Filters_V6 {
-    /**
-     * Loader de credenciales: primero get_option, luego .env
-     * @return array ['p1'=>..., 'p2'=>..., 'P_ApiId'=>...]
-     */
-    private function get_api_auth() {
-        $p1 = get_option('API_P1');
-        $p2 = get_option('API_P2');
-        $api_id = get_option('API_FILTER_ID');
-        if ($p1 && $p2 && $api_id) {
-            return ['p1'=>$p1, 'p2'=>$p2, 'P_ApiId'=>$api_id];
-        }
-        // Si no hay en options, intenta cargar .env
-        $env_path = defined('RESALES_API_PLUGIN_DIR') ? RESALES_API_PLUGIN_DIR.'/.env' : dirname(__DIR__,2).'/.env';
-        $env = [];
-        if (file_exists($env_path)) {
-            // Si existe Dotenv, úsalo
-            if (class_exists('Dotenv\\Dotenv')) {
-                $dotenv = Dotenv\Dotenv::createImmutable(dirname($env_path));
-                $dotenv->load();
-                $env['API_P1'] = $_ENV['API_P1'] ?? '';
-                $env['API_P2'] = $_ENV['API_P2'] ?? '';
-                $env['API_FILTER_ID'] = $_ENV['API_FILTER_ID'] ?? '';
-            } else {
-                // Parser simple
-                foreach (file($env_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-                    if (preg_match('/^([A-Z0-9_]+)=(.*)$/', $line, $m)) {
-                        $env[$m[1]] = trim($m[2]);
-                    }
-                }
-            }
-        }
-        return [
-            'p1' => $env['API_P1'] ?? '',
-            'p2' => $env['API_P2'] ?? '',
-            'P_ApiId' => $env['API_FILTER_ID'] ?? ''
-        ];
-    }
-
-    /**
-     * Normaliza nombres para matching robusto (lowercase, sin tildes, sin espacios extra)
-     */
-    private function normalize_slug($name) {
-        // ...existing code...
-    }
-
-    private function get_api_auth() {
-        // ...existing code...
-    }
-
-    // Helpers de caché, si existen
-    // ...existing code...
-}
