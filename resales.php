@@ -81,6 +81,7 @@ add_action('wp_enqueue_scripts', function(){
             $provider = new Lusso_Resales_Filters_V6();
             wp_localize_script('filters-js', 'LUSSO_BEDROOMS', $provider->get_bedrooms_options());
         }
+        error_log('[resales] enqueue filters.js ' . current_time('mysql') . ' on ' . (is_page('properties') ? 'properties' : 'other'));
     }
 
     // JS para el formulario de filtros legacy (si lo usas)
