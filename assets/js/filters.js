@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             $select.appendChild(o);
         });
+<<<<<<< HEAD
     }
 
     function updateURL() {
@@ -149,6 +150,65 @@ document.addEventListener('DOMContentLoaded', function() {
             credentials: 'same-origin',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: $.param(formData)
+=======
+        $location.html(options);
+        $location.val('');
+        $location.trigger('change');
+    });
+
+    (function ($) {
+        if (typeof RESALES_FILTERS === 'undefined') return;
+
+        const post = (action) =>
+            $.post(RESALES_FILTERS.ajaxUrl, { action, nonce: RESALES_FILTERS.nonce });
+
+        const $area     = $('#lusso-filter-area');
+        const $location = $('#lusso-filter-location');
+        const $types    = $('#lusso-filter-types');
+
+        function setOptions($sel, items, valueKey, textKey, placeholder) {
+            $sel.empty().append(new Option(placeholder, ''));
+            items.forEach(it => $sel.append(new Option(it[textKey], it[valueKey])));
+        }
+        function dedupBy(arr, key) {
+            const m = new Map();
+            arr.forEach(o => m.set(o[key], o));
+            return Array.from(m.values());
+        }
+
+        // LOCATIONS
+        post('resales_v6_locations').done((res) => {
+            if (!res || !res.success) { console.error('locations error', res); return; }
+            const all = res.data || [];
+
+            // Areas únicas
+            const areas = dedupBy(all.filter(i => i.area).map(i => ({ k: i.area, v: i.area })), 'k')
+                .map(i => ({ value: i.v, text: i.v }));
+            setOptions($area, areas, 'value', 'text', 'Area');
+
+            // Todas las locations inicialmente
+            const locs = all.map(i => ({ value: i.name, text: i.name }));
+            setOptions($location, locs, 'value', 'text', 'Location');
+
+            // Filtrar locations por área
+            $area.on('change', function () {
+                const sel = this.value;
+                const filtered = all
+                    .filter(i => !sel || i.area === sel)
+                    .map(i => ({ value: i.name, text: i.name }));
+                setOptions($location, filtered, 'value', 'text', 'Location');
+            });
+        });
+
+        // TYPES
+        post('resales_v6_types').done((res) => {
+            if (!res || !res.success) { console.error('types error', res); return; }
+            const items = res.data || [];
+            setOptions($types, items, 'value', 'text', 'All types');
+        });
+
+    })(jQuery);
+>>>>>>> e6c05ce (feat(filters-v6): enqueue JS y endpoints AJAX para selects dinámicos desde WebAPI V6)
         })
         .then(r => r.json())
         .then(renderResults)
