@@ -29,7 +29,6 @@ register_activation_hook(__FILE__, function () {
         add_option('resales_filters_v6_enabled', 0);
     }
 });
-<?php
 // ===========================
 //  Endpoints AJAX públicos (logueados y no logueados)
 // ===========================
@@ -160,40 +159,6 @@ add_action('http_api_curl', function($handle){
             error_log('[Resales API][RESOLVE] Pin aplicado: ' . RESALES_API_HOST . ' -> ' . RESALES_API_HOST_IP);
         }
     }
-}, 10, 1);
-
-/* ===========================
- *  Bootstrap (clases del plugin)
- * =========================== */
-// Incluir SIEMPRE el data layer para exponer los handlers AJAX
-require_once plugin_dir_path(__FILE__).'includes/class-resales-data.php';
-
-add_action('plugins_loaded', function () {
-    // Núcleo
-    resales_api_require('includes/class-resales-client.php');
-    resales_api_require('includes/class-resales-settings.php');
-    resales_api_require('includes/class-resales-shortcodes.php');
-    resales_api_require('includes/class-resales-admin.php');
-    resales_api_require('includes/class-resales-single.php');
-
-    // NUEVO: shortcode SOLO de filtros
-    resales_api_require('includes/class-resales-filters.php');
-
-    // Inicializar
-    if (class_exists('Resales_Settings'))  Resales_Settings::instance();
-    if (class_exists('Lusso_Resales_Shortcodes')) new Lusso_Resales_Shortcodes(); // tarjetas/listados
-    if (class_exists('Resales_Shortcodes')) new Resales_Shortcodes();
-    if (class_exists('Resales_Single'))     Resales_Single::instance();
-    if (class_exists('Resales_Filters_Shortcode')) new Resales_Filters_Shortcode(); // SOLO filtros
-    if (is_admin() && class_exists('Resales_Admin')) Resales_Admin::instance();
-
-    // Endpoint AJAX ping (diagnóstico)
-    require_once plugin_dir_path(__FILE__).'includes/lusso-ping-endpoint.php';
-
-    // Registrar endpoints REST de filtros V6 SIEMPRE
-    require_once plugin_dir_path(__FILE__).'includes/rest-filters-v6.php';
-});
-
 /* ===========================
  *  Requisitos mínimos
  * =========================== */
