@@ -252,7 +252,7 @@ class Lusso_Resales_Filters_V6 {
         $response = wp_remote_get($url, ['timeout'=>20, 'sslverify'=>true]);
         $data = is_array($response) && isset($response['body']) ? json_decode($response['body'], true) : null;
         if (!is_array($data) || empty($data['data'])) {
-            error_log('[Lusso Filters] API V6 SearchLocations falló, usando snapshot/transient');
+            resales_log('WARN', '[Lusso Filters] API V6 SearchLocations falló, usando snapshot/transient');
             return $snapshot ?: ['areas'=>[]];
         }
         // Filtrar y reordenar por whitelist
@@ -302,7 +302,7 @@ class Lusso_Resales_Filters_V6 {
         $response = wp_remote_get($url, ['timeout'=>20, 'sslverify'=>true]);
         $data = is_array($response) && isset($response['body']) ? json_decode($response['body'], true) : null;
         if (!is_array($data) || empty($data['data'])) {
-            error_log('[Lusso Filters] API V6 SearchPropertyTypes falló, usando snapshot/transient');
+            resales_log('WARN', '[Lusso Filters] API V6 SearchPropertyTypes falló, usando snapshot/transient');
             return $snapshot ?: [];
         }
         $types = [];

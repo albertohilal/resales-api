@@ -2,71 +2,96 @@
 if (!defined('ABSPATH')) exit;
 
 class Resales_Client {
-    private $base_url;
-    private $p1;
-    private $p2;
+    private static $instance = null;
+    private $base = 'https://webapi.resales-online.com/V6';
 
-    public function __construct($p1, $p2) {
-        $this->p1 = $p1;
-        $this->p2 = $p2;
-
-        // 🔴 ANTES (incorrecto):
-        // $this->base_url = 'https://webapi-v6.resales-online.com/';
-
-        // 🟢 AHORA (correcto según documentación):
-        $this->base_url = 'https://webapi.resales-online.com/V6/';
+    public static function instance() {
+        if (self::$instance === null) self::$instance = new self();
+        return self::$instance;
     }
 
-    public function request($endpoint, $params = []) {
-        $url = $this->base_url . ltrim($endpoint, '/');
-
+    /** GET genérico a WebAPI V6 */
+    public function request($function, array $params = []) {
+        $s = Resales_Settings::instance();
+        if (isset($params['P_Agency_FilterId'])) {
+            unset($params['P_Agency_FilterId']);
+            resales_log('WARN', 'P_Agency_FilterId ignorado; usamos P_ApiId');
+        }
         $defaults = [
-            'p1' => $this->p1,
-            'p2' => $this->p2,
+            'p1'       => $s->get_p1(),
+            'p2'       => $s->get_p2(),
+            'P_ApiId'  => $s->get_api_id(),
+            'P_Lang'   => $s->get_lang(),
+            // 'p_sandbox' => true, // habilitar si hace falta
         ];
-        $args = [
-            'timeout' => 20,
-            'sslverify' => true,
-        ];
+        $query = array_filter($defaults + $params, static function($v){ return $v !== null && $v !== ''; });
+        $url   = trailingslashit($this->base) . $function . '?' . http_build_query($query);
 
-        $url = add_query_arg(array_merge($defaults, $params), $url);
-
-        error_log('[Resales_Client] URL: ' . $url);
-
-        $response = wp_remote_get($url, $args);
-
-        if (is_wp_error($response)) {
-            error_log('[Resales_Client] HTTP error: ' . $response->get_error_message());
-            return false;
+        $resp = wp_remote_get($url, ['timeout' => 15]);
+        if (is_wp_error($resp)) {
+            resales_log('ERROR', 'HTTP error', ['function'=>$function,'error'=>$resp->get_error_message()]);
+            return null;
         }
-
-        $code = wp_remote_retrieve_response_code($response);
+        $code = wp_remote_retrieve_response_code($resp);
         if ($code !== 200) {
-            error_log('[Resales_Client] HTTP status: ' . $code);
-            return false;
+            resales_log('ERROR', 'HTTP status != 200', ['function'=>$function,'status'=>$code]);
+            return null;
         }
-
-        $body = wp_remote_retrieve_body($response);
+        $body = wp_remote_retrieve_body($resp);
         $json = json_decode($body, true);
-
-        if (!$json) {
-            error_log('[Resales_Client] JSON inválido: ' . substr($body, 0, 200));
-            return false;
+        if ($json === null) {
+            resales_log('ERROR', 'JSON inválido', ['function'=>$function, 'body_sample'=>substr($body,0,200)]);
         }
-
         return $json;
     }
 
-    public function search($params = []) {
-        return $this->request('SearchProperties', $params);
+    /** Cachea SearchLocations 6h */
+    public function get_locations($lang = null, $force_refresh = false) {
+        $s = Resales_Settings::instance();
+        $lang = $lang ?: $s->get_lang();
+        $key  = "resales_v6_locations_{$lang}";
+        if (!$force_refresh) {
+            $cached = get_transient($key);
+            if ($cached !== false) return $cached;
+        }
+        $data = $this->request('SearchLocations', ['P_Lang' => $lang, 'P_All' => 'TRUE']);
+        $out = [];
+        if (is_array($data) && !empty($data['LocationList'])) {
+            foreach ($data['LocationList'] as $row) {
+                // Normalizar; claves pueden variar según salida
+                $label = $row['Location'] ?? ($row['Name'] ?? '');
+                $value = $row['Location'] ?? '';
+                $area  = $row['Area'] ?? ($row['Province'] ?? '');
+                if ($value) $out[] = ['value'=>$value, 'label'=>$label, 'area'=>$area];
+            }
+        } else {
+            resales_log('WARN', 'SearchLocations vacío o inválido', $data);
+        }
+        set_transient($key, $out, 6 * HOUR_IN_SECONDS);
+        return $out;
     }
 
-    public function list($params = []) {
-        return $this->request('ListProperties', $params);
-    }
-
-    public function get_property($id, $params = []) {
-        $params['propertyId'] = $id;
-        return $this->request('GetPropertyDetails', $params);
+    /** Cachea SearchPropertyTypes 6h */
+    public function get_property_types($lang = null, $force_refresh = false) {
+        $s = Resales_Settings::instance();
+        $lang = $lang ?: $s->get_lang();
+        $key  = "resales_v6_types_{$lang}";
+        if (!$force_refresh) {
+            $cached = get_transient($key);
+            if ($cached !== false) return $cached;
+        }
+        $data = $this->request('SearchPropertyTypes', ['P_Lang' => $lang]);
+        $out = [];
+        if (is_array($data) && !empty($data['PropertyTypes'])) {
+            foreach ($data['PropertyTypes'] as $row) {
+                $value = $row['OptionValue'] ?? '';
+                $label = $row['OptionName'] ?? '';
+                if ($value) $out[] = ['value'=>$value, 'label'=>$label];
+            }
+        } else {
+            resales_log('WARN', 'SearchPropertyTypes vacío o inválido', $data);
+        }
+        set_transient($key, $out, 6 * HOUR_IN_SECONDS);
+        return $out;
     }
 }

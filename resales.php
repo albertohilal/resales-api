@@ -1,4 +1,30 @@
 <?php
+// ================================
+// Helper de logging para Resales API
+// ================================
+if (!defined('RESALES_LOG_LEVEL')) define('RESALES_LOG_LEVEL', 'WARN'); // DEBUG|INFO|WARN|ERROR
+
+if (!function_exists('resales_log')) {
+    function resales_log($level, $msg, $context = null) {
+        $levels = ['DEBUG'=>0,'INFO'=>1,'WARN'=>2,'ERROR'=>3];
+        $cfg    = defined('RESALES_LOG_LEVEL') ? RESALES_LOG_LEVEL : 'WARN';
+        if (!isset($levels[$level]) || $levels[$level] < $levels[$cfg]) return;
+        $line = '[resales-api]['.$level.'] '.$msg;
+        if ($context !== null) {
+            if (is_array($context) || is_object($context)) {
+                $ctx = $context;
+                if (is_array($ctx) && count($ctx) > 3) {
+                    $ctx = array_slice($ctx, 0, 3, true);
+                    $ctx['__truncated__'] = true;
+                }
+                $line .= ' | ' . wp_json_encode($ctx);
+            } else {
+                $line .= ' | ' . (string)$context;
+            }
+        }
+        error_log($line);
+    }
+}
 // ===========================
 //  Endpoints AJAX públicos (logueados y no logueados)
 // ===========================

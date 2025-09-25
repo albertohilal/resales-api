@@ -22,10 +22,7 @@ function lusso_fetch_features($lang = 2) {
     if (!class_exists('Resales_Client')) {
         require_once __DIR__ . '/class-resales-client.php';
     }
-    $client = new Resales_Client(
-        defined('RESALES_API_P1') ? RESALES_API_P1 : '',
-        defined('RESALES_API_P2') ? RESALES_API_P2 : ''
-    );
+    $client = Resales_Client::instance();
     $params = [ 'P_Lang' => $lang ];
     $response = $client->request('SearchFeatures', $params);
     if (!$response || !isset($response['data']) || !is_array($response['data'])) {

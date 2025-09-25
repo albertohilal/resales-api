@@ -20,10 +20,7 @@ function lusso_fetch_locations($lang = 2) {
     if (!class_exists('Resales_Client')) {
         require_once plugin_dir_path(__FILE__).'class-resales-client.php';
     }
-    $client = new Resales_Client(
-        defined('RESALES_API_P1') ? RESALES_API_P1 : '',
-        defined('RESALES_API_P2') ? RESALES_API_P2 : ''
-    );
+    $client = Resales_Client::instance();
     $params = [
         'P_All' => true,
         'P_Lang' => $lang,
@@ -63,10 +60,7 @@ function lusso_fetch_property_types($lang = 2) {
     if (!class_exists('Resales_Client')) {
         require_once plugin_dir_path(__FILE__).'class-resales-client.php';
     }
-    $client = new Resales_Client(
-        defined('RESALES_API_P1') ? RESALES_API_P1 : '',
-        defined('RESALES_API_P2') ? RESALES_API_P2 : ''
-    );
+    $client = Resales_Client::instance();
     $params = [ 'P_Lang' => $lang ];
     $response = $client->request('SearchPropertyTypes', $params);
     if (!is_array($response) || empty($response['data']) || !is_array($response['data'])) {
