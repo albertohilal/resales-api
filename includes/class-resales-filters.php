@@ -1,4 +1,5 @@
 <?php
+
 if (!defined('ABSPATH')) exit;
 
 class Resales_Filters_Shortcode {
@@ -8,12 +9,13 @@ class Resales_Filters_Shortcode {
 
     public function render($atts = []) {
         // Lee valores actuales de la URL para mantener selección al recargar
-    $area       = isset($_GET['area'])        ? sanitize_text_field($_GET['area']) : '';
-    $location   = isset($_GET['location'])    ? sanitize_text_field($_GET['location']) : '';
-    $beds       = isset($_GET['beds'])        ? intval($_GET['beds']) : 0;
-    $price_from = isset($_GET['price_from'])  ? intval($_GET['price_from']) : 0;
-    $price_to   = isset($_GET['price_to'])    ? intval($_GET['price_to']) : 0;
-    $types      = isset($_GET['types'])       ? (array) $_GET['types'] : [];
+        $area       = isset($_GET['area'])        ? sanitize_text_field($_GET['area']) : '';
+        $location   = isset($_GET['location'])    ? sanitize_text_field($_GET['location']) : '';
+        $beds       = isset($_GET['beds'])        ? intval($_GET['beds']) : 0;
+        $price_from = isset($_GET['price_from'])  ? intval($_GET['price_from']) : 0;
+        $price_to   = isset($_GET['price_to'])    ? intval($_GET['price_to']) : 0;
+        $types      = isset($_GET['types'])       ? (array) $_GET['types'] : [];
+        $filters_v6_enabled = get_option('resales_filters_v6_enabled');
 
         // Acción: enviamos a la misma URL con método GET
         $action = esc_url( remove_query_arg( ['paged'] ) ); // evita paginación estancada
@@ -28,33 +30,50 @@ class Resales_Filters_Shortcode {
                 <div class="filter-group">
                     <select id="lusso-filter-area" name="area" class="filter-area" style="min-width:150px;">
                         <option value="">Area</option>
-                        <option value="Costa del Sol" <?php selected($area, 'Costa del Sol'); ?>>Costa del Sol</option>
-                        <option value="Málaga" <?php selected($area, 'Málaga'); ?>>Málaga</option>
+                        <?php if (empty($filters_v6_enabled)) : ?>
+                            <option value="Costa del Sol" <?php selected($area, 'Costa del Sol'); ?>>Costa del Sol</option>
+                            <option value="Málaga" <?php selected($area, 'Málaga'); ?>>Málaga</option>
+                        <?php endif; ?>
                     </select>
                 </div>
                 <div class="filter-group">
                     <select id="lusso-filter-location" name="location" class="filter-location" style="min-width:150px;">
                         <option value="">Location</option>
-                        <option value="Manilva" <?php selected($location, 'Manilva'); ?>>Manilva</option>
-                        <option value="Estepona" <?php selected($location, 'Estepona'); ?>>Estepona</option>
+                        <?php foreach ($this->lusso_static_locations() as $loc): ?>
+                            <option value="<?php echo esc_attr($loc); ?>" <?php selected($location, $loc); ?>><?php echo esc_html($loc); ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
+    /**
+     * Devuelve la lista fija de localidades para el filtro Location
+     * @return array
+     */
+    private function lusso_static_locations() {
+        return [
+            'Benahavís','Benalmádena','Casares','Estepona','Fuengirola',
+            'Manilva','Marbella','Mijas','Torremolinos','Málaga','Sotogrande'
+        ];
+    }
                 <div class="filter-group">
                     <select id="lusso-filter-types" name="types[]" class="filter-types" style="min-width:150px;">
                         <option value="">All types</option>
-                        <option value="Apartments" <?php echo in_array('Apartments', $types, true) ? 'selected' : ''; ?>>Apartments</option>
-                        <option value="Penthouses" <?php echo in_array('Penthouses', $types, true) ? 'selected' : ''; ?>>Penthouses</option>
-                        <option value="Villas" <?php echo in_array('Villas', $types, true) ? 'selected' : ''; ?>>Villas</option>
-                        <option value="Town Houses" <?php echo in_array('Town Houses', $types, true) ? 'selected' : ''; ?>>Town Houses</option>
+                        <?php if (empty($filters_v6_enabled)) : ?>
+                            <option value="Apartments" <?php echo in_array('Apartments', $types, true) ? 'selected' : ''; ?>>Apartments</option>
+                            <option value="Penthouses" <?php echo in_array('Penthouses', $types, true) ? 'selected' : ''; ?>>Penthouses</option>
+                            <option value="Villas" <?php echo in_array('Villas', $types, true) ? 'selected' : ''; ?>>Villas</option>
+                            <option value="Town Houses" <?php echo in_array('Town Houses', $types, true) ? 'selected' : ''; ?>>Town Houses</option>
+                        <?php endif; ?>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <select id="lusso-filter-beds" name="beds" class="filter-beds" style="min-width:120px;">
+                    <select id="lusso-filter-bedrooms" name="beds" class="filter-beds" style="min-width:120px;">
                         <option value="0" <?php selected($beds, 0); ?>>Bedrooms</option>
-                        <option value="1" <?php selected($beds, 1); ?>>1+</option>
-                        <option value="2" <?php selected($beds, 2); ?>>2+</option>
-                        <option value="3" <?php selected($beds, 3); ?>>3+</option>
-                        <option value="4" <?php selected($beds, 4); ?>>4+</option>
+                        <?php if (empty($filters_v6_enabled)) : ?>
+                            <option value="1" <?php selected($beds, 1); ?>>1+</option>
+                            <option value="2" <?php selected($beds, 2); ?>>2+</option>
+                            <option value="3" <?php selected($beds, 3); ?>>3+</option>
+                            <option value="4" <?php selected($beds, 4); ?>>4+</option>
+                        <?php endif; ?>
                     </select>
                 </div>
                 
@@ -135,26 +154,6 @@ class Resales_Filters_Shortcode {
         return ob_get_clean();
     }
 }
-
-add_action('admin_init', function() {
-    register_setting('general', 'filters_v6_enabled', [
-        'type' => 'boolean',
-        'sanitize_callback' => function($value) {
-            return $value === '1' ? true : false;
-        },
-        'default' => false
-    ]);
-    add_settings_field(
-        'filters_v6_enabled',
-        'Filtros V6 (API) habilitados',
-        function() {
-            $value = get_option('filters_v6_enabled', false);
-            echo '<input type="checkbox" name="filters_v6_enabled" value="1" ' . checked($value, true, false) . '> Activar filtros V6 desde API';
-        },
-        'general',
-        'default'
-    );
-});
 
 /**
  * Lusso Resales Filters - Provider V6 (Etapa 1)

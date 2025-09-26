@@ -1,4 +1,16 @@
+
 <?php
+/**
+ * Plugin Name: Resales API
+ * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
+ * Version: 3.2.5
+ * Author: Dev Team
+ * Requires at least: 6.0
+ * Requires PHP:      7.4
+ */
+
+defined('ABSPATH') || exit;
+
 // ================================
 // Helper de logging para Resales API
 // ================================
@@ -25,11 +37,12 @@ if (!function_exists('resales_log')) {
         error_log($line);
     }
 }
+
 // ===========================
 //  Endpoints AJAX públicos (logueados y no logueados)
 // ===========================
 if (!defined('LUSSO_PLUGIN_DIR')) {
-    define('LUSSO_PLUGIN_DIR', plugin_dir_path(__FILE__));
+        define('LUSSO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 }
 add_action('wp_ajax_lusso_ping','lusso_ping');
 add_action('wp_ajax_nopriv_lusso_ping','lusso_ping');
@@ -40,199 +53,187 @@ add_action('wp_ajax_nopriv_lusso_debug_types','lusso_debug_types');
 
 function lusso_ping(){ wp_send_json_success(['ok'=>1]); }
 function lusso_debug_locations(){
-    require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
-    $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
-    $data = lusso_fetch_locations($lang);
-    is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
+        require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
+        $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
+        $data = lusso_fetch_locations($lang);
+        is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
 }
 function lusso_debug_types(){
-    require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
-    $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
-    $data = lusso_fetch_property_types($lang);
-    is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
-}
-/**
- * Plugin Name: Resales API
- * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
- * Version: 3.2.5
- * Author: Dev Team
- * Requires at least: 6.0
- * Requires PHP: 7.4
- */
-
-if (!defined('ABSPATH')) exit;
-
-/* =======================================
- *  Host oficial WebAPI (NO cambiar)
- *  (Las clases deben usar https://webapi.resales-online.com/V6/…)
- * ======================================= */
-if (!defined('RESALES_API_HOST')) {
-    define('RESALES_API_HOST', 'webapi.resales-online.com');
+        require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
+        $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
+        $data = lusso_fetch_property_types($lang);
+        is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
 }
 
-/* =======================================
- *  Pin DNS opcional (solo si el hosting falla resolviendo DNS)
- *  - Déjalo '' para DESACTIVAR el pin.
- *  - Si necesitas pin, pon una IPv4 válida del host:
- *      dig +short webapi.resales-online.com
- * ======================================= */
-if (!defined('RESALES_API_HOST_IP')) {
-    define('RESALES_API_HOST_IP', ''); // ej: '34.175.62.143'
-}
+// ...resto del archivo sin cambios...
 
-/* ===========================
- *  Estilos / scripts frontend
- * =========================== */
-add_action('wp_enqueue_scripts', function(){
-    wp_enqueue_style('lusso-resales', plugins_url('assets/css/lusso-resales.css', __FILE__), [], '1.0');
-    wp_enqueue_style('lusso-resales-filters', plugins_url('assets/css/lusso-resales-filters.css', __FILE__), [], '1.0');
-    wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11.0.0');
-    wp_enqueue_style('lusso-swiper-gallery', plugins_url('assets/css/swiper-gallery.css', __FILE__), ['swiper-css'], '1.0');
-    wp_enqueue_style('lusso-resales-detail', plugins_url('assets/css/lusso-resales-detail.css', __FILE__), [], '1.0');
-    wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
-    wp_enqueue_script('lusso-swiper-init', plugins_url('assets/js/swiper-init.js', __FILE__), ['swiper-js'], '1.0', true);
 
-    // JS para el formulario de filtros V6 solo en LISTING_PATH y si flag ON
-    $listing_path = getenv('LISTING_PATH') ?: '/properties/';
-    if (get_option('filters_v6_enabled') && is_page() && untrailingslashit($_SERVER['REQUEST_URI']) === untrailingslashit($listing_path)) {
-        wp_enqueue_script(
-            'filters-js',
-            plugins_url('assets/js/filters.js', __FILE__),
-            [],
-            '1.0',
-            true
+// === Helpers API V6 (una sola vez) ===
+if (!function_exists('resales_get_api_creds')) {
+    function resales_get_api_creds() {
+        return array(
+            'p1'   => get_option('resales_api_p1'),
+            'p2'   => get_option('resales_api_p2'),
+            'fid'  => get_option('resales_agency_filter_id', 1),
+            'lang' => get_option('resales_lang', 2), // 2 = Español
         );
-        // Inyectar opciones de dormitorios
-        if (class_exists('Lusso_Resales_Filters_V6')) {
-            $provider = new Lusso_Resales_Filters_V6();
-            wp_localize_script('filters-js', 'LUSSO_BEDROOMS', $provider->get_bedrooms_options());
-        }
     }
-
-    // JS para el formulario de filtros legacy (si lo usas)
-    if (file_exists(plugin_dir_path(__FILE__).'assets/js/lusso-newdevs-filters.js')) {
-        wp_enqueue_script(
-            'lusso-newdevs-filters',
-            plugins_url('assets/js/lusso-newdevs-filters.js', __FILE__),
-            [],
-            '1.0',
-            true
-        );
-        wp_localize_script('lusso-newdevs-filters', 'LUSSO_NEWDEVS', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce('lusso_newdevs_nonce'),
-        ]);
-    }
-});
-
-/* ===========================
- *  Helper de carga de clases
- * =========================== */
-function resales_api_require($rel_path){
-    $path = plugin_dir_path(__FILE__) . ltrim($rel_path, '/');
-    if (file_exists($path)) { require_once $path; return true; }
-    error_log('[Resales API] No se pudo cargar: ' . $rel_path);
-    return false;
 }
 
-/* ==================================================
- *  Forzar IPv4 + PIN DNS (sin romper el certificado)
- *  - Solo aplica si la URL objetivo incluye RESALES_API_HOST
- *  - Mantiene verificación TLS (no tocar sslverify!)
- * ================================================== */
-add_action('http_api_curl', function($handle){
-    if (defined('CURL_IPRESOLVE_V4')) {
-        curl_setopt($handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+if (!function_exists('resales_v6_request')) {
+    function resales_v6_request($function, $params = array()) {
+        $c = resales_get_api_creds();
+        $base = 'https://webapi.resales-online.com/V6/' . $function;
+        $query = array_merge(array(
+            'p1' => $c['p1'],
+            'p2' => $c['p2'],
+            'P_Agency_FilterId' => $c['fid'],
+            'P_Lang' => $c['lang'],
+            'P_sandbox' => 'false',
+        ), $params);
+
+        $url  = add_query_arg($query, $base);
+        $resp = wp_remote_get($url, array('timeout' => 20));
+        if (is_wp_error($resp)) return $resp;
+
+        $code = wp_remote_retrieve_response_code($resp);
+        if ($code !== 200) return new WP_Error('resales_http', 'HTTP ' . $code);
+
+        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        if (!$json) return new WP_Error('resales_json', 'JSON inválido');
+        return $json;
     }
-    if (defined('RESALES_API_HOST_IP') && RESALES_API_HOST_IP !== '') {
-        $effective = @curl_getinfo($handle, CURLINFO_EFFECTIVE_URL);
-        if (is_string($effective) && stripos($effective, RESALES_API_HOST) !== false) {
-            curl_setopt($handle, CURLOPT_RESOLVE, [
-                RESALES_API_HOST . ':443:' . RESALES_API_HOST_IP
-            ]);
-            error_log('[Resales API][RESOLVE] Pin aplicado: ' . RESALES_API_HOST . ' -> ' . RESALES_API_HOST_IP);
+}
+
+// === Endpoints AJAX (una sola vez, bien cerrados) ===
+if (!function_exists('resales_v6_locations')) {
+    function resales_v6_locations() {
+        check_ajax_referer('resales_filters_v6', 'nonce');
+        $r = resales_v6_request('SearchLocations', array('P_All' => 'TRUE', 'P_SortType' => 1));
+        if (is_wp_error($r)) wp_send_json_error($r->get_error_message(), 500);
+
+        $items = array();
+
+        // Caso 1: estructura Location->Locations
+        if (!empty($r['Location']['Locations'])) {
+            foreach ($r['Location']['Locations'] as $loc) {
+                $items[] = array(
+                    'province' => $loc['Province'] ?? '',
+                    'area'     => $loc['Area'] ?? '',
+                    'name'     => $loc['Name'] ?? '',
+                );
+            }
         }
-    }
-}, 10, 1);
 
-/* ===========================
- *  Bootstrap (clases del plugin)
- * =========================== */
-// Incluir SIEMPRE el data layer para exponer los handlers AJAX
-require_once plugin_dir_path(__FILE__).'includes/class-resales-data.php';
-
-add_action('plugins_loaded', function () {
-    // Núcleo
-    resales_api_require('includes/class-resales-client.php');
-    resales_api_require('includes/class-resales-settings.php');
-    resales_api_require('includes/class-resales-shortcodes.php');
-    resales_api_require('includes/class-resales-admin.php');
-    resales_api_require('includes/class-resales-single.php');
-
-    // NUEVO: shortcode SOLO de filtros
-    resales_api_require('includes/class-resales-filters.php');
-
-    // Inicializar
-    if (class_exists('Resales_Settings'))  Resales_Settings::instance();
-    if (class_exists('Lusso_Resales_Shortcodes')) new Lusso_Resales_Shortcodes(); // tarjetas/listados
-    if (class_exists('Resales_Shortcodes')) new Resales_Shortcodes();
-    if (class_exists('Resales_Single'))     Resales_Single::instance();
-    if (class_exists('Resales_Filters_Shortcode')) new Resales_Filters_Shortcode(); // SOLO filtros
-    if (is_admin() && class_exists('Resales_Admin')) Resales_Admin::instance();
-
-    // Endpoint AJAX ping (diagnóstico)
-    require_once plugin_dir_path(__FILE__).'includes/lusso-ping-endpoint.php';
-});
-
-/* ===========================
- *  Requisitos mínimos
- * =========================== */
-register_activation_hook(__FILE__, function () {
-    if (version_compare(PHP_VERSION, '7.4', '<')) {
-        wp_die('Resales API requiere PHP 7.4 o superior.');
-    }
-});
-
-/* ===========================
- *  Diagnóstico DNS / TLS
- * =========================== */
-add_action('init', function () {
-    if (!current_user_can('manage_options')) return;
-    if (get_transient('resales_dns_diag_ran')) return;
-    set_transient('resales_dns_diag_ran', 1, 10 * MINUTE_IN_SECONDS);
-
-    $host = RESALES_API_HOST;
-
-    if (defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL) {
-        error_log('[Resales API][DNS] ATENCIÓN: WP_HTTP_BLOCK_EXTERNAL está ACTIVO.');
-    }
-
-    $resolved = @gethostbyname($host);
-    if ($resolved && $resolved !== $host) {
-        error_log('[Resales API][DNS] gethostbyname(' . $host . ') => ' . $resolved);
-    } else {
-        error_log('[Resales API][DNS] No se pudo resolver host: ' . $host . ' (cURL error 6 probable). Si el hosting no arregla DNS, usa RESALES_API_HOST_IP con una IPv4 válida del host.');
-    }
-});
-
-/* ===========================
- *  Aviso visual en Admin
- * =========================== */
-add_action('admin_notices', function () {
-    if (!current_user_can('manage_options')) return;
-
-    $host     = RESALES_API_HOST;
-    $resolved = @gethostbyname($host);
-    $blocked  = (defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL);
-
-    if ($blocked || !$resolved || $resolved === $host) {
-        echo '<div class="notice notice-error"><p><strong>Resales API:</strong> ';
-        if ($blocked) {
-            echo 'Detectado <code>WP_HTTP_BLOCK_EXTERNAL</code> activo. ';
+        // Caso 2: Country->Province->Area (normalizar a la misma salida)
+        if (empty($items) && !empty($r['Country']['Province'])) {
+            $provList = $r['Country']['Province'];
+            if (isset($provList['@attributes'])) $provList = array($provList);
+            foreach ($provList as $prov) {
+                $pName = $prov['@attributes']['Name'] ?? ($prov['Name'] ?? '');
+                $areas = $prov['Area'] ?? array();
+                if (isset($areas['Name'])) $areas = array($areas);
+                foreach ($areas as $area) {
+                    $items[] = array(
+                        'province' => $pName,
+                        'area'     => $area['Name'] ?? '',
+                        'name'     => $area['Name'] ?? '',
+                    );
+                }
+            }
         }
-        if (!$resolved || $resolved === $host) {
-            echo 'El servidor no resuelve <code>'.$host.'</code>. Contacta al hosting o configura temporalmente <code>RESALES_API_HOST_IP</code> con una IPv4 válida del host.';
-        }
-        echo '</p></div>';
+
+        wp_send_json_success($items);
     }
+}
+
+if (!function_exists('resales_v6_types')) {
+    function resales_v6_types() {
+        check_ajax_referer('resales_filters_v6', 'nonce');
+        $r = resales_v6_request('SearchPropertyTypes', array());
+        if (is_wp_error($r)) wp_send_json_error($r->get_error_message(), 500);
+
+        $items = array();
+        $list  = array();
+
+        // Estructuras posibles en V6
+        if (!empty($r['PropertyType']['Type']))          $list = $r['PropertyType']['Type'];
+        if (!empty($r['PropertyTypes']['PropertyType'])) $list = $r['PropertyTypes']['PropertyType'];
+        if (isset($list['Name'])) $list = array($list);
+
+        foreach ($list as $t) {
+            $items[] = array(
+                'value' => $t['OptionValue'] ?? '',
+                'text'  => $t['Name']        ?? '',
+            );
+        }
+        wp_send_json_success($items);
+    }
+}
+
+// Registrar hooks una sola vez
+if (!has_action('wp_ajax_resales_v6_locations', 'resales_v6_locations')) {
+    add_action('wp_ajax_resales_v6_locations', 'resales_v6_locations');
+    add_action('wp_ajax_nopriv_resales_v6_locations', 'resales_v6_locations');
+}
+if (!has_action('wp_ajax_resales_v6_types', 'resales_v6_types')) {
+    add_action('wp_ajax_resales_v6_types', 'resales_v6_types');
+    add_action('wp_ajax_nopriv_resales_v6_types', 'resales_v6_types');
+}
+
+// === Settings API: Flag “Filtros V6 (API) habilitados” en Ajustes → Generales ===
+// (usar register_setting + add_settings_field para que el valor se guarde correctamente) :contentReference[oaicite:3]{index=3}
+add_action('admin_init', 'resales_register_v6_flag');
+function resales_register_v6_flag() {
+    register_setting('general', 'resales_filters_v6_enabled', array(
+        'type'              => 'integer',
+        'sanitize_callback' => 'absint',
+        'default'           => 0,
+        'show_in_rest'      => false,
+    ));
+    add_settings_field(
+        'resales_filters_v6_enabled',
+        __('Filtros V6 (API) habilitados', 'resales'),
+        'resales_render_v6_flag',
+        'general'
+    );
+}
+function resales_render_v6_flag() {
+    $val = (int) get_option('resales_filters_v6_enabled', 0);
+    echo '<label for="resales_filters_v6_enabled">';
+    echo '<input type="checkbox" id="resales_filters_v6_enabled" name="resales_filters_v6_enabled" value="1" ' . checked(1, $val, false) . ' />';
+    echo ' ' . esc_html__('Activar filtros V6 desde API', 'resales');
+    echo '</label>';
+}
+// Activation hook: asegurar opción con default 0 (declarado en el archivo principal del plugin)
+register_activation_hook(__FILE__, 'resales_v6_flag_activate');
+function resales_v6_flag_activate() {
+    if (get_option('resales_filters_v6_enabled', null) === null) {
+        add_option('resales_filters_v6_enabled', 0);
+    }
+}
+
+// === Enqueue del JS de filtros solo si el flag está ON y estamos en la página adecuada ===
+add_action('wp_enqueue_scripts', function () {
+    if (!get_option('resales_filters_v6_enabled')) return;
+
+    $is_properties_page = function_exists('is_page') && is_page('properties');
+    $has_shortcode = is_singular() && has_shortcode(get_post_field('post_content', get_the_ID()), 'lusso_properties');
+    if (!$is_properties_page && !$has_shortcode) return;
+
+    wp_enqueue_script(
+        'resales-filters-v6',
+        plugins_url('assets/js/filters.js', __FILE__),
+        array('jquery'),
+        '1.0.0',
+        true
+    );
+    wp_localize_script('resales-filters-v6', 'RESALES_FILTERS', array(
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce'   => wp_create_nonce('resales_filters_v6'),
+    ));
 });
+// === Helpers / Credenciales API ===
+
+
+

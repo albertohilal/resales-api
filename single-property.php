@@ -36,4 +36,4 @@ $property = [
         <div class="gallery-placeholder" style="height:220px;background:#f2f2f2;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#888;">Próximamente galería de imágenes</div>
     </section>
 </main>
-<?php get_footer(); ?>
+<?php get_footer(); 
