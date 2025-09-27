@@ -243,3 +243,17 @@
   .lusso-filters input,
   .lusso-filters button { width: 100%; }
 }
+
+/* Filtros alineados horizontalmente */
+.resales-filters-form {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.resales-filters-form select,
+.resales-filters-form button {
+  margin: 0;
+}
