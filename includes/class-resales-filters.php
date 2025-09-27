@@ -135,3 +135,261 @@ class Resales_Filters_Shortcode {
         return ob_get_clean();
     }
 }
+
+add_action('admin_init', function() {
+    register_setting('general', 'filters_v6_enabled', [
+        'type' => 'boolean',
+        'sanitize_callback' => function($value) {
+            return $value === '1' ? true : false;
+        },
+        'default' => false
+    ]);
+    add_settings_field(
+        'filters_v6_enabled',
+        'Filtros V6 (API) habilitados',
+        function() {
+            $value = get_option('filters_v6_enabled', false);
+            echo '<input type="checkbox" name="filters_v6_enabled" value="1" ' . checked($value, true, false) . '> Activar filtros V6 desde API';
+        },
+        'general',
+        'default'
+    );
+});
+
+/**
+ * Lusso Resales Filters - Provider V6 (Etapa 1)
+ * - Whitelist de Áreas con orden fijo y normalización robusta
+ * - Lectura segura de credenciales desde .env o get_option
+ * - Providers con caché (transients, TTL 12h)
+ * - No expone .env al frontend
+ * - Feature flag: filters_v6_enabled
+ */
+
+if (!defined('LUSSO_AREA_WHITELIST')) {
+    define('LUSSO_AREA_WHITELIST', json_encode([
+        'Benahavís','Benalmádena','Casares','Estepona','Fuengirola',
+        'Manilva','Marbella','Mijas','Torremolinos','Malaga','Sotogrande'
+    ]));
+}
+
+class Lusso_Resales_Filters_V6 {
+    /**
+     * Loader de credenciales: primero get_option, luego .env
+     * @return array ['p1'=>..., 'p2'=>..., 'P_ApiId'=>...]
+     */
+    private function get_api_auth() {
+        $p1 = get_option('API_P1');
+        $p2 = get_option('API_P2');
+        $api_id = get_option('API_FILTER_ID');
+        if ($p1 && $p2 && $api_id) {
+            return ['p1'=>$p1, 'p2'=>$p2, 'P_ApiId'=>$api_id];
+        }
+        // Si no hay en options, intenta cargar .env
+        $env_path = defined('RESALES_API_PLUGIN_DIR') ? RESALES_API_PLUGIN_DIR.'/.env' : dirname(__DIR__,2).'/.env';
+        $env = [];
+        if (file_exists($env_path)) {
+            // Si existe Dotenv, úsalo
+            if (class_exists('Dotenv\\Dotenv')) {
+                $dotenv = Dotenv\Dotenv::createImmutable(dirname($env_path));
+                $dotenv->load();
+                $env['API_P1'] = $_ENV['API_P1'] ?? '';
+                $env['API_P2'] = $_ENV['API_P2'] ?? '';
+                $env['API_FILTER_ID'] = $_ENV['API_FILTER_ID'] ?? '';
+            } else {
+                // Parser simple
+                foreach (file($env_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+                    if (preg_match('/^([A-Z0-9_]+)=(.*)$/', $line, $m)) {
+                        $env[$m[1]] = trim($m[2]);
+                    }
+                }
+            }
+        }
+        return [
+            'p1' => $env['API_P1'] ?? '',
+            'p2' => $env['API_P2'] ?? '',
+            'P_ApiId' => $env['API_FILTER_ID'] ?? ''
+        ];
+    }
+
+    /**
+     * Normaliza nombres para matching robusto (lowercase, sin tildes, sin espacios extra)
+     */
+    private function normalize_slug($name) {
+        $name = strtolower(trim($name));
+        $map = [
+            'á'=>'a','à'=>'a','ä'=>'a','â'=>'a',
+            'é'=>'e','è'=>'e','ë'=>'e','ê'=>'e',
+            'í'=>'i','ì'=>'i','ï'=>'i','î'=>'i',
+            'ó'=>'o','ò'=>'o','ö'=>'o','ô'=>'o',
+            'ú'=>'u','ù'=>'u','ü'=>'u','û'=>'u',
+            'ñ'=>'n'
+        ];
+        $name = strtr($name, $map);
+        $name = preg_replace('/[^a-z0-9 ]/u', '', $name);
+        $name = preg_replace('/\s+/', ' ', $name);
+        return $name;
+    }
+
+    /**
+     * Provider: Áreas y Locations desde API V6, filtradas y ordenadas por whitelist
+     * @param int $lang
+     * @param int $sort
+     * @return array ['areas'=>[area=>[locations...],...]]
+     */
+    public function get_locations($lang=1, $sort=1) {
+        if (!get_option('filters_v6_enabled')) return ['areas'=>[]];
+        $auth = $this->get_api_auth();
+        $transient_key = 'lusso_v6_locations_' . intval($lang) . '_' . $auth['P_ApiId'];
+        $snapshot = get_transient($transient_key);
+        if ($snapshot !== false) return $snapshot;
+        // Llamada API V6
+        $params = array_merge($auth, [
+            'P_Lang' => $lang,
+            'P_SortType' => $sort,
+            'P_All' => 1
+        ]);
+        $url = 'https://webapi.resales-online.com/V6/SearchLocations?' . http_build_query($params);
+        $response = wp_remote_get($url, ['timeout'=>20, 'sslverify'=>true]);
+        $data = is_array($response) && isset($response['body']) ? json_decode($response['body'], true) : null;
+        if (!is_array($data) || empty($data['data'])) {
+            resales_log('WARN', '[Lusso Filters] API V6 SearchLocations falló, usando snapshot/transient');
+            return $snapshot ?: ['areas'=>[]];
+        }
+        // Filtrar y reordenar por whitelist
+        $areas_raw = [];
+        foreach ($data['data'] as $item) {
+            $area = $item['Area'] ?? '';
+            $location = $item['Location'] ?? '';
+            $parent_id = $item['ParentAreaId'] ?? null;
+            $id = isset($item['LocationId']) ? (int)$item['LocationId'] : null;
+            if ($area && $location) {
+                $areas_raw[$area][] = [
+                    'id' => $id,
+                    'name' => $location,
+                    'parent_area_id' => $parent_id
+                ];
+            }
+        }
+        $whitelist = json_decode(LUSSO_AREA_WHITELIST, true);
+        $areas_final = [];
+        foreach ($whitelist as $area_name) {
+            $norm = $this->normalize_slug($area_name);
+            foreach ($areas_raw as $api_area => $locations) {
+                if ($this->normalize_slug($api_area) === $norm) {
+                    $areas_final[$area_name] = $locations;
+                    break;
+                }
+            }
+        }
+        $result = ['areas'=>$areas_final];
+        set_transient($transient_key, $result, 12 * HOUR_IN_SECONDS);
+        return $result;
+    }
+
+    /**
+     * Provider: Tipos de propiedad desde API V6, cacheado 12h
+     * @param int $lang
+     * @return array [['id'=>'Type-SubType','label'=>'Type / SubType'], ...]
+     */
+    public function get_property_types($lang=1) {
+        if (!get_option('filters_v6_enabled')) return [];
+        $auth = $this->get_api_auth();
+        $transient_key = 'lusso_v6_types_' . intval($lang) . '_' . $auth['P_ApiId'];
+        $snapshot = get_transient($transient_key);
+        if ($snapshot !== false) return $snapshot;
+        $params = array_merge($auth, ['P_Lang'=>$lang]);
+        $url = 'https://webapi.resales-online.com/V6/SearchPropertyTypes?' . http_build_query($params);
+        $response = wp_remote_get($url, ['timeout'=>20, 'sslverify'=>true]);
+        $data = is_array($response) && isset($response['body']) ? json_decode($response['body'], true) : null;
+        if (!is_array($data) || empty($data['data'])) {
+            resales_log('WARN', '[Lusso Filters] API V6 SearchPropertyTypes falló, usando snapshot/transient');
+            return $snapshot ?: [];
+        }
+        $types = [];
+        foreach ($data['data'] as $item) {
+            $id = $item['TypeId'] ?? '';
+            $sub = $item['SubTypeId'] ?? '';
+            $label = $item['Type'] ?? '';
+            $sublabel = $item['SubType'] ?? '';
+            $types[] = [
+                'id' => $id . ($sub ? '-' . $sub : ''),
+                'label' => $label . ($sublabel ? ' / ' . $sublabel : '')
+            ];
+        }
+        set_transient($transient_key, $types, 12 * HOUR_IN_SECONDS);
+        return $types;
+    }
+
+    /**
+     * Provider: Opciones de dormitorios (estático)
+     * @return array
+     */
+    public function get_bedrooms_options() {
+        return [1,2,3,4,'5+'];
+    }
+}
+
+/**
+ * Registrar endpoints REST de solo lectura para filtros V6
+ * Solo si filters_v6_enabled está ON
+ */
+add_action('rest_api_init', function() {
+    if (!get_option('filters_v6_enabled')) return;
+    $provider = new Lusso_Resales_Filters_V6();
+
+    /**
+     * GET /filters/locations
+     * @param WP_REST_Request $request
+     * @return array ['areas'=>[...]] o ['areas'=>[area=>[]]]
+     * Query param opcional: area=<string>
+     * Si no existe el área, responde areas:{"<Area>":[]} (no error 4xx)
+     * Respeta whitelist y orden.
+     */
+    register_rest_route('resales/v1', '/filters/locations', [
+        'methods' => 'GET',
+        'callback' => function($request) use ($provider) {
+            $area = $request->get_param('area');
+            $lang = (int)$request->get_param('lang') ?: 1;
+            $data = $provider->get_locations($lang, 1);
+            if ($area) {
+                $norm = $provider->normalize_slug($area);
+                foreach ($data['areas'] as $key => $locations) {
+                    if ($provider->normalize_slug($key) === $norm) {
+                        return ['areas' => [$key => $locations]];
+                    }
+                }
+                // Área no encontrada: responde con array vacío
+                return ['areas' => [$area => []]];
+            }
+            return $data;
+        },
+        'permission_callback' => '__return_true',
+    ]);
+
+    /**
+     * GET /filters/types
+     * @return array [['id'=>...,'label'=>...],...]
+     * Devuelve tipos de propiedad desde caché/API
+     */
+    register_rest_route('resales/v1', '/filters/types', [
+        'methods' => 'GET',
+        'callback' => function($request) use ($provider) {
+            $lang = (int)$request->get_param('lang') ?: 1;
+            return $provider->get_property_types($lang);
+        },
+        'permission_callback' => '__return_true',
+    ]);
+
+    /**
+     * GET /filters/bedrooms
+     * @return array [1,2,3,4,'5+']
+     * Devuelve opciones estáticas
+     */
+    register_rest_route('resales/v1', '/filters/bedrooms', [
+        'methods' => 'GET',
+        'callback' => function() use ($provider) {
+            return $provider->get_bedrooms_options();
+        },
+        'permission_callback' => '__return_true',
+    ]);
+});

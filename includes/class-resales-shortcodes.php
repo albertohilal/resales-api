@@ -135,7 +135,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       // 1) Intento con lo que vino en SearchProperties
       $imgs = $this->normalize_images($from_search_property);
       if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('[Resales API] Ref ' . $ref . ' imágenes extraídas SearchProperties: ' . print_r($imgs, true));
+        resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes extraídas SearchProperties', $imgs);
       }
       if (count($imgs) > 0) return $imgs;
 
@@ -145,7 +145,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       if ($cached && is_array($cached)) {
         $imgs = $this->normalize_images($cached);
         if (defined('WP_DEBUG') && WP_DEBUG) {
-          error_log('[Resales API] Ref ' . $ref . ' imágenes extraídas de cache detalles: ' . print_r($imgs, true));
+          resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes extraídas de cache detalles', $imgs);
         }
         if (count($imgs) > 0) return $imgs;
       }
@@ -162,13 +162,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       ];
       $details = $this->http_get(self::DETAILS_ENDPOINT, $params, (int)$opts['timeout']);
       if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('[Resales API] Ref ' . $ref . ' respuesta cruda detalles: ' . print_r($details, true));
+        resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' respuesta cruda detalles', $details);
       }
       if (!is_wp_error($details) && !empty($details['Property'][0])) {
         set_transient($tkey, $details['Property'][0], self::DETAIL_TTL);
         $imgs = $this->normalize_images($details['Property'][0]);
         if (defined('WP_DEBUG') && WP_DEBUG) {
-          error_log('[Resales API] Ref ' . $ref . ' imágenes extraídas detalles: ' . print_r($imgs, true));
+          resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes extraídas detalles', $imgs);
         }
       }
       return $imgs;
@@ -343,7 +343,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         $ref  = $p['Reference'] ?? '';
         $imgs = $this->property_images_with_fallback($opts, $ref, $p);
         if ($debug) {
-          error_log('[Resales API] Ref ' . $ref . ' imágenes finales para render: ' . print_r($imgs, true));
+          resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes finales para render', $imgs);
         }
         // strict_min: si es "1", no activamos slider con <2 imágenes (lo resuelve render_card)
         $html = $this->render_card($p, $imgs, $debug);

@@ -90,11 +90,13 @@ class Resales_Single {
 		// Log útil (sin exponer p2)
 		if ( defined('WP_DEBUG') && WP_DEBUG ) {
 			$mask = function($s){ return $s ? substr($s,0,4).'•••' : ''; };
-			error_log('[Resales API] Opciones detectadas → p1=' . ($out['p1'] ?? '')
-				. ' p2=' . $mask($out['p2'] ?? '')
-				. ' P_ApiId=' . ($out['p_apiid'] ?? '')
-				. ' P_Agency_FilterId=' . ($out['p_agency_filterid'] ?? '')
-				. ' Lang=' . ($out['p_lang'] ?? ''));
+			resales_log('DEBUG', '[Resales API] Opciones detectadas', [
+				'p1' => ($out['p1'] ?? ''),
+				'p2' => $mask($out['p2'] ?? ''),
+				'P_ApiId' => ($out['p_apiid'] ?? ''),
+				'P_Agency_FilterId' => ($out['p_agency_filterid'] ?? ''),
+				'Lang' => ($out['p_lang'] ?? '')
+			]);
 		}
 
 		return $out;
