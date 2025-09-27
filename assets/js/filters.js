@@ -75,10 +75,24 @@
     $form.on('submit', function(e){
       e.preventDefault();
       setLoading(true);
-      var formData = $form.serializeArray();
-      formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
-      formData.push({name:'lang', value:2});
-      formData.push({name:'page_size', value:20});
+      // Allow-list de parámetros
+      const allowed = [
+        'province', 'location', 'subarea', 'property_types',
+        'beds', 'baths', 'price_min', 'price_max', 'sort', 'new_devs_mode'
+      ];
+      const formData = {};
+      allowed.forEach(function(key){
+        const el = $form.find('[name="'+key+'"]');
+        if (el.length) {
+          const val = el.val();
+          if (val !== undefined && val !== null && val !== '') {
+            formData[key] = val;
+          }
+        }
+      });
+      formData['nonce'] = LUSSO_NEWDEVS.nonce;
+      formData['lang'] = 2;
+      formData['page_size'] = 20;
       fetch(LUSSO_NEWDEVS.ajaxUrl, {
         method: 'POST',
         credentials: 'same-origin',
