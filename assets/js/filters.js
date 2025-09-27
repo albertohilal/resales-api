@@ -117,104 +117,58 @@
     });
   });
 
-  // --- Filtros dinámicos modernos (V6) ---
-  function initDynamicFilters(){
-    // ...código existente de filtros dinámicos...
-  const AREA_WHITELIST = [
-    'Benahavís','Benalmádena','Casares','Estepona','Fuengirola',
-    'Manilva','Marbella','Mijas','Torremolinos','Malaga','Sotogrande'
-  ];
-  const ENDPOINTS = {
-    locations: '/wp-json/resales/v1/filters/locations',
-    types: '/wp-json/resales/v1/filters/types',
-    bedrooms: '/wp-json/resales/v1/filters/bedrooms'
-  };
+  // --- Poblar selects solo con window.LUSSO_FILTERS ---
+  function populateSelect(sel, options, placeholder) {
+    sel.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = placeholder;
+    sel.appendChild(opt);
+    if (Array.isArray(options) && options.length) {
+      options.forEach(val => {
+        const o = document.createElement('option');
+        o.value = val;
+        o.textContent = val;
+        sel.appendChild(o);
+      });
+      sel.disabled = false;
+    } else {
+      sel.disabled = true;
+    }
+  }
 
-  function fetchJSON(url){ return fetch(url).then(r => r.ok ? r.json() : null).catch(() => null); }
-  function getQS(){ return new URLSearchParams(window.location.search); }
-  function setQS(params){
-    const url = new URL(window.location);
-    Object.keys(params).forEach(k => {
-      if (params[k] !== '' && params[k] != null) url.searchParams.set(k, params[k]);
-      else url.searchParams.delete(k);
+  function initLussoFiltersConfig() {
+    const config = window.LUSSO_FILTERS || {};
+    const provinceSel = document.querySelector('select[name="province"]');
+    const locationSel = document.querySelector('select[name="location"]');
+    const subareaSel  = document.querySelector('select[name="subarea"]');
+    if (!provinceSel || !locationSel || !subareaSel) return;
+
+    // Poblar provincias
+    populateSelect(provinceSel, config.provinces, 'Provincia');
+
+    provinceSel.addEventListener('change', function() {
+      const pv = this.value;
+      const locs = (pv && config.locationsByProvince[pv]) ? config.locationsByProvince[pv] : [];
+      populateSelect(locationSel, locs, 'Localidad');
+      populateSelect(subareaSel, [], 'Subárea');
     });
-    window.history.replaceState({}, '', url);
-  }
-}
 
-  function initDynamicFilters(){
-    const areaSel = document.querySelector('select[name="area"]');
-    const locSel  = document.querySelector('select[name="location"]');
-    const typeSel = document.querySelector('select[name="type"]');
-    const bedSel  = document.querySelector('select[name="bedrooms"]');
+    locationSel.addEventListener('change', function() {
+      const lv = this.value;
+      const subas = (lv && config.subareasByLocation[lv]) ? config.subareasByLocation[lv] : [];
+      populateSelect(subareaSel, subas, 'Subárea');
+    });
 
-    // ✅ Detección robusta de UI estática del shortcode
-    const staticWrapper = document.querySelector('.resales-filters-wrapper[data-source="static"]');
-    const staticArea = document.querySelector('select.lusso-area-static, select#lusso-area-static');
-    const staticLoc  = document.querySelector('select.lusso-location-static, select#lusso-location-static');
-    const isStaticUI  = !!(staticWrapper || staticArea || staticLoc);
-
-    // --- Poblar SIEMPRE types y bedrooms (independiente de área/location) ---
-    if (typeSel) {
-      fetchJSON(ENDPOINTS.types).then(arr => {
-        typeSel.innerHTML = '<option value="">Tipo</option>' +
-          (arr || []).map(t => `<option value="${t.id}">${t.label}</option>`).join('');
-      });
-    }
-    if (bedSel) {
-      if (window.LUSSO_BEDROOMS && Array.isArray(window.LUSSO_BEDROOMS)) {
-        bedSel.innerHTML = '<option value="">Dormitorios</option>' +
-          window.LUSSO_BEDROOMS.map(b => `<option value="${b}">${b}</option>`).join('');
-      } else {
-        fetchJSON(ENDPOINTS.bedrooms).then(arr => {
-          bedSel.innerHTML = '<option value="">Dormitorios</option>' +
-            (arr || []).map(b => `<option value="${b}">${b}</option>`).join('');
-        });
-      }
-    }
-
-    // 🔒 Si es UI estática del shortcode, NO tocar área/location
-    if (isStaticUI) return;
-
-    // Si no hay selects de área/location, no hacemos su población
-    if (!areaSel || !locSel) return;
-
-    // (modo dinámico heredado) Poblar Área y enganchar dependencias
-    areaSel.innerHTML = '<option value="">Área</option>' +
-      AREA_WHITELIST.map(a => `<option value="${a}">${a}</option>`).join('');
-
-    function updateLocations(area){
-      if (!area) { locSel.innerHTML = '<option value="">Localidad</option>'; return; }
-      fetchJSON(ENDPOINTS.locations + '?area=' + encodeURIComponent(area)).then(obj => {
-        let opts = '<option value="">Localidad</option>';
-        const areas = obj && obj.areas ? obj.areas : {};
-        const locs = areas[area] || [];
-        opts += (locs.length)
-          ? locs.map(l => `<option value="${l.name}">${l.name}</option>`).join('')
-          : '<option disabled>Sin localidades disponibles</option>';
-        locSel.innerHTML = opts;
-      });
-    }
-
-    function restoreFromQS(){
-      const qs = getQS();
-      if (qs.has('area')) { areaSel.value = qs.get('area'); updateLocations(qs.get('area')); }
-      if (qs.has('location')) locSel.value = qs.get('location');
-      if (qs.has('type') && typeSel) typeSel.value = qs.get('type');
-      if (qs.has('bedrooms') && bedSel) bedSel.value = qs.get('bedrooms');
-    }
-
-    areaSel.addEventListener('change', () => { setQS({area: areaSel.value, location: ''}); updateLocations(areaSel.value); });
-    if (locSel)    locSel.addEventListener('change', () => setQS({location: locSel.value}));
-    if (typeSel)   typeSel.addEventListener('change', () => setQS({type: typeSel.value}));
-    if (bedSel)    bedSel.addEventListener('change', () => setQS({bedrooms: bedSel.value}));
-
-    restoreFromQS();
+    // Inicializar selects vacíos
+    populateSelect(locationSel, [], 'Localidad');
+    populateSelect(subareaSel, [], 'Subárea');
   }
 
-  // Ejecuta aunque DOMContentLoaded ya haya ocurrido (patrón recomendado)
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDynamicFilters);
+    document.addEventListener('DOMContentLoaded', initLussoFiltersConfig);
   } else {
+    initLussoFiltersConfig();
+  }
     initDynamicFilters();
   }
