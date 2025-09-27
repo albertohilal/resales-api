@@ -102,5 +102,41 @@ if (function_exists('curl_init')) {
 
 // reenviamos el mismo código HTTP que dio la API
 if ($responseCode > 0) { http_response_code($responseCode); }
-echo $responseBody;
+
+$accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+if (stripos($accept, 'application/json') !== false) {
+  header('Content-Type: application/json; charset=utf-8');
+  echo $responseBody;
+  exit;
+}
+
+// Mostrar HTML amigable si no se pide JSON
+header('Content-Type: text/html; charset=utf-8');
+$data = json_decode($responseBody, true, 512, JSON_UNESCAPED_UNICODE);
+
+echo '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Ubicaciones disponibles</title>';
+echo '<style>body{font-family:sans-serif;} ul{margin-left:1em;} strong{color:#1a237e;}</style></head><body>';
+
+if (!is_array($data) || empty($data['LocationData']['ProvinceArea'])) {
+  echo '<h2>Error al obtener ubicaciones</h2>';
+  if (!empty($data['error'])) {
+    echo '<p>' . htmlspecialchars($data['error']) . '</p>';
+  } else {
+    echo '<pre>' . htmlspecialchars($responseBody) . '</pre>';
+  }
+  echo '</body></html>';
+  exit;
+}
+
+echo "<h2>Ubicaciones disponibles</h2>";
+echo "<ul>";
+foreach ($data['LocationData']['ProvinceArea'] as $area) {
+  echo "<li><strong>" . htmlspecialchars($area['ProvinceAreaName'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</strong><ul>";
+  foreach ($area['Locations'] as $loc) {
+    echo "<li>" . htmlspecialchars($loc['Location'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</li>";
+  }
+  echo "</ul></li>";
+}
+echo "</ul>";
+echo '</body></html>';
 
