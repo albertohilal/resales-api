@@ -1,5 +1,33 @@
 <?php
 /**
+ * Devuelve la configuración de filtros (provincias, locations y subáreas) para exponer al JS.
+ *
+ * @return array{
+ *   provinces: string[],
+ *   locationsByProvince: array<string, string[]>,
+ *   subareasByLocation: array<string, string[]>
+ * }
+ */
+function lusso_filters_get_config(): array {
+	$provinces = array_keys(Resales_Filters::$LOCATIONS);
+	$locationsByProvince = [];
+	$subareasByLocation = [];
+	foreach (Resales_Filters::$LOCATIONS as $province => $locs) {
+		$locationsByProvince[$province] = [];
+		foreach ($locs as $item) {
+			$loc = $item['value'];
+			$locationsByProvince[$province][] = $loc;
+			// Si hay subáreas, agregarlas aquí (en este ejemplo no hay, pero estructura lista)
+			$subareasByLocation[$loc] = [];
+		}
+	}
+	return [
+		'provinces' => $provinces,
+		'locationsByProvince' => $locationsByProvince,
+		'subareasByLocation' => $subareasByLocation,
+	];
+}
+/**
  * Devuelve la ubicación formateada para mostrar en la tarjeta.
  *
  * @param array $p Array asociativo con claves 'Province', 'Location', 'SubArea'.
@@ -58,7 +86,7 @@ final class Resales_Filters {
 	 *   Málaga  → Benahavís, Benalmadena, Casares, Estepona, Fuengirola, Málaga, Manilva, Marbella, Mijas, Torremolinos
 	 *   Cádiz   → Sotogrande
 	 */
-	private static $LOCATIONS = [
+	public static $LOCATIONS = [
 		'Málaga' => [
 			[ 'value' => 'Benahavís',    'label' => 'Benahavís'    ],
 			[ 'value' => 'Benalmadena',  'label' => 'Benalmádena'  ],

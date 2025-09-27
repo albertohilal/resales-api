@@ -1,5 +1,10 @@
 // assets/js/filters.js
-jQuery(document).ready(function($){
+(function($){
+  // Inyectar la config PHP como window.LUSSO_FILTERS (esto lo hará wp_localize_script en prod)
+  // window.LUSSO_FILTERS = {...}
+
+  // --- Filtros clásicos con jQuery (si existen en el DOM) ---
+  $(function(){
     var $form = $('.lusso-filters');
     var $results = $('#lusso-search-results');
     var $area = $('#lusso-filter-area');
@@ -7,120 +12,114 @@ jQuery(document).ready(function($){
     var $searchBtn = $form.find('.lusso-filters__submit');
     var areaLocations = $form.data('area-locations') || {};
     if (typeof areaLocations === 'string') {
-        try { areaLocations = JSON.parse(areaLocations); } catch(e) { areaLocations = {}; }
+      try { areaLocations = JSON.parse(areaLocations); } catch(e) { areaLocations = {}; }
     }
 
-    // UX: Prevenir submit por Enter accidental
     $form.on('keydown', function(e){
-        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !$(e.target).is($searchBtn)) {
-            e.preventDefault();
-            return false;
-        }
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !$(e.target).is($searchBtn)) {
+        e.preventDefault();
+        return false;
+      }
     });
 
-    // Poblar locations dependientes
     $area.on('change', function(){
-        var area = $(this).val();
-        var locs = area && areaLocations[area] ? areaLocations[area] : [];
-        var allLocs = [];
-        $.each(areaLocations, function(_, arr){ allLocs = allLocs.concat(arr); });
-        allLocs = Array.from(new Set(allLocs));
-        var options = '<option value="">'+($location.data('all-label')||'All Locations')+'</option>';
-        (area ? locs : allLocs).forEach(function(loc){
-            options += '<option value="'+loc.replace(/"/g,'&quot;')+'">'+loc+'</option>';
-        });
-        $location.html(options);
-        $location.val('');
-        $location.trigger('change');
+      var area = $(this).val();
+      var locs = area && areaLocations[area] ? areaLocations[area] : [];
+      var allLocs = [];
+      $.each(areaLocations, function(_, arr){ allLocs = allLocs.concat(arr); });
+      allLocs = Array.from(new Set(allLocs));
+      var options = '<option value="">'+($location.data('all-label')||'All Locations')+'</option>';
+      (area ? locs : allLocs).forEach(function(loc){
+        options += '<option value="'+loc.replace(/"/g,'&quot;')+'">'+loc+'</option>';
+      });
+      $location.html(options);
+      $location.val('');
+      $location.trigger('change');
     });
 
-    // Focus management
     function focusResults(){
-        if ($results.length) $results.attr('tabindex', -1).focus();
+      if ($results.length) $results.attr('tabindex', -1).focus();
     }
 
-    // Render results
     function renderResults(data) {
-        if (!$results.length) return;
-        $results.removeAttr('aria-busy');
-        if (!data || !data.success || !data.data || !data.data.data) {
-            $results.html('<div class="lusso-error">No results found.</div>');
-            focusResults();
-            return;
-        }
-        var html = '';
-        data.data.data.forEach(function(item){
-            html += '<div class="lusso-result-item">';
-            html += '<strong>' + (item.Title || item.Reference || 'Property') + '</strong><br>';
-            html += (item.Location ? '<span>' + item.Location + '</span><br>' : '');
-            html += (item.Price ? '<span>' + item.Price + '</span>' : '');
-            html += '</div>';
-        });
-        // Paginación
-        if (data.data.QueryId && data.data.PageNo < data.data.PageCount) {
-            html += '<button class="lusso-load-more" data-queryid="'+data.data.QueryId+'" data-pageno="'+(data.data.PageNo+1)+'">'+LUSSO_NEWDEVS.loadMore+'</button>';
-        }
-        $results.html(html);
+      if (!$results.length) return;
+      $results.removeAttr('aria-busy');
+      if (!data || !data.success || !data.data || !data.data.data) {
+        $results.html('<div class="lusso-error">No results found.</div>');
         focusResults();
+        return;
+      }
+      var html = '';
+      data.data.data.forEach(function(item){
+        html += '<div class="lusso-result-item">';
+        html += '<strong>' + (item.Title || item.Reference || 'Property') + '</strong><br>';
+        html += (item.Location ? '<span>' + item.Location + '</span><br>' : '');
+        html += (item.Price ? '<span>' + item.Price + '</span>' : '');
+        html += '</div>';
+      });
+      if (data.data.QueryId && data.data.PageNo < data.data.PageCount) {
+        html += '<button class="lusso-load-more" data-queryid="'+data.data.QueryId+'" data-pageno="'+(data.data.PageNo+1)+'">'+LUSSO_NEWDEVS.loadMore+'</button>';
+      }
+      $results.html(html);
+      focusResults();
     }
 
-    // Loading state
     function setLoading(on) {
-        if (on) {
-            $results.attr('aria-busy', 'true').html('<div class="lusso-loading">'+(LUSSO_NEWDEVS.loading||'Loading...')+'</div>');
-        } else {
-            $results.removeAttr('aria-busy');
-        }
+      if (on) {
+        $results.attr('aria-busy', 'true').html('<div class="lusso-loading">'+(LUSSO_NEWDEVS.loading||'Loading...')+'</div>');
+      } else {
+        $results.removeAttr('aria-busy');
+      }
     }
 
-    // Submit handler
     $form.on('submit', function(e){
-        e.preventDefault();
-        setLoading(true);
-        var formData = $form.serializeArray();
-        formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
-        formData.push({name:'lang', value:2});
-        formData.push({name:'page_size', value:20});
-        fetch(LUSSO_NEWDEVS.ajaxUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: $.param(formData)
-        })
-        .then(r => r.json())
-        .then(renderResults)
-        .catch(function(){
-            $results.html('<div class="lusso-error">Error loading results.</div>');
-        });
+      e.preventDefault();
+      setLoading(true);
+      var formData = $form.serializeArray();
+      formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
+      formData.push({name:'lang', value:2});
+      formData.push({name:'page_size', value:20});
+      fetch(LUSSO_NEWDEVS.ajaxUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: $.param(formData)
+      })
+      .then(r => r.json())
+      .then(renderResults)
+      .catch(function(){
+        $results.html('<div class="lusso-error">Error loading results.</div>');
+      });
     });
 
-    // Paginación
     $results.on('click', '.lusso-load-more', function(e){
-        e.preventDefault();
-        setLoading(true);
-        var queryId = $(this).data('queryid');
-        var pageNo = $(this).data('pageno');
-        var formData = $form.serializeArray();
-        formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
-        formData.push({name:'lang', value:2});
-        formData.push({name:'query_id', value:queryId});
-        formData.push({name:'page_no', value:pageNo});
-        formData.push({name:'page_size', value:20});
-        fetch(LUSSO_NEWDEVS.ajaxUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: $.param(formData)
-        })
-        .then(r => r.json())
-        .then(renderResults)
-        .catch(function(){
-            $results.html('<div class="lusso-error">Error loading results.</div>');
-        });
+      e.preventDefault();
+      setLoading(true);
+      var queryId = $(this).data('queryid');
+      var pageNo = $(this).data('pageno');
+      var formData = $form.serializeArray();
+      formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
+      formData.push({name:'lang', value:2});
+      formData.push({name:'query_id', value:queryId});
+      formData.push({name:'page_no', value:pageNo});
+      formData.push({name:'page_size', value:20});
+      fetch(LUSSO_NEWDEVS.ajaxUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: $.param(formData)
+      })
+      .then(r => r.json())
+      .then(renderResults)
+      .catch(function(){
+        $results.html('<div class="lusso-error">Error loading results.</div>');
+      });
     });
+  });
 
-    // Lusso Filters V6 - Poblar selects dinámicamente
-(function(){
+  // --- Filtros dinámicos modernos (V6) ---
+  function initDynamicFilters(){
+    // ...código existente de filtros dinámicos...
   const AREA_WHITELIST = [
     'Benahavís','Benalmádena','Casares','Estepona','Fuengirola',
     'Manilva','Marbella','Mijas','Torremolinos','Malaga','Sotogrande'
@@ -141,6 +140,7 @@ jQuery(document).ready(function($){
     });
     window.history.replaceState({}, '', url);
   }
+}
 
   function initDynamicFilters(){
     const areaSel = document.querySelector('select[name="area"]');
@@ -218,4 +218,3 @@ jQuery(document).ready(function($){
   } else {
     initDynamicFilters();
   }
-})();
