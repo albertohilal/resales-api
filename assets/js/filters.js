@@ -1,147 +1,83 @@
 // assets/js/filters.js
-document.addEventListener('DOMContentLoaded', function() {
-    const REST_BASE = (window.wpApiSettings?.root ? window.wpApiSettings.root + 'resales/v1/filters' : '/wp-json/resales/v1/filters');
-    const $form = document.querySelector('.lusso-filters-v6');
-    if (!$form) return;
-    const $area = $form.querySelector('select[name="area"]');
-    const $location = $form.querySelector('select[name="location"]');
-    const $type = $form.querySelector('select[name="type"]');
-    const $bedrooms = $form.querySelector('select[name="bedrooms"]');
-    let areaList = [];
-    let areaLocations = {};
+jQuery(document).ready(function($){
+    var $form = $('.lusso-filters');
+    var $results = $('#lusso-search-results');
+    var $area = $('#lusso-filter-area');
+    var $location = $('#lusso-filter-location');
+    var $searchBtn = $form.find('.lusso-filters__submit');
+    var areaLocations = $form.data('area-locations') || {};
+    if (typeof areaLocations === 'string') {
+        try { areaLocations = JSON.parse(areaLocations); } catch(e) { areaLocations = {}; }
+    }
 
-    // --- Helpers ---
-    function setSelectOptions($select, options, opts = {}) {
-        $select.innerHTML = '';
-        if (opts.placeholder) {
-            const opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = opts.placeholder;
-            if (opts.disabled) opt.disabled = true;
-            $select.appendChild(opt);
+    // UX: Prevenir submit por Enter accidental
+    $form.on('keydown', function(e){
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !$(e.target).is($searchBtn)) {
+            e.preventDefault();
+            return false;
         }
-        options.forEach(opt => {
-            const o = document.createElement('option');
-            if (typeof opt === 'object') {
-                o.value = opt.value ?? opt.id ?? '';
-                o.textContent = opt.label ?? opt.name ?? opt.value ?? '';
-            } else {
-                o.value = opt;
-                o.textContent = opt;
-            }
-            $select.appendChild(o);
+    });
+
+    // Poblar locations dependientes
+    $area.on('change', function(){
+        var area = $(this).val();
+        var locs = area && areaLocations[area] ? areaLocations[area] : [];
+        var allLocs = [];
+        $.each(areaLocations, function(_, arr){ allLocs = allLocs.concat(arr); });
+        allLocs = Array.from(new Set(allLocs));
+        var options = '<option value="">'+($location.data('all-label')||'All Locations')+'</option>';
+        (area ? locs : allLocs).forEach(function(loc){
+            options += '<option value="'+loc.replace(/"/g,'&quot;')+'">'+loc+'</option>';
         });
-<<<<<<< HEAD
+        $location.html(options);
+        $location.val('');
+        $location.trigger('change');
+    });
+
+    // Focus management
+    function focusResults(){
+        if ($results.length) $results.attr('tabindex', -1).focus();
     }
 
-    function updateURL() {
-        const params = new URLSearchParams();
-        if ($area.value) params.set('area', $area.value);
-        if ($location.value) params.set('location', $location.value);
-        if ($type.value) params.set('type', $type.value);
-        if ($bedrooms.value) params.set('bedrooms', $bedrooms.value);
-        const qs = params.toString();
-        const url = window.location.pathname + (qs ? '?' + qs : '');
-        window.history.replaceState({}, '', url);
-    }
-
-    function getURLParams() {
-        const params = new URLSearchParams(window.location.search);
-        return {
-            area: params.get('area') || '',
-            location: params.get('location') || '',
-            type: params.get('type') || '',
-            bedrooms: params.get('bedrooms') || ''
-        };
-    }
-
-    // --- Poblar selects desde la API ---
-    async function fetchAreasAndLocations(selectedArea, selectedLocation) {
-        try {
-            const res = await fetch(REST_BASE + '/locations');
-            const data = await res.json();
-            areaList = Object.keys(data.areas || {});
-            areaLocations = data.areas || {};
-            setSelectOptions($area, areaList, { placeholder: 'Área' });
-            if (selectedArea && areaList.includes(selectedArea)) {
-                $area.value = selectedArea;
-                await fetchLocationsForArea(selectedArea, selectedLocation);
-            } else {
-                setSelectOptions($location, [], { placeholder: 'Localidad', disabled: true });
-            }
-        } catch (e) {
-            setSelectOptions($area, [], { placeholder: 'Áreas no disponibles', disabled: true });
-            setSelectOptions($location, [], { placeholder: 'Localidad', disabled: true });
-        }
-    }
-
-    async function fetchLocationsForArea(area, selectedLocation) {
-        if (!area) {
-            setSelectOptions($location, [], { placeholder: 'Localidad', disabled: true });
+    // Render results
+    function renderResults(data) {
+        if (!$results.length) return;
+        $results.removeAttr('aria-busy');
+        if (!data || !data.success || !data.data || !data.data.data) {
+            $results.html('<div class="lusso-error">No results found.</div>');
+            focusResults();
             return;
         }
-        try {
-            const res = await fetch(REST_BASE + '/locations?area=' + encodeURIComponent(area));
-            const data = await res.json();
-            const locs = Object.values(data.areas || {})[0] || [];
-            if (locs.length) {
-                setSelectOptions($location, locs, { placeholder: 'Localidad' });
-                if (selectedLocation && locs.includes(selectedLocation)) {
-                    $location.value = selectedLocation;
-                }
-            } else {
-                setSelectOptions($location, [], { placeholder: 'Sin localidades disponibles', disabled: true });
-            }
-        } catch (e) {
-            setSelectOptions($location, [], { placeholder: 'Localidad', disabled: true });
+        var html = '';
+        data.data.data.forEach(function(item){
+            html += '<div class="lusso-result-item">';
+            html += '<strong>' + (item.Title || item.Reference || 'Property') + '</strong><br>';
+            html += (item.Location ? '<span>' + item.Location + '</span><br>' : '');
+            html += (item.Price ? '<span>' + item.Price + '</span>' : '');
+            html += '</div>';
+        });
+        // Paginación
+        if (data.data.QueryId && data.data.PageNo < data.data.PageCount) {
+            html += '<button class="lusso-load-more" data-queryid="'+data.data.QueryId+'" data-pageno="'+(data.data.PageNo+1)+'">'+LUSSO_NEWDEVS.loadMore+'</button>';
+        }
+        $results.html(html);
+        focusResults();
+    }
+
+    // Loading state
+    function setLoading(on) {
+        if (on) {
+            $results.attr('aria-busy', 'true').html('<div class="lusso-loading">'+(LUSSO_NEWDEVS.loading||'Loading...')+'</div>');
+        } else {
+            $results.removeAttr('aria-busy');
         }
     }
 
-    async function fetchTypes(selectedType) {
-        try {
-            const res = await fetch(REST_BASE + '/types');
-            const data = await res.json();
-            setSelectOptions($type, (data || []).map(t => ({ value: t.id, label: t.label })), { placeholder: 'Tipo' });
-            if (selectedType) $type.value = selectedType;
-        } catch (e) {
-            setSelectOptions($type, [], { placeholder: 'Tipos no disponibles', disabled: true });
-        }
-    }
-
-    async function fetchBedrooms(selectedBedrooms) {
-        try {
-            const res = await fetch(REST_BASE + '/bedrooms');
-            const data = await res.json();
-            setSelectOptions($bedrooms, data || [], { placeholder: 'Dormitorios' });
-            if (selectedBedrooms) $bedrooms.value = selectedBedrooms;
-        } catch (e) {
-            setSelectOptions($bedrooms, [], { placeholder: 'Dormitorios no disponibles', disabled: true });
-        }
-    }
-
-    // --- Eventos de selects ---
-    $area.addEventListener('change', async function() {
-        await fetchLocationsForArea($area.value, '');
-        $location.value = '';
-        updateURL();
-    });
-    $location.addEventListener('change', updateURL);
-    $type.addEventListener('change', updateURL);
-    $bedrooms.addEventListener('change', updateURL);
-
-    // --- Inicialización: poblar y restaurar estado desde URL ---
-    (async function init() {
-        const params = getURLParams();
-        await fetchAreasAndLocations(params.area, params.location);
-        await fetchTypes(params.type);
-        await fetchBedrooms(params.bedrooms);
-        // Restaurar selects si hay params
-        if (params.area) $area.value = params.area;
-        if (params.location) $location.value = params.location;
-        if (params.type) $type.value = params.type;
-        if (params.bedrooms) $bedrooms.value = params.bedrooms;
-    })();
-});
+    // Submit handler
+    $form.on('submit', function(e){
+        e.preventDefault();
+        setLoading(true);
+        var formData = $form.serializeArray();
         formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
         formData.push({name:'lang', value:2});
         formData.push({name:'page_size', value:20});
@@ -150,82 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
             credentials: 'same-origin',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: $.param(formData)
-=======
-        $location.html(options);
-        $location.val('');
-        $location.trigger('change');
-    });
-
-
-    (function ($) {
-        'use strict';
-        if (typeof RESALES_FILTERS === 'undefined') {
-            console.warn('[filters.js] RESALES_FILTERS no definido');
-            return;
-        }
-
-        console.log('[filters.js] loaded');
-        console.log('RESALES_FILTERS:', RESALES_FILTERS);
-        console.log('Selectors exist?',
-            !!document.querySelector('#lusso-filter-area'),
-            !!document.querySelector('#lusso-filter-location'),
-            !!document.querySelector('#lusso-filter-types')
-        );
-
-        const post = (action) =>
-            $.post(RESALES_FILTERS.ajaxUrl, { action, nonce: RESALES_FILTERS.nonce });
-
-        const $area     = $('#lusso-filter-area');
-        const $location = $('#lusso-filter-location');
-        const $types    = $('#lusso-filter-types');
-
-        function setOptions($sel, items, valueKey, textKey, placeholder) {
-            $sel.empty().append(new Option(placeholder, ''));
-            items.forEach(it => $sel.append(new Option(it[textKey], it[valueKey])));
-        }
-        function dedupBy(arr, key) {
-            const m = new Map();
-            arr.forEach(o => m.set(o[key], o));
-            return Array.from(m.values());
-        }
-
-        // LOCATIONS (Area + Location)
-        post('resales_v6_locations')
-            .done((res) => {
-                console.log('locations response:', res);
-                if (!res || !res.success) return;
-                const all = res.data || [];
-
-                const areas = dedupBy(
-                    all.filter(i => i.area).map(i => ({ k: i.area, v: i.area })), 'k'
-                ).map(i => ({ value: i.v, text: i.v }));
-                setOptions($area, areas, 'value', 'text', 'Area');
-
-                const locs = all.map(i => ({ value: i.name, text: i.name }));
-                setOptions($location, locs, 'value', 'text', 'Location');
-
-                $area.on('change', function () {
-                    const sel = this.value;
-                    const filtered = all
-                        .filter(i => !sel || i.area === sel)
-                        .map(i => ({ value: i.name, text: i.name }));
-                    setOptions($location, filtered, 'value', 'text', 'Location');
-                });
-            })
-            .fail((err) => console.error('ajax locations error', err));
-
-        // TYPES
-        post('resales_v6_types')
-            .done((res) => {
-                console.log('types response:', res);
-                if (!res || !res.success) return;
-                const items = res.data || [];
-                setOptions($types, items, 'value', 'text', 'All types');
-            })
-            .fail((err) => console.error('ajax types error', err));
-
-    })(jQuery);
->>>>>>> e6c05ce (feat(filters-v6): enqueue JS y endpoints AJAX para selects dinámicos desde WebAPI V6)
         })
         .then(r => r.json())
         .then(renderResults)
