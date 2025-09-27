@@ -120,99 +120,102 @@ jQuery(document).ready(function($){
     });
 
     // Lusso Filters V6 - Poblar selects dinámicamente
-    (function(){
-        // Configuración: whitelist y endpoints
-        const AREA_WHITELIST = [
-            'Benahavís','Benalmádena','Casares','Estepona','Fuengirola',
-            'Manilva','Marbella','Mijas','Torremolinos','Malaga','Sotogrande'
-        ];
-        const ENDPOINTS = {
-            locations: '/wp-json/resales/v1/filters/locations',
-            types: '/wp-json/resales/v1/filters/types',
-            bedrooms: '/wp-json/resales/v1/filters/bedrooms'
-        };
-        // Helpers
-        function getQS() {
-            return new URLSearchParams(window.location.search);
-        }
-        function setQS(params) {
-            const url = new URL(window.location);
-            Object.keys(params).forEach(k => {
-                if (params[k] !== '' && params[k] !== null && typeof params[k] !== 'undefined') {
-                    url.searchParams.set(k, params[k]);
-                } else {
-                    url.searchParams.delete(k);
-                }
-            });
-            window.history.replaceState({}, '', url);
-        }
-        function fetchJSON(url) {
-            return fetch(url).then(r => r.ok ? r.json() : Promise.resolve(null)).catch(() => null);
-        }
-        // DOM Ready
-        document.addEventListener('DOMContentLoaded', function(){
-            const areaSel = document.querySelector('select[name="area"]');
-            const locSel  = document.querySelector('select[name="location"]');
-            const typeSel = document.querySelector('select[name="type"]');
-            const bedSel  = document.querySelector('select[name="bedrooms"]');
-            if (!areaSel || !locSel || !typeSel || !bedSel) return;
-            // Poblar Area
-            areaSel.innerHTML = '<option value="">Área</option>' + AREA_WHITELIST.map(a => `<option value="${a}">${a}</option>`).join('');
-            // Poblar Bedrooms
-            if (window.LUSSO_BEDROOMS && Array.isArray(window.LUSSO_BEDROOMS)) {
-                bedSel.innerHTML = '<option value="">Dormitorios</option>' + window.LUSSO_BEDROOMS.map(b => `<option value="${b}">${b}</option>`).join('');
-            } else {
-                fetchJSON(ENDPOINTS.bedrooms).then(arr => {
-                    bedSel.innerHTML = '<option value="">Dormitorios</option>' + (arr||[]).map(b => `<option value="${b}">${b}</option>`).join('');
-                });
-            }
-            // Poblar Types
-            fetchJSON(ENDPOINTS.types).then(arr => {
-                typeSel.innerHTML = '<option value="">Tipo</option>' + (arr||[]).map(t => `<option value="${t.id}">${t.label}</option>`).join('');
-            });
-            // Area→Location dependiente
-            function updateLocations(area) {
-                if (!area) {
-                    locSel.innerHTML = '<option value="">Localidad</option>';
-                    return;
-                }
-                fetchJSON(ENDPOINTS.locations + '?area=' + encodeURIComponent(area)).then(obj => {
-                    let opts = '<option value="">Localidad</option>';
-                    const areas = obj && obj.areas ? obj.areas : {};
-                    const locs = areas[area] || [];
-                    if (locs.length) {
-                        opts += locs.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
-                    } else {
-                        opts += '<option disabled>Sin localidades disponibles</option>';
-                    }
-                    locSel.innerHTML = opts;
-                });
-            }
-            // Persistir estado en URL y reconstruir selects
-            function restoreFromQS() {
-                const qs = getQS();
-                if (qs.has('area')) {
-                    areaSel.value = qs.get('area');
-                    updateLocations(qs.get('area'));
-                }
-                if (qs.has('location')) locSel.value = qs.get('location');
-                if (qs.has('type')) typeSel.value = qs.get('type');
-                if (qs.has('bedrooms')) bedSel.value = qs.get('bedrooms');
-            }
-            areaSel.addEventListener('change', function(){
-                setQS({area: areaSel.value, location: ''});
-                updateLocations(areaSel.value);
-            });
-            locSel.addEventListener('change', function(){
-                setQS({location: locSel.value});
-            });
-            typeSel.addEventListener('change', function(){
-                setQS({type: typeSel.value});
-            });
-            bedSel.addEventListener('change', function(){
-                setQS({bedrooms: bedSel.value});
-            });
-            restoreFromQS();
+(function(){
+  const AREA_WHITELIST = [
+    'Benahavís','Benalmádena','Casares','Estepona','Fuengirola',
+    'Manilva','Marbella','Mijas','Torremolinos','Malaga','Sotogrande'
+  ];
+  const ENDPOINTS = {
+    locations: '/wp-json/resales/v1/filters/locations',
+    types: '/wp-json/resales/v1/filters/types',
+    bedrooms: '/wp-json/resales/v1/filters/bedrooms'
+  };
+
+  function fetchJSON(url){ return fetch(url).then(r => r.ok ? r.json() : null).catch(() => null); }
+  function getQS(){ return new URLSearchParams(window.location.search); }
+  function setQS(params){
+    const url = new URL(window.location);
+    Object.keys(params).forEach(k => {
+      if (params[k] !== '' && params[k] != null) url.searchParams.set(k, params[k]);
+      else url.searchParams.delete(k);
+    });
+    window.history.replaceState({}, '', url);
+  }
+
+  function initDynamicFilters(){
+    const areaSel = document.querySelector('select[name="area"]');
+    const locSel  = document.querySelector('select[name="location"]');
+    const typeSel = document.querySelector('select[name="type"]');
+    const bedSel  = document.querySelector('select[name="bedrooms"]');
+
+    // ✅ Detección robusta de UI estática del shortcode
+    const staticWrapper = document.querySelector('.resales-filters-wrapper[data-source="static"]');
+    const staticArea = document.querySelector('select.lusso-area-static, select#lusso-area-static');
+    const staticLoc  = document.querySelector('select.lusso-location-static, select#lusso-location-static');
+    const isStaticUI  = !!(staticWrapper || staticArea || staticLoc);
+
+    // --- Poblar SIEMPRE types y bedrooms (independiente de área/location) ---
+    if (typeSel) {
+      fetchJSON(ENDPOINTS.types).then(arr => {
+        typeSel.innerHTML = '<option value="">Tipo</option>' +
+          (arr || []).map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+      });
+    }
+    if (bedSel) {
+      if (window.LUSSO_BEDROOMS && Array.isArray(window.LUSSO_BEDROOMS)) {
+        bedSel.innerHTML = '<option value="">Dormitorios</option>' +
+          window.LUSSO_BEDROOMS.map(b => `<option value="${b}">${b}</option>`).join('');
+      } else {
+        fetchJSON(ENDPOINTS.bedrooms).then(arr => {
+          bedSel.innerHTML = '<option value="">Dormitorios</option>' +
+            (arr || []).map(b => `<option value="${b}">${b}</option>`).join('');
         });
-    })();
-});
+      }
+    }
+
+    // 🔒 Si es UI estática del shortcode, NO tocar área/location
+    if (isStaticUI) return;
+
+    // Si no hay selects de área/location, no hacemos su población
+    if (!areaSel || !locSel) return;
+
+    // (modo dinámico heredado) Poblar Área y enganchar dependencias
+    areaSel.innerHTML = '<option value="">Área</option>' +
+      AREA_WHITELIST.map(a => `<option value="${a}">${a}</option>`).join('');
+
+    function updateLocations(area){
+      if (!area) { locSel.innerHTML = '<option value="">Localidad</option>'; return; }
+      fetchJSON(ENDPOINTS.locations + '?area=' + encodeURIComponent(area)).then(obj => {
+        let opts = '<option value="">Localidad</option>';
+        const areas = obj && obj.areas ? obj.areas : {};
+        const locs = areas[area] || [];
+        opts += (locs.length)
+          ? locs.map(l => `<option value="${l.name}">${l.name}</option>`).join('')
+          : '<option disabled>Sin localidades disponibles</option>';
+        locSel.innerHTML = opts;
+      });
+    }
+
+    function restoreFromQS(){
+      const qs = getQS();
+      if (qs.has('area')) { areaSel.value = qs.get('area'); updateLocations(qs.get('area')); }
+      if (qs.has('location')) locSel.value = qs.get('location');
+      if (qs.has('type') && typeSel) typeSel.value = qs.get('type');
+      if (qs.has('bedrooms') && bedSel) bedSel.value = qs.get('bedrooms');
+    }
+
+    areaSel.addEventListener('change', () => { setQS({area: areaSel.value, location: ''}); updateLocations(areaSel.value); });
+    if (locSel)    locSel.addEventListener('change', () => setQS({location: locSel.value}));
+    if (typeSel)   typeSel.addEventListener('change', () => setQS({type: typeSel.value}));
+    if (bedSel)    bedSel.addEventListener('change', () => setQS({bedrooms: bedSel.value}));
+
+    restoreFromQS();
+  }
+
+  // Ejecuta aunque DOMContentLoaded ya haya ocurrido (patrón recomendado)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDynamicFilters);
+  } else {
+    initDynamicFilters();
+  }
+})();
