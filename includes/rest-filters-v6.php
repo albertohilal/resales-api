@@ -1,3 +1,35 @@
+    // /properties (buscador principal)
+    register_rest_route('resales/v1', '/properties', [
+        'methods' => ['POST', 'GET'],
+        'callback' => function($request) {
+            $allowed = [
+                'province', 'location', 'subarea', 'property_types',
+                'beds', 'baths', 'price_min', 'price_max', 'sort', 'new_devs_mode', 'page'
+            ];
+            $input = [];
+            foreach ($allowed as $key) {
+                $val = $request->get_param($key);
+                if ($val !== null && $val !== '' && $val !== []) {
+                    // Normalizar tipos
+                    if (in_array($key, ['beds','baths','page'])) $val = (int)$val;
+                    if (in_array($key, ['price_min','price_max'])) $val = (float)$val;
+                    $input[$key] = $val;
+                }
+            }
+            require_once __DIR__ . '/class-resales-client.php';
+            $client = new Resales_Client();
+            $result = $client->search_properties_v6($input);
+            if (function_exists('rest_ensure_response')) {
+                $resp = rest_ensure_response($result);
+                $resp->header('X-RO-Query-Trace', 'on');
+                return $resp;
+            } else {
+                header('X-RO-Query-Trace: on');
+                return $result;
+            }
+        },
+        'permission_callback' => '__return_true',
+    ]);
 <?php
 if (!defined('ABSPATH')) exit;
 

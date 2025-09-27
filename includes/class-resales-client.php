@@ -10,88 +10,76 @@ class Resales_Client {
         return self::$instance;
     }
 
-    /** GET genérico a WebAPI V6 */
-    public function request($function, array $params = []) {
-        $s = Resales_Settings::instance();
-        if (isset($params['P_Agency_FilterId'])) {
-            unset($params['P_Agency_FilterId']);
-            resales_log('WARN', 'P_Agency_FilterId ignorado; usamos P_ApiId');
-        }
-        $defaults = [
-            'p1'       => $s->get_p1(),
-            'p2'       => $s->get_p2(),
-            'P_ApiId'  => $s->get_api_id(),
-            'P_Lang'   => $s->get_lang(),
-            // 'p_sandbox' => true, // habilitar si hace falta
-        ];
-        $query = array_filter($defaults + $params, static function($v){ return $v !== null && $v !== ''; });
-        $url   = trailingslashit($this->base) . $function . '?' . http_build_query($query);
-
-        $resp = wp_remote_get($url, ['timeout' => 15]);
-        if (is_wp_error($resp)) {
-            resales_log('ERROR', 'HTTP error', ['function'=>$function,'error'=>$resp->get_error_message()]);
-            return null;
-        }
-        $code = wp_remote_retrieve_response_code($resp);
-        if ($code !== 200) {
-            resales_log('ERROR', 'HTTP status != 200', ['function'=>$function,'status'=>$code]);
-            return null;
-        }
-        $body = wp_remote_retrieve_body($resp);
-        $json = json_decode($body, true);
-        if ($json === null) {
-            resales_log('ERROR', 'JSON inválido', ['function'=>$function, 'body_sample'=>substr($body,0,200)]);
-        }
-        return $json;
-    }
-
-    /** Cachea SearchLocations 6h */
-    public function get_locations($lang = null, $force_refresh = false) {
-        $s = Resales_Settings::instance();
-        $lang = $lang ?: $s->get_lang();
-        $key  = "resales_v6_locations_{$lang}";
-        if (!$force_refresh) {
-            $cached = get_transient($key);
-            if ($cached !== false) return $cached;
-        }
-        $data = $this->request('SearchLocations', ['P_Lang' => $lang, 'P_All' => 'TRUE']);
-        $out = [];
-        if (is_array($data) && !empty($data['LocationList'])) {
-            foreach ($data['LocationList'] as $row) {
-                // Normalizar; claves pueden variar según salida
-                $label = $row['Location'] ?? ($row['Name'] ?? '');
-                $value = $row['Location'] ?? '';
-                $area  = $row['Area'] ?? ($row['Province'] ?? '');
-                if ($value) $out[] = ['value'=>$value, 'label'=>$label, 'area'=>$area];
+    /**
+     * Busca propiedades usando V6, con lógica de filtro, localización y caché.
+     * @param array $input Normalized payload from REST endpoint
+     * @return array
+     */
+    public function search_properties_v6($input) {
+        // 1. Leer FilterId del panel (API Filter) desde config/env
+        $filterId = getenv('P_ApiId') ?: getenv('P_Agency_FilterId');
+            if (!$filterId) {
+                // fallback: opción WP
+                $filterId = get_option('lusso_api_filter_id') ?: get_option('lusso_agency_filter_id');
             }
-        } else {
-            resales_log('WARN', 'SearchLocations vacío o inválido', $data);
-        }
-        set_transient($key, $out, 6 * HOUR_IN_SECONDS);
-        return $out;
-    }
+            if (!$filterId) return ['success'=>false, 'error'=>'No FilterId'];
 
-    /** Cachea SearchPropertyTypes 6h */
-    public function get_property_types($lang = null, $force_refresh = false) {
-        $s = Resales_Settings::instance();
-        $lang = $lang ?: $s->get_lang();
-        $key  = "resales_v6_types_{$lang}";
-        if (!$force_refresh) {
-            $cached = get_transient($key);
-            if ($cached !== false) return $cached;
-        }
-        $data = $this->request('SearchPropertyTypes', ['P_Lang' => $lang]);
-        $out = [];
-        if (is_array($data) && !empty($data['PropertyTypes'])) {
-            foreach ($data['PropertyTypes'] as $row) {
-                $value = $row['OptionValue'] ?? '';
-                $label = $row['OptionName'] ?? '';
-                if ($value) $out[] = ['value'=>$value, 'label'=>$label];
+            // 2. Localización
+            $p_location = null;
+            if (!empty($input['subarea'])) {
+                $p_location = $input['subarea'];
+            } elseif (!empty($input['location'])) {
+                $p_location = $input['location'];
+            } elseif (!empty($input['province'])) {
+                if (function_exists('lusso_filters_get_config')) {
+                    $cfg = lusso_filters_get_config();
+                    $prov = $input['province'];
+                    $locs = isset($cfg['locationsByProvince'][$prov]) ? $cfg['locationsByProvince'][$prov] : [];
+                    $p_location = implode(',', $locs);
+                }
             }
-        } else {
-            resales_log('WARN', 'SearchPropertyTypes vacío o inválido', $data);
-        }
-        set_transient($key, $out, 6 * HOUR_IN_SECONDS);
-        return $out;
+
+            // 3. new_devs_mode
+            $p_new_devs = null;
+            if (!empty($input['new_devs_mode'])) {
+                $mode = $input['new_devs_mode'];
+                if (in_array($mode, ['only','include','exclude'])) $p_new_devs = $mode;
+            }
+
+            // 4. Otros parámetros
+            $payload = [
+                'P_ApiId' => $filterId,
+            ];
+            if ($p_location) $payload['P_Location'] = $p_location;
+            if ($p_new_devs) $payload['p_new_devs'] = $p_new_devs;
+            if (!empty($input['property_types'])) $payload['P_PropertyTypes'] = $input['property_types'];
+            if (!empty($input['beds'])) $payload['P_Beds'] = (int)$input['beds'];
+            if (!empty($input['baths'])) $payload['P_Baths'] = (int)$input['baths'];
+            if (!empty($input['price_min'])) $payload['P_Min'] = (float)$input['price_min'];
+            if (!empty($input['price_max'])) $payload['P_Max'] = (float)$input['price_max'];
+            if (!empty($input['sort'])) $payload['P_SortType'] = $input['sort'];
+            if (!empty($input['page'])) $payload['p_PageNo'] = (int)$input['page'];
+            $payload['p_PageSize'] = 20;
+
+            // 5. NUNCA enviar Area ni P_All=TRUE
+            unset($payload['Area'], $payload['P_All']);
+
+            // 6. Cache: hash del JSON normalizado + FilterId + page
+            $cache_key = 'v6_' . md5(json_encode($payload) . $filterId . ($payload['p_PageNo'] ?? 1));
+            $cache = get_transient($cache_key);
+            if ($cache) {
+                error_log('[V6] Cache hit: ' . $cache_key);
+                return $cache;
+            }
+
+            // 7. Mostrar en log la URL/params (sin secretos)
+            error_log('[V6] SearchProperties payload: ' . json_encode($payload));
+
+            // 8. Llamada real a V6
+            $result = $this->request('SearchProperties', $payload);
+
+        // 9. Guardar en caché (TTL 5 min)
+        set_transient($cache_key, $result, 5 * MINUTE_IN_SECONDS);
+        return $result;
     }
 }

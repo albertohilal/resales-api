@@ -75,10 +75,10 @@
     $form.on('submit', function(e){
       e.preventDefault();
       setLoading(true);
-      // Allow-list de parámetros
+      // Allow-list estricto de parámetros
       const allowed = [
         'province', 'location', 'subarea', 'property_types',
-        'beds', 'baths', 'price_min', 'price_max', 'sort', 'new_devs_mode'
+        'beds', 'baths', 'price_min', 'price_max', 'sort', 'new_devs_mode', 'page'
       ];
       const formData = {};
       allowed.forEach(function(key){
@@ -90,9 +90,7 @@
           }
         }
       });
-      formData['nonce'] = LUSSO_NEWDEVS.nonce;
-      formData['lang'] = 2;
-      formData['page_size'] = 20;
+      // POST al endpoint REST (no enviar area, ni vacíos, ni params extra)
       fetch(LUSSO_NEWDEVS.ajaxUrl, {
         method: 'POST',
         credentials: 'same-origin',
@@ -149,7 +147,7 @@
     } else {
       sel.disabled = true;
     }
-  }
+// End IIFE
 
   function initLussoFiltersConfig() {
     const config = window.LUSSO_FILTERS || {};
@@ -180,9 +178,11 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLussoFiltersConfig);
+    document.addEventListener('DOMContentLoaded', function() {
+      initLussoFiltersConfig();
+      if (typeof initDynamicFilters === 'function') initDynamicFilters();
+    });
   } else {
     initLussoFiltersConfig();
-  }
-    initDynamicFilters();
+    if (typeof initDynamicFilters === 'function') initDynamicFilters();
   }
