@@ -181,9 +181,21 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
   $first = $has ? esc_url($imgs[0]['Url']) : '';
   $ref   = esc_html($p['Reference'] ?? '');
   $detail_url = esc_url( add_query_arg(['ref' => $ref], home_url('/property/')) );
-  $area = isset($p['Area']) ? esc_html($p['Area']) : '';
-  $subarea = isset($p['SubArea']) ? esc_html($p['SubArea']) : '';
-  $location = trim($area . ($subarea ? ', ' . $subarea : ''));
+  // Usar la función get_card_place_label si existe, si no, fallback inline
+  if (function_exists('get_card_place_label')) {
+    $location = get_card_place_label($p);
+  } else {
+    $province = isset($p['Province']) ? trim((string)$p['Province']) : '';
+    $loc = isset($p['Location']) ? trim((string)$p['Location']) : '';
+    $sub = isset($p['SubArea']) ? trim((string)$p['SubArea']) : '';
+    if ($sub !== '') {
+      $location = esc_html($sub . ($loc !== '' ? ', ' . $loc : ''));
+    } elseif ($loc !== '') {
+      $location = esc_html($loc . ($province !== '' ? ', ' . $province : ''));
+    } else {
+      $location = esc_html($province);
+    }
+  }
       // Descripción: primera oración del segundo párrafo
       $desc = '';
       if (isset($p['Description']) && is_string($p['Description'])) {

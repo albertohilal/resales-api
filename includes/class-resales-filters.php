@@ -1,5 +1,31 @@
 <?php
 /**
+ * Devuelve la ubicación formateada para mostrar en la tarjeta.
+ *
+ * @param array $p Array asociativo con claves 'Province', 'Location', 'SubArea'.
+ * @return string Ubicación formateada y escapada.
+ */
+function get_card_place_label(array $p): string {
+	$province = isset($p['Province']) ? trim((string)$p['Province']) : '';
+	$location = isset($p['Location']) ? trim((string)$p['Location']) : '';
+	$subarea  = isset($p['SubArea'])  ? trim((string)$p['SubArea'])  : '';
+
+	if ($subarea !== '') {
+		$label = $subarea;
+		if ($location !== '') {
+			$label .= ', ' . $location;
+		}
+	} elseif ($location !== '') {
+		$label = $location;
+		if ($province !== '') {
+			$label .= ', ' . $province;
+		}
+	} else {
+		$label = $province;
+	}
+	return esc_html($label);
+}
+/**
  * Resales Filters – lista predefinida para Área y Location + shortcode [lusso_filters]
  *
  * - Renderiza selects de Área y Location con <optgroup>.
