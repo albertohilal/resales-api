@@ -16,6 +16,10 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+        // 1) Fallback constante para API Filter si no hay opción
+        if (!defined('RESALES_API_DEFAULT_FILTER_ID')) {
+            define('RESALES_API_DEFAULT_FILTER_ID', 65503); // TODO: reemplazar por el FilterId real
+        }
     /*
      * ==== Resales-Online Web API V6 — SearchProperties: Parámetros y ejemplos oficiales ====
      *
@@ -86,21 +90,42 @@ class Resales_Client {
             'p2' => $this->api_key,
         ];
 
-        // 3) Merge $params from rest-filters-v6.php
+    // 3) Mapear filtros del front (location, type, bedrooms)
+    // Siempre enviar el filtro fijo
+    $query['P_Agency_FilterId'] = RESALES_API_DEFAULT_FILTER_ID;
+        // Mapear location
+        if (!empty($_GET['location'])) {
+            $query['P_Location'] = sanitize_text_field($_GET['location']);
+        }
+        // Mapear type
+        if (!empty($_GET['type'])) {
+            $query['P_PropertyTypes'] = sanitize_text_field($_GET['type']);
+        }
+        // Mapear bedrooms
+        if (!empty($_GET['bedrooms'])) {
+            $query['P_Beds'] = (int) $_GET['bedrooms'];
+        }
+        // Nunca enviar "Area"
+        // Merge otros params si vienen de la llamada
         if (!empty($params)) $query = array_merge($query, $params);
 
         // 4) Enforce ONE filter ID if missing
+        // Si el fallback está definido y en uso, NO mostrar warning aunque la opción esté vacía
         if (empty($query['P_Agency_FilterId']) && empty($query['P_ApiId'])) {
             $query['P_Agency_FilterId'] = (int) get_option('lusso_agency_filter_id');
             if (empty($query['P_Agency_FilterId']) && empty($query['P_ApiId'])) {
-                error_log('[resales-api][ERROR] Falta P_ApiId/P_Agency_FilterId');
+                // Solo mostrar el warning si NO está usando el fallback
+                if (!defined('RESALES_API_DEFAULT_FILTER_ID') || RESALES_API_DEFAULT_FILTER_ID === null) {
+                    error_log('[resales-api][ERROR] Falta P_ApiId/P_Agency_FilterId');
+                }
                 return new WP_Error('missing_filter', 'Falta filtro de API.');
             }
         }
 
         $query['p_new_devs'] = 'only';  // si tu web es solo ND
+        // Diagnóstico temporal
+        $query['P_sandbox'] = true;
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            $query['p_sandbox'] = 'true';
             error_log('[V6 OUT] ' . json_encode($query, JSON_UNESCAPED_UNICODE));
         }
 
@@ -121,6 +146,10 @@ class Resales_Client {
         $json = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             return ['success'=>false, 'error'=>'JSON error', 'body'=>$body];
+        }
+        // Loguear el bloque transaction si existe
+        if (isset($json['transaction'])) {
+            error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
         }
         return $json;
     }

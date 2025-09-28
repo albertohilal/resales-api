@@ -236,3 +236,39 @@ add_action('admin_notices', function () {
         echo '</p></div>';
     }
 });
+
+add_action('admin_init', function(){
+    if (!current_user_can('manage_options')) return;
+    if (!get_option('resales_api_apiid')) update_option('resales_api_apiid', 65503);
+    if (!get_option('lusso_agency_filter_id')) update_option('lusso_agency_filter_id', 65503);
+});
+
+function build_search_properties_params(array $args = []) : array {
+    // Obtener el filtro de agencia desde la opción del plugin (ajusta el nombre si es necesario)
+    $agency_filter_id = get_option('resales_api_filter_id'); // o 'lusso_agency_filter_id'
+    $params = [];
+
+    if ($agency_filter_id) {
+        $params['P_Agency_FilterId'] = $agency_filter_id;
+    }
+
+    // Tomar location de $_GET si existe y mapear a P_Location
+    if (!empty($_GET['location'])) {
+        $params['P_Location'] = sanitize_text_field($_GET['location']);
+    }
+
+    // Nunca enviar "Area"
+
+    // Activar sandbox temporalmente para logging
+    $params['P_sandbox'] = true;
+
+    // ...aquí iría la llamada HTTP a SearchProperties...
+    // $response = ...;
+
+    // Loguear el bloque transaction si existe
+    if (isset($response['transaction'])) {
+        error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($response['transaction']));
+    }
+
+    return $params;
+}

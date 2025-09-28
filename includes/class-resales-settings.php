@@ -12,7 +12,7 @@ class Resales_Settings {
     // Mantén los mismos option_names que ya usa el plugin
     $this->p1     = get_option('resales_api_p1');
     $this->p2     = get_option('resales_api_p2');
-    $this->api_id = get_option('resales_api_apid'); // usamos P_ApiId, NO P_Agency_FilterId
+  $this->api_id = get_option('resales_api_apiid'); // usamos P_ApiId, NO P_Agency_FilterId
     $this->lang   = get_option('resales_api_lang', 1);
 
     // Validaciones mínimas

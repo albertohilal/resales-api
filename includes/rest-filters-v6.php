@@ -26,13 +26,19 @@
                                             : $bedsRaw;
                                     }
 
-                                    // Mapear type "apartment" → IDs para P_PropertyTypes (temporal: sólo si coincide)
+                                    // Mapear type a IDs reales de Resales Online
                                     if ($typeTxt !== '') {
                                         $map = [
-                                            'apartment' => '<<ID_APARTMENT>>', // sustituye por los IDs reales CSV
-                                            // 'villa' => '<<ID_VILLA>>', ...
+                                            'apartment' => '2-1', // ID real de "apartment"
+                                            'villa'     => '1-1', // ID real de "villa"
+                                            // añade más tipos según tu catálogo
                                         ];
-                                        if (!empty($map[$typeTxt])) $params['P_PropertyTypes'] = $map[$typeTxt];
+                                        if (!empty($map[$typeTxt])) {
+                                            $params['P_PropertyTypes'] = $map[$typeTxt];
+                                        } else {
+                                            // Si el type no está en el mapa, no enviar P_PropertyTypes
+                                            // (deja la búsqueda abierta por tipo)
+                                        }
                                     }
 
                                     return $this->client->search_properties_v6($params);
