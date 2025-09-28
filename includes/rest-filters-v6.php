@@ -1,65 +1,80 @@
+<?php
+    if (!defined('ABSPATH')) exit;
+
     // /properties (buscador principal)
-    register_rest_route('resales/v1', '/properties', [
+    add_action('rest_api_init', function() {
+        register_rest_route('resales/v1', '/properties', [
             // --- V6 API Param Notes ---
             // p_new_devs: exclude | include (default) | only
             // P_Location: "Specific Location or csv list of Locations"
             // P_Beds: 2 (exact) or 2x (at least)
-        'methods' => ['POST', 'GET'],
-        'callback' => function($request) {
+            'methods' => ['POST', 'GET'],
+            'callback' => function($request) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[REST IN] ' . json_encode($_GET, JSON_UNESCAPED_UNICODE));
+                }
 
-                        // 1) Sanitize GET
-                                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                                        error_log('[REST IN] ' . json_encode($_GET, JSON_UNESCAPED_UNICODE));
-                                    }
+                $location = isset($_GET['location']) ? sanitize_text_field(wp_unslash($_GET['location'])) : '';
+                $typeTxt  = isset($_GET['type']) ? sanitize_text_field(wp_unslash($_GET['type'])) : '';
+                $bedsRaw  = isset($_GET['bedrooms']) ? sanitize_text_field(wp_unslash($_GET['bedrooms'])) : '';
 
-                                    $location = isset($_GET['location']) ? sanitize_text_field(wp_unslash($_GET['location'])) : '';
-                                    $typeTxt  = isset($_GET['type']) ? sanitize_text_field(wp_unslash($_GET['type'])) : '';
-                                    $bedsRaw  = isset($_GET['bedrooms']) ? sanitize_text_field(wp_unslash($_GET['bedrooms'])) : '';
 
-                                    $params = [];
-                                    if ($location !== '') $params['P_Location'] = $location;
+                $params = [];
+                // Validar location contra la lista oficial
+                $valid_locations = [
+                    'Benahavís','Benalmadena','Casares','Estepona','Fuengirola','Málaga','Manilva','Marbella','Mijas','Torremolinos','Sotogrande'
+                ];
+                if ($location !== '' && in_array($location, $valid_locations, true)) {
+                    $params['P_Location'] = $location;
+                } else if ($location !== '') {
+                    error_log('[REST FILTERS] Localización inválida: ' . $location);
+                }
 
-                                    // bedrooms: exacto vs 1+
-                                    if ($bedsRaw !== '') {
-                                        $params['P_Beds'] = (substr($bedsRaw, -1) === '+')
-                                            ? rtrim($bedsRaw, '+') . 'x'
-                                            : $bedsRaw;
-                                    }
+                // bedrooms: exacto vs 1+
+                if ($bedsRaw !== '') {
+                    // Si termina en +, convertir a 'x'. Si es solo número, también convertir a 'x' (al menos N)
+                    if (is_numeric($bedsRaw)) {
+                        $params['P_Beds'] = $bedsRaw . 'x';
+                    } elseif (substr($bedsRaw, -1) === '+') {
+                        $params['P_Beds'] = rtrim($bedsRaw, '+') . 'x';
+                    } else {
+                        $params['P_Beds'] = $bedsRaw;
+                    }
+                }
 
-                                    // Mapear type a IDs reales de Resales Online
-                                    if ($typeTxt !== '') {
-                                        $map = [
-                                            'apartment' => '2-1', // ID real de "apartment"
-                                            'villa'     => '1-1', // ID real de "villa"
-                                            // añade más tipos según tu catálogo
-                                        ];
-                                        if (!empty($map[$typeTxt])) {
-                                            $params['P_PropertyTypes'] = $map[$typeTxt];
-                                        } else {
-                                            // Si el type no está en el mapa, no enviar P_PropertyTypes
-                                            // (deja la búsqueda abierta por tipo)
-                                        }
-                                    }
+                // Mapear type a IDs reales de Resales Online
+                if ($typeTxt !== '') {
+                    $map = [
+                        'apartment' => '2-1', // ID real de "apartment"
+                        'villa'     => '1-1', // ID real de "villa"
+                        // añade más tipos según tu catálogo
+                    ];
+                    if (!empty($map[$typeTxt])) {
+                        $params['P_PropertyTypes'] = $map[$typeTxt];
+                    } else {
+                        // Si el type no está en el mapa, no enviar P_PropertyTypes
+                        // (deja la búsqueda abierta por tipo)
+                    }
+                }
 
-                                    return $this->client->search_properties_v6($params);
+                error_log('[REST FILTERS] Params enviados a la API: ' . json_encode($params, JSON_UNESCAPED_UNICODE));
+                require_once __DIR__ . '/class-resales-client.php';
+                $client = new Resales_Client();
+                $result = $client->search_properties_v6($params);
+                if (function_exists('rest_ensure_response')) {
+                    $resp = rest_ensure_response($result);
+                    $resp->header('X-RO-Query-Trace', 'on');
+                    return $resp;
+                } else {
+                    header('X-RO-Query-Trace: on');
+                    return $result;
+                }
+            },
+            'permission_callback' => '__return_true',
+        ]);
 
-            // 5) Call client
-            require_once __DIR__ . '/class-resales-client.php';
-            $client = new Resales_Client();
-            $result = $client->search_properties_v6($params);
-            if (function_exists('rest_ensure_response')) {
-                $resp = rest_ensure_response($result);
-                $resp->header('X-RO-Query-Trace', 'on');
-                return $resp;
-            } else {
-                header('X-RO-Query-Trace: on');
-                return $result;
-            }
-        },
-        'permission_callback' => '__return_true',
-    ]);
-<?php
-if (!defined('ABSPATH')) exit;
+        // ...resto de endpoints ya existentes...
+    });
 
 // Registrar endpoints REST de filtros V6 SIEMPRE, incondicionalmente
 add_action('rest_api_init', function() {
