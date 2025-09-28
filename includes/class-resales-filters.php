@@ -27,6 +27,7 @@ function lusso_filters_get_config(): array {
 		'subareasByLocation' => $subareasByLocation,
 	];
 }
+
 /**
  * Devuelve la ubicación formateada para mostrar en la tarjeta.
  *
@@ -276,16 +277,17 @@ final class Resales_Filters_Shortcode {
 				ob_start();
 				?>
 				<div class="resales-filters-wrapper">
-				  <form class="resales-filters-form" method="get" action="">
+				  <form id="lusso-filters" class="resales-filters-form" method="get" action="">
 				    <div class="filter-field">
 				      <?php
 				        // Área
 				        echo $filters->render_area_select(
 				          $selected_area,
 				          [
-				            'id'    => 'resales-area',
-				            'name'  => 'area',
-				            'class' => 'resales-area-filter lusso-area-static',
+							  'id'    => 'resales-area',
+							  'name'  => '', // Blindaje: no serializar area
+							  'data-name' => 'area',
+							  'class' => 'resales-area-filter lusso-area-static',
 				          ]
 				        );
 				      ?>
@@ -325,7 +327,7 @@ final class Resales_Filters_Shortcode {
 				      </select>
 				    </div>
 				    <div class="filter-field lusso-filters__submit">
-				      <button type="submit" class="button">
+					  <button type="button" data-role="search" class="button">
 				        <?php esc_html_e( 'Search', 'resales-api' ); ?>
 				      </button>
 				    </div>

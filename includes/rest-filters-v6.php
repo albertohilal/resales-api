@@ -1,24 +1,45 @@
     // /properties (buscador principal)
     register_rest_route('resales/v1', '/properties', [
+            // --- V6 API Param Notes ---
+            // p_new_devs: exclude | include (default) | only
+            // P_Location: "Specific Location or csv list of Locations"
+            // P_Beds: 2 (exact) or 2x (at least)
         'methods' => ['POST', 'GET'],
         'callback' => function($request) {
-            $allowed = [
-                'province', 'location', 'subarea', 'property_types',
-                'beds', 'baths', 'price_min', 'price_max', 'sort', 'new_devs_mode', 'page'
+            // 1) Sanitize GET
+            $location = isset($_GET['location']) ? sanitize_text_field(wp_unslash($_GET['location'])) : '';
+            $type     = isset($_GET['type']) ? sanitize_text_field(wp_unslash($_GET['type'])) : '';
+            $bedsRaw  = isset($_GET['bedrooms']) ? sanitize_text_field(wp_unslash($_GET['bedrooms'])) : '';
+
+            // 2) Base params (only V6-supported keys)
+            $params = [
+                'p_new_devs' => 'only',
             ];
-            $input = [];
-            foreach ($allowed as $key) {
-                $val = $request->get_param($key);
-                if ($val !== null && $val !== '' && $val !== []) {
-                    // Normalizar tipos
-                    if (in_array($key, ['beds','baths','page'])) $val = (int)$val;
-                    if (in_array($key, ['price_min','price_max'])) $val = (float)$val;
-                    $input[$key] = $val;
-                }
+            // Agency FilterId or ApiId (prefer ApiId if set)
+            $apiId = getenv('P_ApiId') ?: get_option('lusso_api_apiid');
+            $agencyId = getenv('P_Agency_FilterId') ?: get_option('lusso_api_agency_filterid');
+            if ($apiId) {
+                $params['P_ApiId'] = $apiId;
+            } elseif ($agencyId) {
+                $params['P_Agency_FilterId'] = $agencyId;
             }
+
+            // 3) Map UI → API
+            if ($location !== '') {
+                $params['P_Location'] = $location;
+            }
+            if ($bedsRaw !== '') {
+                $params['P_Beds'] = (substr($bedsRaw, -1) === '+') ? rtrim($bedsRaw, '+') . 'x' : $bedsRaw;
+            }
+            // (skip type mapping for now if not IDs)
+
+            // 4) Explicitly ignore area/province
+            // (do not add to $params)
+
+            // 5) Call client
             require_once __DIR__ . '/class-resales-client.php';
             $client = new Resales_Client();
-            $result = $client->search_properties_v6($input);
+            $result = $client->search_properties_v6($params);
             if (function_exists('rest_ensure_response')) {
                 $resp = rest_ensure_response($result);
                 $resp->header('X-RO-Query-Trace', 'on');

@@ -7,13 +7,10 @@
   $(function(){
     var $form = $('.lusso-filters');
     var $results = $('#lusso-search-results');
-    var $area = $('#lusso-filter-area');
+
     var $location = $('#lusso-filter-location');
+    var $subarea = $('#lusso-filter-subarea');
     var $searchBtn = $form.find('.lusso-filters__submit');
-    var areaLocations = $form.data('area-locations') || {};
-    if (typeof areaLocations === 'string') {
-      try { areaLocations = JSON.parse(areaLocations); } catch(e) { areaLocations = {}; }
-    }
 
     $form.on('keydown', function(e){
       if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !$(e.target).is($searchBtn)) {
@@ -22,19 +19,30 @@
       }
     });
 
-    $area.on('change', function(){
-      var area = $(this).val();
-      var locs = area && areaLocations[area] ? areaLocations[area] : [];
-      var allLocs = [];
-      $.each(areaLocations, function(_, arr){ allLocs = allLocs.concat(arr); });
-      allLocs = Array.from(new Set(allLocs));
-      var options = '<option value="">'+($location.data('all-label')||'All Locations')+'</option>';
-      (area ? locs : allLocs).forEach(function(loc){
-        options += '<option value="'+loc.replace(/"/g,'&quot;')+'">'+loc+'</option>';
+    // Al cambiar provincia, poblar location y subarea usando SearchLocations (window.LUSSO_FILTERS)
+    var config = window.LUSSO_FILTERS || {};
+    var $province = $form.find('select[name="province"]');
+    $province.on('change', function(){
+      var pv = $(this).val();
+      var locs = (pv && config.locationsByProvince && config.locationsByProvince[pv]) ? config.locationsByProvince[pv] : [];
+      $location.html('<option value="">Localidad</option>');
+      locs.forEach(function(loc){
+        $location.append('<option value="'+loc.replace(/"/g,'&quot;')+'">'+loc+'</option>');
       });
-      $location.html(options);
       $location.val('');
       $location.trigger('change');
+      $subarea.html('<option value="">Subárea</option>');
+      $subarea.val('');
+    });
+
+    $location.on('change', function(){
+      var lv = $(this).val();
+      var subas = (lv && config.subareasByLocation && config.subareasByLocation[lv]) ? config.subareasByLocation[lv] : [];
+      $subarea.html('<option value="">Subárea</option>');
+      subas.forEach(function(sa){
+        $subarea.append('<option value="'+sa.replace(/"/g,'&quot;')+'">'+sa+'</option>');
+      });
+      $subarea.val('');
     });
 
     function focusResults(){
@@ -74,34 +82,16 @@
 
     $form.on('submit', function(e){
       e.preventDefault();
-      setLoading(true);
-      // Allow-list estricto de parámetros
-      const allowed = [
-        'province', 'location', 'subarea', 'property_types',
-        'beds', 'baths', 'price_min', 'price_max', 'sort', 'new_devs_mode', 'page'
-      ];
-      const formData = {};
-      allowed.forEach(function(key){
-        const el = $form.find('[name="'+key+'"]');
-        if (el.length) {
-          const val = el.val();
-          if (val !== undefined && val !== null && val !== '') {
-            formData[key] = val;
-          }
-        }
-      });
-      // POST al endpoint REST (no enviar area, ni vacíos, ni params extra)
-      fetch(LUSSO_NEWDEVS.ajaxUrl, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: $.param(formData)
-      })
-      .then(r => r.json())
-      .then(renderResults)
-      .catch(function(){
-        $results.html('<div class="lusso-error">Error loading results.</div>');
-      });
+      // Solo enviar location, type, bedrooms en la URL
+      const location  = document.querySelector('select[name="location"]')?.value?.trim();
+      const type      = document.querySelector('select[name="type"]')?.value?.trim();
+      const bedrooms  = document.querySelector('select[name="bedrooms"]')?.value?.trim();
+      const qs = new URLSearchParams();
+      if (location) qs.set('location', location);
+      if (type)     qs.set('type', type);
+      if (bedrooms) qs.set('bedrooms', bedrooms);
+      const url = window.location.pathname + (qs.toString() ? '?' + qs.toString() : '');
+      window.location.assign(url);
     });
 
     $results.on('click', '.lusso-load-more', function(e){
@@ -129,60 +119,4 @@
     });
   });
 
-  // --- Poblar selects solo con window.LUSSO_FILTERS ---
-  function populateSelect(sel, options, placeholder) {
-    sel.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = placeholder;
-    sel.appendChild(opt);
-    if (Array.isArray(options) && options.length) {
-      options.forEach(val => {
-        const o = document.createElement('option');
-        o.value = val;
-        o.textContent = val;
-        sel.appendChild(o);
-      });
-      sel.disabled = false;
-    } else {
-      sel.disabled = true;
-    }
-// End IIFE
 
-  function initLussoFiltersConfig() {
-    const config = window.LUSSO_FILTERS || {};
-    const provinceSel = document.querySelector('select[name="province"]');
-    const locationSel = document.querySelector('select[name="location"]');
-    const subareaSel  = document.querySelector('select[name="subarea"]');
-    if (!provinceSel || !locationSel || !subareaSel) return;
-
-    // Poblar provincias
-    populateSelect(provinceSel, config.provinces, 'Provincia');
-
-    provinceSel.addEventListener('change', function() {
-      const pv = this.value;
-      const locs = (pv && config.locationsByProvince[pv]) ? config.locationsByProvince[pv] : [];
-      populateSelect(locationSel, locs, 'Localidad');
-      populateSelect(subareaSel, [], 'Subárea');
-    });
-
-    locationSel.addEventListener('change', function() {
-      const lv = this.value;
-      const subas = (lv && config.subareasByLocation[lv]) ? config.subareasByLocation[lv] : [];
-      populateSelect(subareaSel, subas, 'Subárea');
-    });
-
-    // Inicializar selects vacíos
-    populateSelect(locationSel, [], 'Localidad');
-    populateSelect(subareaSel, [], 'Subárea');
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      initLussoFiltersConfig();
-      if (typeof initDynamicFilters === 'function') initDynamicFilters();
-    });
-  } else {
-    initLussoFiltersConfig();
-    if (typeof initDynamicFilters === 'function') initDynamicFilters();
-  }

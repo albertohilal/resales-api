@@ -15,71 +15,58 @@ class Resales_Client {
      * @param array $input Normalized payload from REST endpoint
      * @return array
      */
-    public function search_properties_v6($input) {
-        // 1. Leer FilterId del panel (API Filter) desde config/env
-        $filterId = getenv('P_ApiId') ?: getenv('P_Agency_FilterId');
-            if (!$filterId) {
-                // fallback: opción WP
-                $filterId = get_option('lusso_api_filter_id') ?: get_option('lusso_agency_filter_id');
+    public function search_properties_v6($params) {
+        // 1) Base URL
+        $base = 'https://webapi.resales-online.com/V6/SearchProperties';
+
+        // 2) Start query with credentials
+        $this->api_user = get_option('resales_api_p1');
+        $this->api_key  = get_option('resales_api_p2');
+        $query = [
+            'p1' => $this->api_user,
+            'p2' => $this->api_key,
+        ];
+
+        // 3) Merge $params from rest-filters-v6.php
+        if (!empty($params)) $query = array_merge($query, $params);
+
+        // 4) Enforce ONE filter ID if missing
+        if (empty($query['P_Agency_FilterId']) && empty($query['P_ApiId'])) {
+            $apiId = getenv('P_ApiId') ?: get_option('lusso_api_apiid');
+            $agencyId = getenv('P_Agency_FilterId') ?: get_option('lusso_api_agency_filterid');
+            if ($apiId) {
+                $query['P_ApiId'] = $apiId;
+            } elseif ($agencyId) {
+                $query['P_Agency_FilterId'] = $agencyId;
             }
-            if (!$filterId) return ['success'=>false, 'error'=>'No FilterId'];
+        }
 
-            // 2. Localización
-            $p_location = null;
-            if (!empty($input['subarea'])) {
-                $p_location = $input['subarea'];
-            } elseif (!empty($input['location'])) {
-                $p_location = $input['location'];
-            } elseif (!empty($input['province'])) {
-                if (function_exists('lusso_filters_get_config')) {
-                    $cfg = lusso_filters_get_config();
-                    $prov = $input['province'];
-                    $locs = isset($cfg['locationsByProvince'][$prov]) ? $cfg['locationsByProvince'][$prov] : [];
-                    $p_location = implode(',', $locs);
-                }
-            }
+        // 5) Enforce New Developments only
+        $query['p_new_devs'] = 'only';
 
-            // 3. new_devs_mode
-            $p_new_devs = null;
-            if (!empty($input['new_devs_mode'])) {
-                $mode = $input['new_devs_mode'];
-                if (in_array($mode, ['only','include','exclude'])) $p_new_devs = $mode;
-            }
+        // 6) p_sandbox for diagnostics
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $query['p_sandbox'] = true;
+        }
 
-            // 4. Otros parámetros
-            $payload = [
-                'P_ApiId' => $filterId,
-            ];
-            if ($p_location) $payload['P_Location'] = $p_location;
-            if ($p_new_devs) $payload['p_new_devs'] = $p_new_devs;
-            if (!empty($input['property_types'])) $payload['P_PropertyTypes'] = $input['property_types'];
-            if (!empty($input['beds'])) $payload['P_Beds'] = (int)$input['beds'];
-            if (!empty($input['baths'])) $payload['P_Baths'] = (int)$input['baths'];
-            if (!empty($input['price_min'])) $payload['P_Min'] = (float)$input['price_min'];
-            if (!empty($input['price_max'])) $payload['P_Max'] = (float)$input['price_max'];
-            if (!empty($input['sort'])) $payload['P_SortType'] = $input['sort'];
-            if (!empty($input['page'])) $payload['p_PageNo'] = (int)$input['page'];
-            $payload['p_PageSize'] = 20;
-
-            // 5. NUNCA enviar Area ni P_All=TRUE
-            unset($payload['Area'], $payload['P_All']);
-
-            // 6. Cache: hash del JSON normalizado + FilterId + page
-            $cache_key = 'v6_' . md5(json_encode($payload) . $filterId . ($payload['p_PageNo'] ?? 1));
-            $cache = get_transient($cache_key);
-            if ($cache) {
-                error_log('[V6] Cache hit: ' . $cache_key);
-                return $cache;
-            }
-
-            // 7. Mostrar en log la URL/params (sin secretos)
-            error_log('[V6] SearchProperties payload: ' . json_encode($payload));
-
-            // 8. Llamada real a V6
-            $result = $this->request('SearchProperties', $payload);
-
-        // 9. Guardar en caché (TTL 5 min)
-        set_transient($cache_key, $result, 5 * MINUTE_IN_SECONDS);
-        return $result;
+        // 7) Build URL and GET
+        $url = $base . '?' . http_build_query($query);
+        $timeout = (int) get_option('resales_api_timeout', 20);
+        $args = [
+            'timeout' => $timeout,
+            'headers' => [ 'Accept' => 'application/json' ],
+        ];
+        $res = wp_remote_get($url, $args);
+        if (is_wp_error($res)) return ['success'=>false, 'error'=>$res->get_error_message()];
+        $code = wp_remote_retrieve_response_code($res);
+        $body = wp_remote_retrieve_body($res);
+        if ($code !== 200) {
+            return ['success'=>false, 'error'=>'HTTP '.$code, 'body'=>$body];
+        }
+        $json = json_decode($body, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return ['success'=>false, 'error'=>'JSON error', 'body'=>$body];
+        }
+        return $json;
     }
 }
