@@ -6,35 +6,36 @@
             // P_Beds: 2 (exact) or 2x (at least)
         'methods' => ['POST', 'GET'],
         'callback' => function($request) {
-            // 1) Sanitize GET
-            $location = isset($_GET['location']) ? sanitize_text_field(wp_unslash($_GET['location'])) : '';
-            $type     = isset($_GET['type']) ? sanitize_text_field(wp_unslash($_GET['type'])) : '';
-            $bedsRaw  = isset($_GET['bedrooms']) ? sanitize_text_field(wp_unslash($_GET['bedrooms'])) : '';
 
-            // 2) Base params (only V6-supported keys)
-            $params = [
-                'p_new_devs' => 'only',
-            ];
-            // Agency FilterId or ApiId (prefer ApiId if set)
-            $apiId = getenv('P_ApiId') ?: get_option('lusso_api_apiid');
-            $agencyId = getenv('P_Agency_FilterId') ?: get_option('lusso_api_agency_filterid');
-            if ($apiId) {
-                $params['P_ApiId'] = $apiId;
-            } elseif ($agencyId) {
-                $params['P_Agency_FilterId'] = $agencyId;
-            }
+                        // 1) Sanitize GET
+                                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                                        error_log('[REST IN] ' . json_encode($_GET, JSON_UNESCAPED_UNICODE));
+                                    }
 
-            // 3) Map UI → API
-            if ($location !== '') {
-                $params['P_Location'] = $location;
-            }
-            if ($bedsRaw !== '') {
-                $params['P_Beds'] = (substr($bedsRaw, -1) === '+') ? rtrim($bedsRaw, '+') . 'x' : $bedsRaw;
-            }
-            // (skip type mapping for now if not IDs)
+                                    $location = isset($_GET['location']) ? sanitize_text_field(wp_unslash($_GET['location'])) : '';
+                                    $typeTxt  = isset($_GET['type']) ? sanitize_text_field(wp_unslash($_GET['type'])) : '';
+                                    $bedsRaw  = isset($_GET['bedrooms']) ? sanitize_text_field(wp_unslash($_GET['bedrooms'])) : '';
 
-            // 4) Explicitly ignore area/province
-            // (do not add to $params)
+                                    $params = [];
+                                    if ($location !== '') $params['P_Location'] = $location;
+
+                                    // bedrooms: exacto vs 1+
+                                    if ($bedsRaw !== '') {
+                                        $params['P_Beds'] = (substr($bedsRaw, -1) === '+')
+                                            ? rtrim($bedsRaw, '+') . 'x'
+                                            : $bedsRaw;
+                                    }
+
+                                    // Mapear type "apartment" → IDs para P_PropertyTypes (temporal: sólo si coincide)
+                                    if ($typeTxt !== '') {
+                                        $map = [
+                                            'apartment' => '<<ID_APARTMENT>>', // sustituye por los IDs reales CSV
+                                            // 'villa' => '<<ID_VILLA>>', ...
+                                        ];
+                                        if (!empty($map[$typeTxt])) $params['P_PropertyTypes'] = $map[$typeTxt];
+                                    }
+
+                                    return $this->client->search_properties_v6($params);
 
             // 5) Call client
             require_once __DIR__ . '/class-resales-client.php';

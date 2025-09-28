@@ -16,6 +16,65 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+    /*
+     * ==== Resales-Online Web API V6 — SearchProperties: Parámetros y ejemplos oficiales ====
+     *
+     * Common parameters:
+     *   p1                    (required) — identificador del agente  
+     *   p2                    (required) — API key del agente  
+     *   p_sandbox             (optional) — si TRUE devuelve sección “transaction” con diagnóstico  
+     *   p_output              (optional) — formato de salida (JSON / XML)  
+     *   P_ApiId               (required if P_Agency_FilterId missing) — filtro del panel  
+     *   P_Agency_FilterId     (required if P_ApiId missing) — filtro del panel  
+     *
+     * Filtros específicos de búsqueda:
+     *   p_new_devs            include | exclude | only — filtrar nuevos desarrollos  
+     *   P_Location            nombre o lista CSV de ubicaciones  
+     *   P_PropertyTypes       IDs de tipo de propiedad (CSV)  
+     *   P_Beds                número exacto o con sufijo “x” para “al menos”  
+     *   P_Baths               número exacto o “x”  
+     *   P_MustHaveFeatures    IDs de características obligatorias  
+     *   P_MinPrice / P_MaxPrice — rangos de precio  
+     *   P_Dimension           tamaño / metros cuadrados  
+     *   P_RTA                 número de licencia de alquiler (nuevo parámetro agregado en V6)  
+     *   P_QueryId             token de consulta para paginación  
+     *   P_PageNo              número de página  
+     *   P_PageSize            cantidad por página  
+     *   P_RemoveLocation      lista de ubicaciones a excluir si P_Location vacío  
+     *   P_SortType            orden de resultados (precio ascendente, descendente, fecha, etc.)  
+     *
+     * Ejemplos:
+     *   /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY&p_sandbox=true
+     *   /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY&P_Location=Benalmadena
+     *   /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY&P_Location=Benalmadena&P_PropertyTypes=2-1,3-1
+     *   /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY&P_Location=Benalmadena&P_Beds=3x&p_new_devs=only
+     *   /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY&P_Beds=2&P_PageSize=5
+     *
+     * Nota: la respuesta siempre está limitada por las condiciones del filtro del panel usado (P_ApiId o P_Agency_FilterId).
+     * Para más referencia completa, ver la documentación oficial en el repositorio de Resales-Online Web API V6.  
+     */
+    /*
+     * Resales-Online Web API V6 — SearchProperties parameters:
+     *  Required: p1 (agent id), p2 (api key)
+     *  Either P_ApiId or P_Agency_FilterId (obligatorio uno)
+     *  Optional:
+     *    p_sandbox (true = retorna sección “transaction”)
+     *    p_output (JSON o XML)
+     *    p_new_devs (include | exclude | only) — para filtrar nuevos desarrollos
+     *    P_Location (nombre o lista CSV de localizaciones)
+     *    P_PropertyTypes (IDs CSV)
+     *    P_Beds (número exacto, o con sufijo “x” = al menos)
+     *    P_Baths (similar)
+     *    P_MustHaveFeatures (filtros por características)
+     *    P_Dimension, P_MinPrice, P_MaxPrice, P_RTA, etc.  
+     *    P_QueryId, P_PageNo, P_PageSize — para paginación
+     *
+     *  Ejemplos de uso:
+     *    /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY& P_Location=Benalmadena
+     *    /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY& P_Location=Benalmadena&P_PropertyTypes=2-1,3-1
+     *    /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY& P_Location=Benalmadena&P_Beds=3x&p_new_devs=only
+     *    /V6/SearchProperties?p_agency_filterid=1&p1=XXX&p2=YYY& P_Beds=2&P_PageSize=5 
+     */
         // 1) Base URL
         $base = 'https://webapi.resales-online.com/V6/SearchProperties';
 
@@ -32,21 +91,17 @@ class Resales_Client {
 
         // 4) Enforce ONE filter ID if missing
         if (empty($query['P_Agency_FilterId']) && empty($query['P_ApiId'])) {
-            $apiId = getenv('P_ApiId') ?: get_option('lusso_api_apiid');
-            $agencyId = getenv('P_Agency_FilterId') ?: get_option('lusso_api_agency_filterid');
-            if ($apiId) {
-                $query['P_ApiId'] = $apiId;
-            } elseif ($agencyId) {
-                $query['P_Agency_FilterId'] = $agencyId;
+            $query['P_Agency_FilterId'] = (int) get_option('lusso_agency_filter_id');
+            if (empty($query['P_Agency_FilterId']) && empty($query['P_ApiId'])) {
+                error_log('[resales-api][ERROR] Falta P_ApiId/P_Agency_FilterId');
+                return new WP_Error('missing_filter', 'Falta filtro de API.');
             }
         }
 
-        // 5) Enforce New Developments only
-        $query['p_new_devs'] = 'only';
-
-        // 6) p_sandbox for diagnostics
+        $query['p_new_devs'] = 'only';  // si tu web es solo ND
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            $query['p_sandbox'] = true;
+            $query['p_sandbox'] = 'true';
+            error_log('[V6 OUT] ' . json_encode($query, JSON_UNESCAPED_UNICODE));
         }
 
         // 7) Build URL and GET
