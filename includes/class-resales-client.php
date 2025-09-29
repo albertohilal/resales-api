@@ -36,6 +36,37 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+        // --- 0) Normaliza y asegura P_Location en el payload ---
+        // 0.1) Fuente primaria: $params['P_Location'] (viene del shortcode)
+        $p_location = '';
+        if (isset($params['P_Location']) && $params['P_Location'] !== '') {
+            $p_location = (string) $params['P_Location'];
+        }
+        // 0.2) (Respaldo) Si no vino en $params pero sí en $_GET['location'] (carga directa con ?location=)
+        if ($p_location === '' && isset($_GET['location'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $p_location = sanitize_text_field(wp_unslash((string)$_GET['location'])); // phpcs:ignore
+        }
+
+        // 0.3) Copia explícita al contenedor real que se envía (payload o query) ANTES del wp_remote_*.
+        //     *No* logs con valores crudos: solo banderas.
+        if (!empty($p_location)) {
+            // si usas $payload para POST:
+            if (isset($payload) && is_array($payload)) {
+                $payload['P_Location'] = $p_location;
+            }
+            // si usas $query para GET/POST:
+            if (isset($query) && is_array($query)) {
+                $query['P_Location'] = $p_location;
+            }
+        }
+
+        // 0.4) Logs de control (solo banderas, sin datos sensibles)
+        if (function_exists('resales_safe_log')) {
+            resales_safe_log('REQ PAYLOAD', [
+                'payload_keys'   => array_keys(($payload ?? $query ?? [])),
+                'P_Location_set' => (isset(($payload ?? $query)['P_Location']) && ($payload ?? $query)['P_Location'] !== '') ? 'yes' : 'no',
+            ]);
+        }
         // Log seguro de filtros antes de la petición HTTP
         $has_agency = isset($payload['P_Agency_FilterId']) ? 'yes' : 'no';
         $has_api    = isset($payload['P_ApiId']) ? 'yes' : 'no';
