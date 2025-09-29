@@ -264,6 +264,15 @@ final class Resales_Filters_Shortcode {
 	 * @return string HTML
 	 */
 	public function render_shortcode( $atts = [], $content = '', $tag = '' ) {
+		// Log opcional para depuración de submits y presencia de location
+		if (function_exists('resales_safe_log')) {
+			resales_safe_log('SHORTCODE FORM SUBMIT', [
+				'GET_location' => isset($_GET['location']) ? $_GET['location'] : null,
+				'GET_area' => isset($_GET['area']) ? $_GET['area'] : null,
+				'GET_type' => isset($_GET['type']) ? $_GET['type'] : null,
+				'GET_bedrooms' => isset($_GET['bedrooms']) ? $_GET['bedrooms'] : null,
+			]);
+		}
 		$filters = Resales_Filters::instance();
 
 		$selected_area = isset( $_GET['area'] )
@@ -276,8 +285,8 @@ final class Resales_Filters_Shortcode {
 
 				ob_start();
 				?>
-				<div class="resales-filters-wrapper">
-				  <form id="lusso-filters" class="resales-filters-form" method="get" action="">
+								<div class="resales-filters-wrapper">
+									<form id="lusso-filters" class="resales-filters-form" method="get" action="">
 				    <div class="filter-field">
 				      <?php
 				        // Área
@@ -326,11 +335,11 @@ final class Resales_Filters_Shortcode {
 				        <option value="5" <?php selected(isset($_GET['bedrooms']) ? $_GET['bedrooms'] : '', '5'); ?>>5+</option>
 				      </select>
 				    </div>
-				    <div class="filter-field lusso-filters__submit">
-					  <button type="button" data-role="search" class="button">
-				        <?php esc_html_e( 'Search', 'resales-api' ); ?>
-				      </button>
-				    </div>
+										<div class="filter-field lusso-filters__submit">
+	<button type="submit" data-role="search" class="button">
+				<?php esc_html_e( 'Search', 'resales-api' ); ?>
+			</button>
+		</div>
 				  </form>
 				</div>
 				<?php
