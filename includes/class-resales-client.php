@@ -36,6 +36,36 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+        // ... después de decodificar JSON ...
+        if (isset($json['transaction']['parameters'])) {
+            error_log('[resales-api][SAFELOG] V6 TXN PARAMS | ' . json_encode([
+                'accepted' => array_keys((array)$json['transaction']['parameters']),
+            ], JSON_UNESCAPED_UNICODE));
+        }
+        // Normaliza fuente
+        $p_location = '';
+        if (!empty($params['P_Location'])) $p_location = (string) $params['P_Location'];
+        if ($p_location === '' && isset($_GET['location'])) {
+            $p_location = sanitize_text_field(wp_unslash((string)$_GET['location']));
+        }
+
+        // Copia al contenedor real que envías
+        if ($p_location !== '') {
+            if (isset($payload) && is_array($payload)) $payload['P_Location'] = $p_location;
+            if (isset($query) && is_array($query)) $query['P_Location'] = $p_location;
+        }
+                // --- LOGS OBLIGATORIOS ANTES DE LA PETICIÓN HTTP ---
+                // Aquí ya tienes el array que realmente envías ($payload o $query)
+                error_log('[resales-api][SAFELOG] REQ PAYLOAD (FILTER CHECK) | ' . json_encode([
+                    'has_P_Agency_FilterId' => isset($payload['P_Agency_FilterId']) ? 'yes' : 'no',
+                    'has_P_ApiId'           => isset($payload['P_ApiId'])           ? 'yes' : 'no',
+                ], JSON_UNESCAPED_UNICODE));
+
+                error_log('[resales-api][SAFELOG] REQ PAYLOAD | ' . json_encode([
+                    'payload_keys'   => array_keys($payload ?? $query ?? []),
+                    'P_Location_set' => (isset(($payload ?? $query)['P_Location']) && ($payload ?? $query)['P_Location'] !== '') ? 'yes' : 'no',
+                ], JSON_UNESCAPED_UNICODE));
+    error_log('[resales-api][TRACE] ENTER search_properties_v6');
         // --- 0) Normaliza y asegura P_Location en el payload ---
         // 0.1) Fuente primaria: $params['P_Location'] (viene del shortcode)
         $p_location = '';
