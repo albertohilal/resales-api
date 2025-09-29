@@ -42,9 +42,13 @@ class Resales_Client {
             'has_P_ApiId'           => isset($query['P_ApiId']) ? 'yes' : 'no',
         ]);
         resales_safe_log('REQ PAYLOAD', [
-            'payload_keys'   => array_keys($query),
-            'P_Location_set' => (isset($query['P_Location']) && $query['P_Location'] !== '') ? 'yes' : 'no',
+            'payload_keys'   => array_keys($query ?? $payload ?? []),
+            'P_Location_set' => (isset(($query ?? $payload)['P_Location']) && ($query ?? $payload)['P_Location'] !== '') ? 'yes' : 'no',
         ]);
+        // Sandbox si WP_DEBUG
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $query['p_sandbox'] = true;
+        }
         // 1. Determinar P_Location desde $params o $_GET['location']
         $location_source = 'none';
         $p_location = null;
@@ -224,9 +228,6 @@ class Resales_Client {
         // 3. Loguear transaction si existe
         if (isset($json['transaction'])) {
             resales_safe_log('V6 TRANSACTION', ['keys' => array_keys($json['transaction'])]);
-            if (isset($json['transaction']['parameters'])) {
-                resales_safe_log('V6 TXN PARAMS', ['accepted' => array_keys($json['transaction']['parameters'])]);
-            }
         }
         return $json;
     }
