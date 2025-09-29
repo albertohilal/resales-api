@@ -264,27 +264,36 @@ final class Resales_Filters_Shortcode {
 	 * @return string HTML
 	 */
 	public function render_shortcode( $atts = [], $content = '', $tag = '' ) {
+		// Logging de banderas GET para location
+		if (function_exists('resales_safe_log')) {
+			resales_safe_log('SC GET', [
+				'has_location' => isset($_GET['location']) ? 'yes' : 'no',
+				'location_val' => isset($_GET['location']) && $_GET['location'] !== '' ? '***' : 'empty'
+			]);
+		}
 		// Leer location y area desde GET, sanitizar
 		$selected_area = isset($_GET['area']) ? sanitize_text_field(wp_unslash((string)$_GET['area'])) : '';
 		$selected_location = isset($_GET['location']) ? sanitize_text_field(wp_unslash((string)$_GET['location'])) : '';
 
+		$area_inferred = 'no';
 		// Si no hay área pero sí location, inferir área
 		if ($selected_area === '' && $selected_location !== '') {
 			foreach (Resales_Filters::$LOCATIONS as $area_label => $locs) {
 				foreach ($locs as $item) {
 					if (isset($item['value']) && $item['value'] === $selected_location) {
 						$selected_area = $area_label;
+						$area_inferred = 'yes';
 						break 2;
 					}
 				}
 			}
 		}
 
-		// Log banderas de GET y args
+		// Log banderas de GET y área inferida
 		if (function_exists('resales_safe_log')) {
 			resales_safe_log('SHORTCODE ARGS', [
 				'location_get' => $selected_location !== '' ? 'yes' : 'no',
-				'args_has_P_Location' => (isset($atts['P_Location']) ? 'yes' : 'no'),
+				'area_inferred' => ($selected_area !== '' && !isset($_GET['area'])) ? 'yes' : 'no',
 			]);
 		}
 		$filters = Resales_Filters::instance();

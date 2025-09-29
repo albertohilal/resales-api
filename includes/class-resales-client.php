@@ -37,17 +37,33 @@ class Resales_Client {
      */
     public function search_properties_v6($params) {
         // Log seguro de filtros antes de la petición HTTP
-        resales_safe_log('REQ PAYLOAD (FILTER CHECK)', [
-            'has_P_Agency_FilterId' => isset($query['P_Agency_FilterId']) ? 'yes' : 'no',
-            'has_P_ApiId'           => isset($query['P_ApiId']) ? 'yes' : 'no',
-        ]);
+        $has_agency = isset($payload['P_Agency_FilterId']) ? 'yes' : 'no';
+        $has_api    = isset($payload['P_ApiId']) ? 'yes' : 'no';
+        // Solo uno debe ser 'yes'
+        if ($has_agency === $has_api) {
+            resales_safe_log('REQ PAYLOAD (FILTER CHECK)', [
+                'error' => 'Debe haber exactamente uno en yes',
+                'has_P_Agency_FilterId' => $has_agency,
+                'has_P_ApiId'           => $has_api,
+            ]);
+        } else {
+            resales_safe_log('REQ PAYLOAD (FILTER CHECK)', [
+                'has_P_Agency_FilterId' => $has_agency,
+                'has_P_ApiId'           => $has_api,
+            ]);
+        }
+        $payload_keys = array_keys($payload ?? $query ?? []);
         resales_safe_log('REQ PAYLOAD', [
-            'payload_keys'   => array_keys($query ?? $payload ?? []),
-            'P_Location_set' => (isset(($query ?? $payload)['P_Location']) && ($query ?? $payload)['P_Location'] !== '') ? 'yes' : 'no',
+            'payload_keys_includes_P_Location' => in_array('P_Location', $payload_keys, true) ? 'yes' : 'no',
+            'P_Location_set' => (isset(($payload ?? $query)['P_Location']) && ($payload ?? $query)['P_Location'] !== '') ? 'yes' : 'no',
         ]);
         // Sandbox si WP_DEBUG
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            $query['p_sandbox'] = true;
+            if (isset($payload)) {
+                $payload['p_sandbox'] = true;
+            } elseif (isset($query)) {
+                $query['p_sandbox'] = true;
+            }
         }
         // 1. Determinar P_Location desde $params o $_GET['location']
         $location_source = 'none';
