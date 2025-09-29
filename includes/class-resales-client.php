@@ -1,4 +1,24 @@
 <?php
+// Helper para logging seguro de parámetros sensibles
+if (!function_exists('resales_safe_log')) {
+    /**
+     * Log seguro para credenciales y parámetros sensibles.
+     * @param string $msg
+     * @param array $context
+     */
+    function resales_safe_log($msg, $context = []) {
+        $sensitive = ['P1', 'P2', 'Filter', 'FilterId', 'ApiId', 'ApiKey', 'Password', 'Key'];
+        $safe = [];
+        foreach ($context as $k => $v) {
+            if (in_array($k, $sensitive, true)) {
+                $safe[$k] = '***REDACTED***';
+            } else {
+                $safe[$k] = $v;
+            }
+        }
+        error_log('[resales-api][SAFELOG] ' . $msg . ' | ' . json_encode($safe, JSON_UNESCAPED_UNICODE));
+    }
+}
 if (!defined('ABSPATH')) exit;
 
 class Resales_Client {
@@ -16,6 +36,11 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+        // --- LOG seguro del payload antes de la petición HTTP ---
+        resales_safe_log('REQ PAYLOAD', [
+            'P_Location_set' => isset($query['P_Location']) ? 'yes' : 'no',
+            'payload_keys'   => array_keys($query),
+        ]);
         // 1) Fallback constante para API Filter si no hay opción
         if (!defined('RESALES_API_DEFAULT_FILTER_ID')) {
             define('RESALES_API_DEFAULT_FILTER_ID', 65503); // TODO: reemplazar por el FilterId real
@@ -90,9 +115,20 @@ class Resales_Client {
             'p2' => $this->api_key,
         ];
 
-    // 3) Mapear filtros del front (location, type, bedrooms)
-    // Siempre enviar el filtro fijo
-    $query['P_Agency_FilterId'] = RESALES_API_DEFAULT_FILTER_ID;
+        // 3) Mapear filtros del front (location, type, bedrooms)
+        // Siempre enviar el filtro fijo
+        $query['P_Agency_FilterId'] = RESALES_API_DEFAULT_FILTER_ID;
+        // --- LOG seguro de presencia de credenciales y filtro ---
+        $resP1 = $query['p1'];
+        $resP2 = $query['p2'];
+        $resFilter = isset($query['P_Agency_FilterId']) ? $query['P_Agency_FilterId'] : (isset($query['P_ApiId']) ? $query['P_ApiId'] : null);
+        $filterType = isset($query['P_Agency_FilterId']) ? 'P_Agency_FilterId' : (isset($query['P_ApiId']) ? 'P_ApiId' : 'none');
+        resales_safe_log('CHECK PARAMS', [
+            'P1' => !empty($resP1) ? 'set' : 'missing',
+            'P2' => !empty($resP2) ? 'set' : 'missing',
+            'Filter' => !empty($resFilter) ? 'set' : 'missing',
+            'FilterType' => $filterType
+        ]);
         // Mapear location
         if (!empty($_GET['location'])) {
             $query['P_Location'] = sanitize_text_field($_GET['location']);

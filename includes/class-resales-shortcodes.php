@@ -281,6 +281,15 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
     /* ---- Shortcode principal ---- */
 
     public function shortcode_properties($atts) {
+      // Logging seguro de location
+      $args = [];
+      if (isset($_GET['location'])) {
+        $args['P_Location'] = sanitize_text_field($_GET['location']);
+      }
+      resales_safe_log('SHORTCODE ARGS', [
+        'location_get' => isset($_GET['location']) ? 'yes' : 'no',
+        'args_has_P_Location' => isset($args['P_Location']) ? 'yes' : 'no',
+      ]);
       $atts = shortcode_atts([
         'api_id'           => '',   // opcional: forzar P_ApiId
         'page'             => 1,
