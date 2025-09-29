@@ -36,6 +36,7 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+    error_log('[resales-api][TRACE] ENTER search_properties_v6');
         // ... después de decodificar JSON ...
         if (isset($json['transaction']['parameters'])) {
             error_log('[resales-api][SAFELOG] V6 TXN PARAMS | ' . json_encode([
@@ -145,7 +146,7 @@ class Resales_Client {
         ]);
         // 1) Fallback constante para API Filter si no hay opción
         if (!defined('RESALES_API_DEFAULT_FILTER_ID')) {
-            define('RESALES_API_DEFAULT_FILTER_ID', 65503); // TODO: reemplazar por el FilterId real
+            define('RESALES_API_DEFAULT_FILTER_ID', 1); // Filtro de ejemplo: p_agency_filterid=1
         }
     /*
      * ==== Resales-Online Web API V6 — SearchProperties: Parámetros y ejemplos oficiales ====
@@ -273,10 +274,17 @@ class Resales_Client {
             $query['p_sandbox'] = true;
         }
         // 2b. Log de payload antes de la petición
-        resales_safe_log('REQ PAYLOAD', [
-            'payload_keys' => array_keys($query),
-            'P_Location_set' => (isset($query['P_Location']) && $query['P_Location'] !== '') ? 'yes' : 'no',
-        ]);
+
+                // --- LOGS OBLIGATORIOS ANTES DE LA PETICIÓN HTTP ---
+                error_log('[resales-api][SAFELOG] REQ PAYLOAD (FILTER CHECK) | ' . json_encode([
+                    'has_P_Agency_FilterId' => isset($query['P_Agency_FilterId']) ? 'yes' : 'no',
+                    'has_P_ApiId'           => isset($query['P_ApiId'])           ? 'yes' : 'no',
+                ], JSON_UNESCAPED_UNICODE));
+
+                error_log('[resales-api][SAFELOG] REQ PAYLOAD | ' . json_encode([
+                    'payload_keys'   => array_keys($query),
+                    'P_Location_set' => (isset($query['P_Location']) && $query['P_Location'] !== '') ? 'yes' : 'no',
+                ], JSON_UNESCAPED_UNICODE));
 
         // 7) Build URL and GET
         $url = $base . '?' . http_build_query($query);
