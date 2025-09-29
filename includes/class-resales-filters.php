@@ -264,24 +264,30 @@ final class Resales_Filters_Shortcode {
 	 * @return string HTML
 	 */
 	public function render_shortcode( $atts = [], $content = '', $tag = '' ) {
-		// Log opcional para depuración de submits y presencia de location
+		// Leer location y area desde GET, sanitizar
+		$selected_area = isset($_GET['area']) ? sanitize_text_field(wp_unslash((string)$_GET['area'])) : '';
+		$selected_location = isset($_GET['location']) ? sanitize_text_field(wp_unslash((string)$_GET['location'])) : '';
+
+		// Si no hay área pero sí location, inferir área
+		if ($selected_area === '' && $selected_location !== '') {
+			foreach (Resales_Filters::$LOCATIONS as $area_label => $locs) {
+				foreach ($locs as $item) {
+					if (isset($item['value']) && $item['value'] === $selected_location) {
+						$selected_area = $area_label;
+						break 2;
+					}
+				}
+			}
+		}
+
+		// Log banderas de GET y args
 		if (function_exists('resales_safe_log')) {
-			resales_safe_log('SHORTCODE FORM SUBMIT', [
-				'GET_location' => isset($_GET['location']) ? $_GET['location'] : null,
-				'GET_area' => isset($_GET['area']) ? $_GET['area'] : null,
-				'GET_type' => isset($_GET['type']) ? $_GET['type'] : null,
-				'GET_bedrooms' => isset($_GET['bedrooms']) ? $_GET['bedrooms'] : null,
+			resales_safe_log('SHORTCODE ARGS', [
+				'location_get' => $selected_location !== '' ? 'yes' : 'no',
+				'args_has_P_Location' => (isset($atts['P_Location']) ? 'yes' : 'no'),
 			]);
 		}
 		$filters = Resales_Filters::instance();
-
-		$selected_area = isset( $_GET['area'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['area'] ) )
-			: '';
-
-		$selected_location = isset( $_GET['location'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['location'] ) )
-			: '';
 
 				ob_start();
 				?>

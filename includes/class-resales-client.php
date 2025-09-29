@@ -36,10 +36,22 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
-        // --- LOG seguro del payload antes de la petición HTTP ---
-        resales_safe_log('REQ PAYLOAD', [
-            'P_Location_set' => isset($query['P_Location']) ? 'yes' : 'no',
-            'payload_keys'   => array_keys($query),
+        // 1. Determinar P_Location desde $params o $_GET['location']
+        $location_source = 'none';
+        $p_location = null;
+        if (isset($params['P_Location']) && !empty($params['P_Location'])) {
+            $p_location = $params['P_Location'];
+            $location_source = 'params';
+        } elseif (!empty($_GET['location'])) {
+            $p_location = sanitize_text_field(wp_unslash($_GET['location']));
+            $location_source = 'get';
+        }
+        // 1b. Log de banderas de presencia
+        resales_safe_log('CHECK PARAMS', [
+            'P_Location_source' => $location_source,
+            'P_Location_set' => $p_location ? 'set' : 'missing',
+            'params_keys' => array_keys($params),
+            'GET_location' => isset($_GET['location']) ? 'present' : 'absent',
         ]);
         // 1) Fallback constante para API Filter si no hay opción
         if (!defined('RESALES_API_DEFAULT_FILTER_ID')) {
@@ -129,13 +141,15 @@ class Resales_Client {
             'Filter' => !empty($resFilter) ? 'set' : 'missing',
             'FilterType' => $filterType
         ]);
-        // Mapear location
-        if (!empty($_GET['location'])) {
-            $query['P_Location'] = sanitize_text_field($_GET['location']);
+        // Mapear location: priorizar $params['P_Location'], luego $p_location
+        if (isset($params['P_Location']) && $params['P_Location'] !== '') {
+            $query['P_Location'] = $params['P_Location'];
+        } elseif (isset($p_location) && $p_location) {
+            $query['P_Location'] = $p_location;
         }
         // Mapear type
         if (!empty($_GET['type'])) {
-            $query['P_PropertyTypes'] = sanitize_text_field($_GET['type']);
+            $query['P_PropertyTypes'] = sanitize_text_field(wp_unslash($_GET['type']));
         }
         // Mapear bedrooms
         if (!empty($_GET['bedrooms'])) {
@@ -159,11 +173,15 @@ class Resales_Client {
         }
 
         $query['p_new_devs'] = 'only';  // si tu web es solo ND
-        // Diagnóstico temporal
-        $query['P_sandbox'] = true;
+        // 2. Añadir p_sandbox solo si WP_DEBUG
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[V6 OUT] ' . json_encode($query, JSON_UNESCAPED_UNICODE));
+            $query['p_sandbox'] = true;
         }
+        // 2b. Log de payload antes de la petición
+        resales_safe_log('REQ PAYLOAD', [
+            'payload_keys' => array_keys($query),
+            'P_Location_set' => (isset($query['P_Location']) && $query['P_Location'] !== '') ? 'yes' : 'no',
+        ]);
 
         // 7) Build URL and GET
         $url = $base . '?' . http_build_query($query);
@@ -183,9 +201,12 @@ class Resales_Client {
         if (json_last_error() !== JSON_ERROR_NONE) {
             return ['success'=>false, 'error'=>'JSON error', 'body'=>$body];
         }
-        // Loguear el bloque transaction si existe
+        // 3. Loguear transaction si existe
         if (isset($json['transaction'])) {
-            error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
+            resales_safe_log('V6 TRANSACTION', ['keys' => array_keys($json['transaction'])]);
+            if (isset($json['transaction']['parameters'])) {
+                resales_safe_log('V6 TXN PARAMS', ['accepted' => array_keys($json['transaction']['parameters'])]);
+            }
         }
         return $json;
     }
