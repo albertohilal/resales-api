@@ -36,6 +36,12 @@ class Resales_Client {
      * @return array
      */
     public function search_properties_v6($params) {
+        // Log seguro de filtros antes de la petición HTTP
+        resales_safe_log('REQ PAYLOAD (FILTER CHECK)', [
+            'has_P_Agency_FilterId' => isset($query['P_Agency_FilterId']) ? 'yes' : 'no',
+            'has_P_ApiId'           => isset($query['P_ApiId']) ? 'yes' : 'no',
+            'filter_id_value'       => isset($query['P_Agency_FilterId']) ? '***REDACTED***' : (isset($query['P_ApiId']) ? '***REDACTED***' : 'none'),
+        ]);
         // 1. Determinar P_Location desde $params o $_GET['location']
         $location_source = 'none';
         $p_location = null;
@@ -147,6 +153,11 @@ class Resales_Client {
         } elseif (isset($p_location) && $p_location) {
             $query['P_Location'] = $p_location;
         }
+        // Log de payload antes de la petición
+        resales_safe_log('REQ PAYLOAD', [
+            'payload_keys' => array_keys($query),
+            'P_Location_set' => (isset($query['P_Location']) && $query['P_Location'] !== '') ? 'yes' : 'no',
+        ]);
         // Mapear type
         if (!empty($_GET['type'])) {
             $query['P_PropertyTypes'] = sanitize_text_field(wp_unslash($_GET['type']));
@@ -200,6 +211,12 @@ class Resales_Client {
         $json = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             return ['success'=>false, 'error'=>'JSON error', 'body'=>$body];
+        }
+        // Loguear parámetros aceptados por la transacción si existen
+        if (isset($json['transaction'])) {
+            resales_safe_log('V6 TXN PARAMS', [
+                'accepted' => array_keys((array)($json['transaction']['parameters'] ?? []))
+            ]);
         }
         // 3. Loguear transaction si existe
         if (isset($json['transaction'])) {
