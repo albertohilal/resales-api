@@ -40,7 +40,10 @@ class Resales_Client {
         resales_safe_log('REQ PAYLOAD (FILTER CHECK)', [
             'has_P_Agency_FilterId' => isset($query['P_Agency_FilterId']) ? 'yes' : 'no',
             'has_P_ApiId'           => isset($query['P_ApiId']) ? 'yes' : 'no',
-            'filter_id_value'       => isset($query['P_Agency_FilterId']) ? '***REDACTED***' : (isset($query['P_ApiId']) ? '***REDACTED***' : 'none'),
+        ]);
+        resales_safe_log('REQ PAYLOAD', [
+            'payload_keys'   => array_keys($query),
+            'P_Location_set' => (isset($query['P_Location']) && $query['P_Location'] !== '') ? 'yes' : 'no',
         ]);
         // 1. Determinar P_Location desde $params o $_GET['location']
         $location_source = 'none';
@@ -213,9 +216,9 @@ class Resales_Client {
             return ['success'=>false, 'error'=>'JSON error', 'body'=>$body];
         }
         // Loguear parámetros aceptados por la transacción si existen
-        if (isset($json['transaction'])) {
+        if (isset($json['transaction']['parameters'])) {
             resales_safe_log('V6 TXN PARAMS', [
-                'accepted' => array_keys((array)($json['transaction']['parameters'] ?? []))
+                'accepted' => array_keys((array)$json['transaction']['parameters'])
             ]);
         }
         // 3. Loguear transaction si existe
