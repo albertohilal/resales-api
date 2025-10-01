@@ -10,9 +10,18 @@
             // P_Beds: 2 (exact) or 2x (at least)
             'methods' => ['POST', 'GET'],
             'callback' => function($request) {
+
                 if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('[REST IN] ' . json_encode($_GET, JSON_UNESCAPED_UNICODE));
                 }
+
+                // --- LOG CREDENCIALES Y ARGUMENTOS ENVIADOS ---
+                $api_user = get_option('resales_api_p1');
+                $api_key = get_option('resales_api_p2');
+                $filter_id = defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 'NO_DEF';
+                $api_key_masked = $api_key ? substr($api_key, 0, 4) . str_repeat('*', max(0, strlen($api_key)-8)) . substr($api_key, -4) : '';
+                error_log('[Resales API][CRED] p1=' . $api_user . ' p2=' . $api_key_masked . ' FilterId=' . $filter_id);
+                error_log('[Resales API][ARGS] ' . json_encode($_GET, JSON_UNESCAPED_UNICODE));
 
                 $location = isset($_GET['location']) ? sanitize_text_field(wp_unslash($_GET['location'])) : '';
                 $typeTxt  = isset($_GET['type']) ? sanitize_text_field(wp_unslash($_GET['type'])) : '';

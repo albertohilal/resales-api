@@ -1,9 +1,6 @@
 <?php
-// ================================
-// Helper de logging para Resales API
-// ================================
-if (!defined('RESALES_LOG_LEVEL')) define('RESALES_LOG_LEVEL', 'WARN'); // DEBUG|INFO|WARN|ERROR
-
+require_once __DIR__ . '/includes/class-resales-rest.php';
+// Helper de logging para Resales API (debe estar disponible para todas las clases)
 if (!function_exists('resales_log')) {
     function resales_log($level, $msg, $context = null) {
         $levels = ['DEBUG'=>0,'INFO'=>1,'WARN'=>2,'ERROR'=>3];
@@ -25,6 +22,67 @@ if (!function_exists('resales_log')) {
         error_log($line);
     }
 }
+// Handler AJAX para búsqueda de propiedades (V6 SearchProperties)
+add_action('wp_ajax_lusso_search_properties', 'lusso_search_properties_ajax');
+add_action('wp_ajax_nopriv_lusso_search_properties', 'lusso_search_properties_ajax');
+function lusso_search_properties_ajax() {
+    // --- LOG CREDENCIALES Y ARGUMENTOS ENVIADOS ---
+    $api_key_masked = $p2 ? substr($p2, 0, 4) . str_repeat('*', max(0, strlen($p2)-8)) . substr($p2, -4) : '';
+    resales_log('DEBUG', '[AJAX][CRED] p1=' . $p1 . ' p2=' . $api_key_masked . ' FilterId=' . ($filter_id ?: $apiid));
+    resales_log('DEBUG', '[AJAX][ARGS] ' . json_encode($_REQUEST, JSON_UNESCAPED_UNICODE));
+    // 1. Credenciales
+    $p1 = get_option('resales_api_p1');
+    $p2 = get_option('resales_api_p2');
+    // 2. Filtro: usar solo uno
+    $filter_id = get_option('resales_api_filter_id') ?: get_option('lusso_agency_filter_id');
+    $params = [
+        'p1' => $p1,
+        'p2' => $p2,
+        'P_sandbox' => true,
+    ];
+    if ($filter_id) {
+        $params['P_Agency_FilterId'] = $filter_id;
+    } elseif ($apiid = get_option('resales_api_apiid')) {
+        $params['P_ApiId'] = $apiid;
+    }
+    // 3. Mapear argumentos
+    if (!empty($_REQUEST['location'])) {
+        $params['P_Location'] = sanitize_text_field($_REQUEST['location']);
+    }
+    if (!empty($_REQUEST['type'])) {
+        $params['P_PropertyTypes'] = sanitize_text_field($_REQUEST['type']);
+    }
+    if (!empty($_REQUEST['bedrooms'])) {
+        $params['P_Beds'] = (int)$_REQUEST['bedrooms'];
+    }
+    // Nunca enviar "Area"
+    // 4. Construir URL y hacer GET
+    $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
+    $timeout = (int) get_option('resales_api_timeout', 20);
+    $args = [
+        'timeout' => $timeout,
+        'headers' => [ 'Accept' => 'application/json' ],
+    ];
+    $res = wp_remote_get($url, $args);
+    $code = wp_remote_retrieve_response_code($res);
+    $body = wp_remote_retrieve_body($res);
+    $json = json_decode($body, true);
+    // 5. Loguear transaction si existe
+    if (isset($json['transaction'])) {
+        error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
+    }
+    // 6. Salida JSON estándar
+    if ($code !== 200) {
+        wp_send_json_error(['error'=>'HTTP '.$code, 'body'=>$body], $code);
+    }
+    wp_send_json_success($json);
+}
+
+
+// ================================
+// Helper de logging para Resales API
+// ================================
+if (!defined('RESALES_LOG_LEVEL')) define('RESALES_LOG_LEVEL', 'WARN'); // DEBUG|INFO|WARN|ERROR
 // ===========================
 //  Endpoints AJAX públicos (logueados y no logueados)
 // ===========================
