@@ -180,8 +180,10 @@ add_action('rest_api_init', function() {
                 'p1' => $api_user,
                 'p2' => $api_key,
             ];
+            // removed area select: ignorar parámetro 'area', solo mapear 'location' → P_Location
             $location = $request->get_param('location');
             if ($location) $params['P_Location'] = sanitize_text_field($location);
+            // otros filtros se mantienen igual
             $type = $request->get_param('type');
             if ($type) $params['P_PropertyType'] = sanitize_text_field($type);
             $bedrooms = $request->get_param('bedrooms');

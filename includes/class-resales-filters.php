@@ -349,30 +349,16 @@ final class Resales_Filters_Shortcode {
 									<form id="lusso-filters" class="resales-filters-form" method="get" action="">
 				    <div class="filter-field">
 				      <?php
-				        // Área
-				        echo $filters->render_area_select(
-				          $selected_area,
-				          [
-							  'id'    => 'resales-area',
-							  'name'  => '', // Blindaje: no serializar area
-							  'data-name' => 'area',
-							  'class' => 'resales-area-filter lusso-area-static',
-				          ]
-				        );
-				      ?>
-				    </div>
-				    <div class="filter-field">
-				      <?php
-				        // Location (filtrado por área si corresponde)
-				        echo $filters->render_location_select(
-				          $selected_location,
-				          $selected_area,
-				          [
-				            'id'    => 'resales-location',
-				            'name'  => 'location',
-				            'class' => 'resales-location-filter lusso-location-static',
-				          ]
-				        );
+								// Location agrupado por zonas
+								echo $filters->render_location_select(
+									$selected_location,
+									null,
+									[
+										'id'    => 'resales-location',
+										'name'  => 'location',
+										'class' => 'resales-location-filter lusso-location-static',
+									]
+								);
 				      ?>
 				    </div>
 				    <div class="filter-field">
