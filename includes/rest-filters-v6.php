@@ -87,6 +87,123 @@
 
 // Registrar endpoints REST de filtros V6 SIEMPRE, incondicionalmente
 add_action('rest_api_init', function() {
+    // /resales/v6/locations: devuelve todas las localidades permitidas por el API Filter
+    register_rest_route('resales/v6', '/locations', [
+        'methods' => 'GET',
+        'callback' => function($request) {
+            $api_user = get_option('resales_api_p1');
+            $api_key = get_option('resales_api_p2');
+            $filter_id = defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : '';
+            $agency_id = defined('RESALES_API_DEFAULT_AGENCY_ID') ? RESALES_API_DEFAULT_AGENCY_ID : '';
+            $lang = $request->get_param('lang') ? sanitize_text_field($request->get_param('lang')) : '1';
+            $pagesize = $request->get_param('pagesize') ? max(1, min(1000, intval($request->get_param('pagesize')))) : 500;
+            $params = [
+                'P_All' => 'true',
+                'P_PageNo' => 1,
+                'P_PageSize' => $pagesize,
+                'lang' => $lang,
+                'p1' => $api_user,
+                'p2' => $api_key,
+                'p_sandbox' => 'true',
+            ];
+            // API Filter obligatorio
+            if ($filter_id) {
+                $params['P_ApiId'] = $filter_id;
+            } elseif ($agency_id) {
+                $params['P_Agency_FilterId'] = $agency_id;
+            }
+            // País y área por defecto si no vienen definidos
+            if (empty($params['P_Country'])) {
+                $params['P_Country'] = 'Spain';
+            }
+            if (empty($params['P_Area'])) {
+                $params['P_Area'] = 'Costa del Sol';
+            }
+            $url = add_query_arg($params, 'https://webapi.resales-online.com/V6/SearchLocations');
+            $response = wp_remote_get($url, [
+                'timeout' => 20,
+                'headers' => [ 'Accept' => 'application/json' ],
+            ]);
+            if (is_wp_error($response)) {
+                return new WP_Error('rest_api_error', $response->get_error_message(), ['status' => 500]);
+            }
+            $body = wp_remote_retrieve_body($response);
+            $json = json_decode($body, true);
+            $api_locations = [];
+            if (!empty($json['LocationData']['ProvinceArea'])) {
+                foreach ($json['LocationData']['ProvinceArea'] as $province) {
+                    if (!empty($province['Locations'])) {
+                        foreach ($province['Locations'] as $loc) {
+                            if (!empty($loc['Location'])) {
+                                $api_locations[] = sanitize_text_field($loc['Location']);
+                            }
+                        }
+                    }
+                }
+            }
+            $api_locations = array_unique($api_locations, SORT_STRING);
+            sort($api_locations, SORT_NATURAL | SORT_FLAG_CASE);
+
+            // Static mapping desde class-resales-filters.php
+            $static_locations = [];
+            if (class_exists('Resales_Filters')) {
+                foreach (Resales_Filters::$LOCATIONS as $area => $locs) {
+                    foreach ($locs as $item) {
+                        if (!empty($item['value'])) {
+                            $static_locations[] = sanitize_text_field($item['value']);
+                        }
+                    }
+                }
+            }
+            $static_locations = array_unique($static_locations, SORT_STRING);
+            sort($static_locations, SORT_NATURAL | SORT_FLAG_CASE);
+
+            $result = [ 'static' => $static_locations, 'api' => $api_locations ];
+            // Si la API está vacía, solo devuelve static
+            if (empty($api_locations)) {
+                $result = [ 'static' => $static_locations ];
+            }
+            return $result;
+        },
+        'permission_callback' => '__return_true',
+    ]);
+
+    // /resales/v6/search: combina API Filter + refinamientos
+    register_rest_route('resales/v6', '/search', [
+        'methods' => 'GET',
+        'callback' => function($request) {
+            $api_user = get_option('resales_api_p1');
+            $api_key = get_option('resales_api_p2');
+            $filter_id = defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : '';
+            $params = [
+                'P_ApiId' => $filter_id,
+                'p1' => $api_user,
+                'p2' => $api_key,
+            ];
+            $location = $request->get_param('location');
+            if ($location) $params['P_Location'] = sanitize_text_field($location);
+            $type = $request->get_param('type');
+            if ($type) $params['P_PropertyType'] = sanitize_text_field($type);
+            $bedrooms = $request->get_param('bedrooms');
+            if ($bedrooms) $params['P_Beds'] = sanitize_text_field($bedrooms);
+            $minprice = $request->get_param('minprice');
+            if ($minprice) $params['P_MinPrice'] = sanitize_text_field($minprice);
+            $maxprice = $request->get_param('maxprice');
+            if ($maxprice) $params['P_MaxPrice'] = sanitize_text_field($maxprice);
+            $url = add_query_arg($params, 'https://webapi.resales-online.com/V6/SearchProperties');
+            $response = wp_remote_get($url, [
+                'timeout' => 20,
+                'headers' => [ 'Accept' => 'application/json' ],
+            ]);
+            if (is_wp_error($response)) {
+                return new WP_Error('rest_api_error', $response->get_error_message(), ['status' => 500]);
+            }
+            $body = wp_remote_retrieve_body($response);
+            $json = json_decode($body, true);
+            return $json;
+        },
+        'permission_callback' => '__return_true',
+    ]);
     error_log('[resales-api] rest_api_init fired; routes registered');
     $provider = class_exists('Lusso_Resales_Filters_V6') ? new Lusso_Resales_Filters_V6() : null;
 

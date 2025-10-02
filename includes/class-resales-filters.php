@@ -69,6 +69,19 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 if ( ! class_exists( 'Resales_Filters' ) ) :
 
 final class Resales_Filters {
+	/**
+	 * Normaliza un string eliminando etiquetas HTML y convirtiendo a minúsculas.
+	 * @param string $s
+	 * @return string
+	 */
+	private function norm($s) {
+		$s = wp_strip_all_tags($s);
+		$s = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$s = remove_accents($s);
+		$s = strtolower($s);
+		$s = preg_replace('/\s+/', ' ', $s);
+		return trim($s);
+	}
 
 	/**
 	 * Singleton.
@@ -188,6 +201,8 @@ final class Resales_Filters {
 	 * @return string HTML
 	 */
 	public function render_location_select( $selected = '', $selected_area = null, $attrs = [] ) {
+	// Permite inyectar set de localidades de la API para marcar estado visual
+	$api_locs = isset($attrs['api_locs']) && is_array($attrs['api_locs']) ? array_map([$this, 'norm'], $attrs['api_locs']) : [];
 		if ( isset( $_GET['location'] ) && '' === $selected ) {
 			$selected = sanitize_text_field( wp_unslash( (string) $_GET['location'] ) );
 		}
@@ -223,38 +238,29 @@ final class Resales_Filters {
 			'MÁLAGA CAPITAL (COSTA)' => [ 'Málaga', 'Málaga Centro', 'Málaga Este', 'Limonar', 'Pedrelejo', 'El Palo', 'Cerrado de Calderon', 'La Magaleta', 'Higueron', 'Puerto de la Torre', 'Churriana' ],
 			'INTERIOR (MÁLAGA)' => [ 'Campillos', 'Fuente de Piedra', 'Zalea', 'Ardales', 'Casarabonela', 'El Chorro', 'Alora', 'Pizarra', 'Cártama', 'Estacion de Cartama', 'Gibralgalia', 'Casabermeja', 'Mollina', 'Antequera', 'Almogía', 'Valle de Abdalajis', 'Villanueva De La Concepcion', 'La Atalaya', 'Villanueva del Rosario', 'Archidona', 'Villanueva del Trabuco', 'Alameda', 'Cañete la Real', 'Carratraca', 'Cuevas Bajas', 'Villanueva de Algaidas', 'Estación Archidona', 'Cuevas De San Marcos', 'La Parrilla', 'Jubrique', 'Teba', 'Gobantes' ],
 		];
-		// Agrupar localidades por zona
-		$agrupadas = [];
-		$otras = [];
-		foreach ( self::$LOCATIONS as $area_label => $locs ) {
-			foreach ( $locs as $item ) {
-				$value = isset( $item['value'] ) ? (string) $item['value'] : '';
-				$label = isset( $item['label'] ) ? (string) $item['label'] : $value;
-				$encontrada = false;
-				foreach ( $zonas_map as $zona => $localidades ) {
-					if ( in_array( $value, $localidades, true ) ) {
-						$agrupadas[ $zona ][] = [ 'value' => $value, 'label' => $label ];
-						$encontrada = true;
-						break;
-					}
-				}
-				if ( ! $encontrada ) {
-					$otras[] = [ 'value' => $value, 'label' => $label ];
-				}
-			}
-		}
+		// Siempre renderiza todas las zonas/localidades del mapping estático
+		$agrupadas = $zonas_map;
 
 		$html  = '<select' . $attr_html . '>';
 		$html .= '<option value="">' . esc_html__( 'Location', 'resales-api' ) . '</option>';
 
 		foreach ( $agrupadas as $zona => $locs ) {
+			// Si se selecciona área, filtra por label de zona
+			if ($selected_area && $this->norm($selected_area) !== $this->norm($zona)) {
+				continue;
+			}
 			$html .= sprintf( '<optgroup label="%s">', esc_attr( $zona ) );
-			foreach ( $locs as $item ) {
+			foreach ( $locs as $loc ) {
+				$value = (string)$loc;
+				$value_norm = $this->norm($value);
+				$has_api = empty($api_locs) || in_array($value_norm, $api_locs, true) ? '1' : '0';
+				$data_attr = $has_api === '0' ? ' data-has-api="0"' : '';
 				$html .= sprintf(
-					'<option value="%1$s"%2$s>%3$s</option>',
-					esc_attr( $item['value'] ),
-					selected( $selected, $item['value'], false ),
-					esc_html( $item['label'] )
+					'<option value="%1$s"%2$s%3$s>%4$s</option>',
+					esc_attr( $value ),
+					selected( $selected, $value, false ),
+					$data_attr,
+					esc_html( $value )
 				);
 			}
 			$html .= '</optgroup>';
