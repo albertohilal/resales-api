@@ -188,11 +188,11 @@ final class Resales_Filters {
 	 * @return string HTML
 	 */
 	public function render_location_select( $selected = '', $selected_area = null, $attrs = [] ) {
-		if ( isset( $_GET['location'] ) && '' === $selected ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$selected = sanitize_text_field( wp_unslash( (string) $_GET['location'] ) ); // phpcs:ignore
+		if ( isset( $_GET['location'] ) && '' === $selected ) {
+			$selected = sanitize_text_field( wp_unslash( (string) $_GET['location'] ) );
 		}
-		if ( isset( $_GET['area'] ) && null === $selected_area ) { // phpcs:ignore
-			$selected_area = sanitize_text_field( wp_unslash( (string) $_GET['area'] ) ); // phpcs:ignore
+		if ( isset( $_GET['area'] ) && null === $selected_area ) {
+			$selected_area = sanitize_text_field( wp_unslash( (string) $_GET['area'] ) );
 		}
 
 		$attrs = wp_parse_args(
@@ -209,25 +209,57 @@ final class Resales_Filters {
 			$attr_html .= sprintf( ' %s="%s"', esc_attr( $k ), esc_attr( $v ) );
 		}
 
-		$html  = '<select' . $attr_html . '>';
-		$html .= '<option value="">' . esc_html__( 'Location', 'resales-api' ) . '</option>';
+		// Mapeo de zonas/localidades de Alejandro
+		$zonas_map = [
+			'Costa del Sol' => [ 'Benahavís', 'Benalmadena', 'Casares', 'Estepona', 'Fuengirola', 'Málaga', 'Manilva', 'Marbella', 'Mijas', 'Torremolinos' ],
+			'Sotogrande'    => [ 'Sotogrande' ],
+			// Agrega aquí más zonas/localidades si Alejandro provee más
+		];
 
+		// Agrupar localidades por zona
+		$agrupadas = [];
+		$otras = [];
 		foreach ( self::$LOCATIONS as $area_label => $locs ) {
-			// Si hay área seleccionada, limitar el grupo.
-			if ( ! empty( $selected_area ) && $selected_area !== $area_label ) {
-				continue;
-			}
-			$html .= sprintf( '<optgroup label="%s">', esc_attr( $area_label ) );
-
 			foreach ( $locs as $item ) {
 				$value = isset( $item['value'] ) ? (string) $item['value'] : '';
 				$label = isset( $item['label'] ) ? (string) $item['label'] : $value;
+				$encontrada = false;
+				foreach ( $zonas_map as $zona => $localidades ) {
+					if ( in_array( $value, $localidades, true ) ) {
+						$agrupadas[ $zona ][] = [ 'value' => $value, 'label' => $label ];
+						$encontrada = true;
+						break;
+					}
+				}
+				if ( ! $encontrada ) {
+					$otras[] = [ 'value' => $value, 'label' => $label ];
+				}
+			}
+		}
 
+		$html  = '<select' . $attr_html . '>';
+		$html .= '<option value="">' . esc_html__( 'Location', 'resales-api' ) . '</option>';
+
+		foreach ( $agrupadas as $zona => $locs ) {
+			$html .= sprintf( '<optgroup label="%s">', esc_attr( $zona ) );
+			foreach ( $locs as $item ) {
 				$html .= sprintf(
 					'<option value="%1$s"%2$s>%3$s</option>',
-					esc_attr( $value ),                          // value EXACTO que espera la API
-					selected( $selected, $value, false ),
-					esc_html( $label )
+					esc_attr( $item['value'] ),
+					selected( $selected, $item['value'], false ),
+					esc_html( $item['label'] )
+				);
+			}
+			$html .= '</optgroup>';
+		}
+		if ( ! empty( $otras ) ) {
+			$html .= sprintf( '<optgroup label="%s">', esc_html__( 'OTRAS', 'resales-api' ) );
+			foreach ( $otras as $item ) {
+				$html .= sprintf(
+					'<option value="%1$s"%2$s>%3$s</option>',
+					esc_attr( $item['value'] ),
+					selected( $selected, $item['value'], false ),
+					esc_html( $item['label'] )
 				);
 			}
 			$html .= '</optgroup>';
