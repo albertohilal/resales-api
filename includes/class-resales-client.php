@@ -254,7 +254,9 @@ class Resales_Client {
         }
         // Nunca enviar "Area"
         // Merge otros params si vienen de la llamada
-        if (!empty($params)) $query = array_merge($query, $params);
+    if (!empty($params)) $query = array_merge($query, $params);
+    // Log de parámetros finales antes de la llamada a la API
+    error_log('[Resales API][LOG] Params FINAL antes de API: ' . json_encode($query));
 
         // 4) Enforce ONE filter ID if missing
         // Si el fallback está definido y en uso, NO mostrar warning aunque la opción esté vacía

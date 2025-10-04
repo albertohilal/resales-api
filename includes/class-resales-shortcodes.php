@@ -307,11 +307,15 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         return '<p>[Resales API] Faltan credenciales en Ajustes.</p>';
       }
 
+      // LOG: parámetros recibidos por GET
+      error_log('[Resales API][LOG] GET params: ' . json_encode($_GET));
+
       // Cache del resultado de SearchProperties
       $tkey = sprintf('resales_nd_search_p%d_s%d', (int)$atts['page'], (int)$atts['page_size']);
       $cached = get_transient($tkey);
       if ($cached) {
         $resp = $cached;
+        error_log('[Resales API][LOG] Usando cache/transient para SearchProperties');
       } else {
         $params = [
           'p1'        => $opts['p1'],
@@ -329,10 +333,14 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         if (!empty($args['P_Location'])) {
           $params['P_Location'] = $args['P_Location'];
         }
+        // LOG: parámetros enviados a la API
+        error_log('[Resales API][LOG] Params enviados a API: ' . json_encode($params));
         $resp = $this->http_get(self::SEARCH_ENDPOINT, $params, (int)$opts['timeout']);
         if (!is_wp_error($resp)) {
           set_transient($tkey, $resp, self::SEARCH_TTL);
         }
+        // LOG: respuesta cruda de la API
+        error_log('[Resales API][LOG] Respuesta API: ' . json_encode($resp));
       }
 
       if (is_wp_error($resp) || empty($resp['Property'])) {
@@ -356,6 +364,12 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         $props = array_filter($props, function($p) use ($min_beds) {
           return isset($p['Bedrooms']) && (int)$p['Bedrooms'] >= $min_beds;
         });
+      }
+
+      // LOG: propiedades renderizadas y cantidad
+      error_log('[Resales API][LOG] Total propiedades renderizadas: ' . count($props));
+      foreach ($props as $p) {
+        error_log('[Resales API][LOG] Propiedad: Ref=' . ($p['Reference'] ?? '') . ' | Dormitorios=' . ($p['Bedrooms'] ?? '')); 
       }
 
       // Render

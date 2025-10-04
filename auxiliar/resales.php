@@ -52,13 +52,9 @@ function lusso_search_properties_ajax() {
     if (!empty($_REQUEST['type'])) {
         $params['P_PropertyTypes'] = sanitize_text_field($_REQUEST['type']);
     }
-    $min_beds = null;
-    if (!empty($_REQUEST['bedrooms']) && is_numeric($_REQUEST['bedrooms'])) {
-        $min_beds = intval($_REQUEST['bedrooms']);
-        $params['P_Beds'] = $min_beds . 'x';
+    if (!empty($_REQUEST['bedrooms'])) {
+        $params['P_Beds'] = (int)$_REQUEST['bedrooms'];
     }
-    $params['p_new_devs'] = 'only';
-    error_log('[Resales API][LOG] Params enviados a API: ' . json_encode($params));
     // Nunca enviar "Area"
     // 4. Construir URL y hacer GET
     $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
@@ -71,19 +67,6 @@ function lusso_search_properties_ajax() {
     $code = wp_remote_retrieve_response_code($res);
     $body = wp_remote_retrieve_body($res);
     $json = json_decode($body, true);
-    error_log('[Resales API][LOG] Respuesta API: ' . json_encode($json));
-    if (isset($json['Property'])) {
-        error_log('[Resales API][LOG] Total propiedades recibidas: ' . count($json['Property']));
-        foreach ($json['Property'] as $prop) {
-            error_log('[Resales API][LOG] Propiedad: Ref=' . $prop['Reference'] . ' | Dormitorios=' . $prop['Bedrooms']);
-        }
-    }
-    // Filtro defensivo antes de enviar al frontend
-    if ($min_beds !== null && isset($json['Property'])) {
-        $json['Property'] = array_filter($json['Property'], function($prop) use ($min_beds) {
-            return cumple_minimo_dormitorios($min_beds, $prop['Bedrooms']);
-        });
-    }
     // 5. Loguear transaction si existe
     if (isset($json['transaction'])) {
         error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
@@ -93,27 +76,6 @@ function lusso_search_properties_ajax() {
         wp_send_json_error(['error'=>'HTTP '.$code, 'body'=>$body], $code);
     }
     wp_send_json_success($json);
-// --- Filtro defensivo mejorado ---
-function cumple_minimo_dormitorios($min, $bedrooms_str) {
-    $bedrooms_str = trim(str_replace(['–', 'a', ','], ['-', '-', '-'], $bedrooms_str));
-    // "2 - 4"
-    if (preg_match('/^(\d+)\s*-\s*(\d+)$/', $bedrooms_str, $m)) {
-        return intval($m[2]) >= $min;
-    }
-    // "5+"
-    if (preg_match('/^(\d+)\+$/', $bedrooms_str, $m)) {
-        return intval($m[1]) >= $min;
-    }
-    // "7"
-    if (preg_match('/^(\d+)$/', $bedrooms_str, $m)) {
-        return intval($m[1]) >= $min;
-    }
-    // "4-5" o "4 a 5"
-    if (preg_match('/^(\d+)\s*-\s*(\d+)$/', $bedrooms_str, $m)) {
-        return intval($m[2]) >= $min;
-    }
-    return false;
-}
 }
 
 
@@ -343,8 +305,8 @@ add_action('admin_init', function(){
 });
 
 // Incluir la página de ajustes si existe
-if (file_exists(__DIR__ . '/includes/resales-api-settings.php')) {
-    require_once __DIR__ . '/includes/resales-api-settings.php';
+if (file_exists(__DIR__ . '/../resales-api-settings.php')) {
+    require_once __DIR__ . '/../resales-api-settings.php';
 }
 
 function build_search_properties_params(array $args = []) : array {
