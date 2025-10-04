@@ -39,7 +39,7 @@ class Resales_Filters_V6 {
         }
         $json = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            return new WP_Error('resales_json_error', 'JSON error', ['body' => $body]);
+            return new WP_Error('resales_json_error', 'JSON error: ' . json_last_error_msg(), ['body' => $body]);
         }
         return $json;
     }
@@ -47,26 +47,26 @@ class Resales_Filters_V6 {
     public function search_with_filters($filters = []) {
         $opts = $this->get_opt_all();
 
-        // Credenciales mínimas necesarias
         if (empty($opts['p1']) || empty($opts['p2'])) {
-            return new WP_Error('resales_missing_credentials', 'Missing API credentials p1/p2.');
+            return new WP_Error('resales_missing_credentials', 'Missing API credentials p1 or p2.');
         }
 
+        // Construir parámetros básicos
         $params = [
-            'p1'       => $opts['p1'],
-            'p2'       => $opts['p2'],
+            'p1' => $opts['p1'],
+            'p2' => $opts['p2'],
             'p_output' => 'JSON',
-            'P_Lang'   => $opts['P_Lang'],
+            'P_Lang' => $opts['P_Lang'],
         ];
 
-        // Incluir filtro de agencia si está definido, si no usar api id
+        // Usar filtro de agencia preferido si está configurado
         if (!empty($opts['P_Agency_FilterId'])) {
             $params['p_agency_filterid'] = $opts['P_Agency_FilterId'];
         } elseif (!empty($opts['P_ApiId'])) {
             $params['P_ApiId'] = $opts['P_ApiId'];
         }
 
-        // Paginación y orden
+        // Paginación / orden
         if (isset($filters['page'])) {
             $params['P_PageNo'] = (int)$filters['page'];
         }
@@ -89,26 +89,25 @@ class Resales_Filters_V6 {
         }
 
         // Filtros de precio
-        if (!empty($filters['minprice'])) {
+        if (isset($filters['minprice']) && strlen($filters['minprice']) > 0) {
             $params['P_PriceMin'] = intval($filters['minprice']);
         }
-        if (!empty($filters['maxprice'])) {
+        if (isset($filters['maxprice']) && strlen($filters['maxprice']) > 0) {
             $params['P_PriceMax'] = intval($filters['maxprice']);
         }
 
-        // Características especiales usando P_MustHaveFeatures y mapeo a parámetros exactos
+        // Características especiales
         if (!empty($filters['features']) && is_array($filters['features'])) {
             $params['P_MustHaveFeatures'] = 1;
-            // Mapeo de nombres de “feature” al parámetro exacto en la API V6
             $feature_map = [
-                'pool'    => '1Pool1',
-                'seaview' => '1SeaView',
-                'garage'  => '1Garage',
-                'garden'  => '1Garden',
-                'terrace' => '1Terrace',
-                'lift'    => '1Lift',
-                'aircon'  => '1AirConditioning',
-                // agrega más según lo que permite tu filtro API
+                'pool'     => '1Pool1',
+                'seaview'  => '1SeaView',
+                'garage'   => '1Garage',
+                'garden'   => '1Garden',
+                'terrace'  => '1Terrace',
+                'lift'     => '1Lift',
+                'aircon'   => '1AirConditioning',
+                // Agrega otros parámetros de característica si los usa tu API
             ];
             foreach ($filters['features'] as $feat) {
                 if (isset($feature_map[$feat])) {
@@ -117,39 +116,71 @@ class Resales_Filters_V6 {
             }
         }
 
-        // Caché basado en parámetros
+        // Clave de caché
         $cache_key = 'resales_v6_search_' . md5(json_encode($params));
         $cached = get_transient($cache_key);
         if ($cached !== false) {
             return $cached;
         }
 
+        // Logging antes de la llamada API
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $endpoint_url = self::API_BASE . self::SEARCH_ENDPOINT;
+            $full_url = $endpoint_url . '?' . http_build_query($params);
+            error_log('[ResalesAPI] Calling URL: ' . $full_url);
+        }
+
+        // Llamada real
         $resp = $this->http_get(self::SEARCH_ENDPOINT, $params, (int)$opts['timeout']);
+
+        // Logging de respuesta
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (is_wp_error($resp)) {
+                error_log('[ResalesAPI] WP_Error: ' . print_r($resp, true));
+            } else {
+                if (isset($resp['transaction']['status']) && $resp['transaction']['status'] === 'error') {
+                    error_log('[ResalesAPI] API status error. Resp: ' . print_r($resp, true));
+                } else {
+                    $count = 0;
+                    if (isset($resp['Property']) && is_array($resp['Property'])) {
+                        $count = count($resp['Property']);
+                    }
+                    error_log('[ResalesAPI] API call success. Results: ' . $count);
+                }
+            }
+        }
+
+        // Guardar en caché si no error
         if (!is_wp_error($resp)) {
             set_transient($cache_key, $resp, self::CACHE_TTL);
         }
+
         return $resp;
     }
 
     public static function register_rest_endpoint() {
         register_rest_route('resales/v6', '/search', [
-            'methods'             => 'GET',
-            'callback'            => function($request) {
+            'methods' => 'GET',
+            'callback' => function($request) {
                 $filters = [];
+                // Recoger los parámetros esperados
                 foreach (['location','type','bedrooms','minprice','maxprice','page','page_size','sort'] as $k) {
-                    $v = $request->get_param($k);
-                    if ($v !== null) {
-                        $filters[$k] = $v;
+                    $val = $request->get_param($k);
+                    if ($val !== null) {
+                        $filters[$k] = $val;
                     }
                 }
                 $features = $request->get_param('features');
                 if ($features && is_array($features)) {
                     $filters['features'] = $features;
                 }
-                $self = new self();
-                $result = $self->search_with_filters($filters);
+                $instance = new self();
+                $result = $instance->search_with_filters($filters);
                 if (is_wp_error($result)) {
-                    wp_send_json_error(['error' => $result->get_error_message(), 'data' => $result->get_error_data()]);
+                    wp_send_json_error([
+                        'error' => $result->get_error_message(),
+                        'data'  => $result->get_error_data(),
+                    ]);
                 } else {
                     wp_send_json_success($result);
                 }
