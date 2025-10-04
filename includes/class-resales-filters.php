@@ -224,19 +224,38 @@ final class Resales_Filters {
 			$attr_html .= sprintf( ' %s="%s"', esc_attr( $k ), esc_attr( $v ) );
 		}
 
-		// Mapeo completo de zonas/localidades de Alejandro
 		$zonas_map = [
-			'CÁDIZ – CAMPO DE GIBRALTAR' => [ 'Los Barrios', 'Algeciras', 'Zahara', 'San Roque', 'La Línea', 'La Alcaidesa', 'San Roque Club', 'Sotogrande', 'Sotogrande Alto', 'Sotogrande Costa', 'Sotogrande Marina', 'Sotogrande Playa', 'Sotogrande Puerto', 'Guadiaro', 'Torreguadiaro', 'Pueblo Nuevo de Guadiaro', 'San Enrique', 'San Martín de Tesorillo', 'San Diego', 'Punta Chullera' ],
-			'MANILVA' => [ 'La Duquesa', 'San Luis de Sabinillas', 'Gaucín', 'Algatocin', 'Benadalid', 'Benarrabá', 'Manilva', 'Casares', 'Casares Playa', 'Casares Pueblo', 'Doña Julia', 'Puerto de la Duquesa', 'San Diego', 'Valle Romano' ],
-			'ESTEPONA & NEW GOLDEN MILE' => [ 'Estepona', 'Selwo', 'Genalguacil', 'New Golden Mile', 'Benamara', 'El Padrón', 'El Presidente', 'Bel Air', 'Alpandeire', 'Costalita', 'Los Flamingos', 'El Paraiso', 'Benavista', 'Diana Park', 'Atalaya', 'Hacienda del Sol', 'Valle Romano', 'Valle del Sol', 'Guadalmina Alta', 'Guadalmina Baja' ],
-			'BENAHAVÍS' => [ 'Benahavís', 'La Heredia', 'El Madroñal', 'La Zagaleta', 'Los Arqueros', 'Los Almendros', 'Monte Halcones', 'La Quinta' ],
-			'MARBELLA' => [ 'San Pedro de Alcántara', 'Cortijo Blanco', 'Los Prados', 'Montejaque', 'Benaoján', 'Júzcar', 'Ronda', 'Arriate', 'Estación de Gaucin', 'Cuevas del Becerro', 'La Campana', 'Aloha', 'Las Brisas', 'Nueva Andalucía', 'Puerto Banús', 'The Golden Mile', 'Marbella', 'Sierra Blanca', 'Nagüeles', 'Istán', 'Ojén', 'Monda', 'Guaro', 'Tolox', 'El Burgo', 'Yunquera', 'Alozaina', 'Coín', 'Torre Real', 'Río Real', 'Bahía de Marbella', 'Santa Clara', 'Los Monteros', 'Altos de los Monteros', 'Las Chapas', 'Hacienda Las Chapas', 'El Rosario', 'Costabella', 'La Mairena', 'Reserva de Marbella', 'Elviria', 'Marbesa', 'Carib Playa', 'Artola', 'Cabopino', 'Puerto de Cabopino', 'Marbella Centro & Casco Antiguo', 'Golden Mile / Milla de Oro', 'Nagüeles', 'Sierra Blanca', 'Casablanca', 'Nueva Andalucía', 'Aloha', 'Las Brisas', 'La Campana', 'Puerto Banús', 'San Pedro de Alcántara', 'Cortijo Blanco', 'Linda Vista', 'Guadalmina Baja', 'Guadalmina Alta' ],
-			'MIJAS COSTA' => [ 'Calahonda', 'Calahonda (Sitio de Calahonda)', 'Riviera del Sol', 'Miraflores', 'Torrenueva', 'El Chaparral', 'El Faro', 'La Cala de Mijas', 'La Cala Hills', 'La Cala Golf', 'Calanova Golf', 'Calypso', 'Sierrezuela', 'El Coto', 'Campo Mijas', 'Cerros del Águila', 'Las Lagunas', 'Valtocado', 'Mijas Costa', 'Mijas', 'Mijas Golf' ],
-			'FUENGIROLA' => [ 'Fuengirola', 'Centro', 'Los Boliches', 'Los Pacos', 'Torreblanca', 'Carvajal' ],
-			'BENALMÁDENA' => [ 'Benalmádena', 'Benalmádena Pueblo', 'Arroyo de la Miel', 'Benalmádena Costa', 'Torremuelle', 'Torrequebrada', 'La Capellanía', 'Torremar' ],
-			'TORREMOLINOS' => [ 'Torremolinos', 'Centro', 'Bajondillo', 'La Carihuela', 'Montemar', 'Playamar', 'Los Álamos', 'El Pinillo', 'La Colina', 'El Calvario', 'Torremolinos Centro', 'La Leala' ],
-			'MÁLAGA CAPITAL (COSTA)' => [ 'Málaga', 'Málaga Centro', 'Málaga Este', 'Limonar', 'Pedrelejo', 'El Palo', 'Cerrado de Calderon', 'La Magaleta', 'Higueron', 'Puerto de la Torre', 'Churriana' ],
-			'INTERIOR (MÁLAGA)' => [ 'Campillos', 'Fuente de Piedra', 'Zalea', 'Ardales', 'Casarabonela', 'El Chorro', 'Alora', 'Pizarra', 'Cártama', 'Estacion de Cartama', 'Gibralgalia', 'Casabermeja', 'Mollina', 'Antequera', 'Almogía', 'Valle de Abdalajis', 'Villanueva De La Concepcion', 'La Atalaya', 'Villanueva del Rosario', 'Archidona', 'Villanueva del Trabuco', 'Alameda', 'Cañete la Real', 'Carratraca', 'Cuevas Bajas', 'Villanueva de Algaidas', 'Estación Archidona', 'Cuevas De San Marcos', 'La Parrilla', 'Jubrique', 'Teba', 'Gobantes' ],
+			'BENAHAVÍS' => [
+				'Altos de los Monteros', 'Benahavís', 'El Madroñal', 'La Heredia', 'La Quinta', 'La Zagaleta', 'Los Almendros', 'Los Arqueros', 'Monte Halcones'
+			],
+			'BENALMÁDENA' => [
+				'Arroyo de la Miel', 'Benalmadena', 'Benalmadena Costa', 'Benalmadena Pueblo', 'Carvajal', 'La Capellanía', 'Torremar', 'Torrequebrada', 'Torremuelle'
+			],
+			'CÁDIZ – CAMPO DE GIBRALTAR' => [
+				'Guadiaro', 'La Alcaidesa', 'Pueblo Nuevo de Guadiaro', 'Punta Chullera', 'San Diego', 'San Enrique', 'San Roque', 'San Roque Club', 'Sotogrande', 'Sotogrande Alto', 'Sotogrande Costa', 'Sotogrande Marina', 'Sotogrande Playa', 'Sotogrande Puerto', 'Torreguadiaro'
+			],
+			'ESTEPONA & NEW GOLDEN MILE' => [
+				'Atalaya', 'Bel Air', 'Benamara', 'Benavista', 'Cancelada', 'Costalita', 'El Padron', 'El Paraiso', 'El Presidente', 'Estepona', 'Los Flamingos', 'New Golden Mile'
+			],
+			'FUENGIROLA' => [
+				'Fuengirola', 'Los Alamos', 'Los Boliches', 'Los Pacos', 'Miraflores'
+			],
+			'MÁLAGA CAPITAL (COSTA)' => [
+				'Higueron', 'Málaga', 'Málaga Centro', 'Málaga Este', 'Playamar', 'Puerto de la Torre'
+			],
+			'MANILVA' => [
+				'Casares', 'Casares Playa', 'Casares Pueblo', 'Doña Julia', 'La Duquesa', 'Manilva', 'San Luis de Sabinillas'
+				// 'Selwo' (si lo consideras zona limítrofe)
+			],
+			'MARBELLA' => [
+				'Aloha', 'Artola', 'Bahía de Marbella', 'Cabopino', 'Carib Playa', 'Cerros del Aguila', 'Cortijo Blanco', 'Costabella', 'Diana Park', 'El Rosario', 'Elviria', 'Guadalmina Alta', 'Guadalmina Baja', 'Hacienda del Sol', 'Hacienda Las Chapas', 'La Campana', 'La Mairena', 'Las Brisas', 'Las Chapas', 'Los Monteros', 'Marbella', 'Marbesa', 'Nagüeles', 'Nueva Andalucía', 'Ojén', 'Puerto Banús', 'Puerto de Cabopino', 'Reserva de Marbella', 'Río Real', 'San Pedro de Alcántara', 'Sierra Blanca', 'Torre Real', 'Valle Romano', 'Valtocado'
+			],
+			'MIJAS COSTA' => [
+				'Calahonda', 'Calanova Golf', 'Calypso', 'Campo Mijas', 'El Chaparral', 'El Coto', 'El Faro', 'La Cala de Mijas', 'La Cala Golf', 'La Cala Hills', 'Las Lagunas', 'Mijas', 'Mijas Costa', 'Mijas Golf', 'Riviera del Sol', 'Sierrezuela', 'Torrenueva'
+			],
+			'TORREMOLINOS' => [
+				'Bajondillo', 'El Calvario', 'El Pinillo', 'La Carihuela', 'La Colina', 'Montemar', 'Torreblanca', 'Torremolinos', 'Torremolinos Centro', 'Torremar'
+			],
 		];
 		// Siempre renderiza todas las zonas/localidades del mapping estático
 		$agrupadas = $zonas_map;
