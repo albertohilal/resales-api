@@ -283,12 +283,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
     public function shortcode_properties($atts) {
       // Logging seguro de location
       $args = [];
-      if (isset($_GET['location'])) {
+      if (isset($_GET['location']) && $_GET['location'] !== '') {
         $args['P_Location'] = sanitize_text_field($_GET['location']);
       }
       resales_safe_log('SHORTCODE ARGS', [
         'location_get' => isset($_GET['location']) ? 'yes' : 'no',
         'args_has_P_Location' => isset($args['P_Location']) ? 'yes' : 'no',
+        'P_Location_val' => $args['P_Location'] ?? 'empty',
       ]);
       $atts = shortcode_atts([
         'api_id'           => '',   // opcional: forzar P_ApiId
@@ -324,6 +325,10 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
           'p_new_devs'=> 'only',          // ND
           // No enviamos p_images ni p_sandbox aquí.
         ];
+        // Si el filtro location está presente, añádelo a los parámetros
+        if (!empty($args['P_Location'])) {
+          $params['P_Location'] = $args['P_Location'];
+        }
         $resp = $this->http_get(self::SEARCH_ENDPOINT, $params, (int)$opts['timeout']);
         if (!is_wp_error($resp)) {
           set_transient($tkey, $resp, self::SEARCH_TTL);
