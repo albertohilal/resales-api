@@ -1,9 +1,9 @@
 .
 ├── assets
 │   ├── css
-│   │   ├── lusso-resales.css
 │   │   ├── lusso-resales-detail.css
 │   │   ├── lusso-resales-filters.css
+│   │   ├── lusso-resales.css
 │   │   ├── resales.css
 │   │   └── swiper-gallery.css
 │   └── js
@@ -14,24 +14,63 @@
 │   ├── 2025-09-12_Paleta Colores.jpg
 │   ├── DetallesPropiedad.jpg
 │   ├── filtros.png
+│   ├── footer.php
 │   ├── HeaderStiky.css
 │   ├── HeaderStiky.js
 │   ├── lussogroup.es_properties_ (5).png
+│   ├── lussogroup.es_properties__location=Sotogrande.png
 │   ├── lussogroup.es_properties_01.png
+│   ├── Referencias-clave.txt
+│   ├── rest-filters-v6-nuevo.php
 │   ├── Tarjeta-Muestra.jpg
 │   ├── Tarjetas.jpg
 │   ├── tree.txt
 │   ├── wp-config-NO.php
 │   ├── wp-config.php
-│   └── www.marbella-ev.com_developments.png
+│   ├── www.marbella-ev.com_developments.png
 ├── builds
-│   └── OLD
+│   ├── debug.log
+│   ├── resales-api.zip
+│   └── Codespace
+│       ├── resales-api-72-codespace.zip
+│       ├── resales-api.zip
+│       ├── resales-api74-codespace.zip
+│       └── OLD
+│           ├── resales-api-01.zip
+│           ├── resales-api-02.zip
+│           ├── resales-api-03.zip
+│           ├── resales-api-04.zip
+│           ├── resales-api-05.zip
+│           ├── resales-api-06.zip
+│           ├── resales-api-07.zip
+│           ├── resales-api-08.zip
+│           ├── resales-api-09.zip
+│           ├── resales-api-10.zip
+│           ├── resales-api-11.zip
+│           ├── resales-api-12.zip
+│           ├── resales-api-13.zip
+│           ─── ...
 ├── docs
 │   └── troubleshooting.md
-├── .env
-├── .env.example
 ├── functions.php
-├── .gitignore
+├── package.json
+├── playwright.config.ts
+├── README.md
+├── resales.php
+├── single-property.php
+├── test_search.php
+├── test-call_api_debug.php
+├── test-captura_headers.php
+├── test-gallery-root.php
+├── test-gallery-standalone.php
+├── test-gallery.php
+├── test-locations-slim.php
+├── test-locations.php
+├── test-resales-api.php
+├── test-resales-client-snippet.php
+├── TESTS.md
+├── assets/
+├── docs/
 ├── includes
 │   ├── class-resales-admin.php
 │   ├── class-resales-client.php
@@ -43,28 +82,16 @@
 │   ├── class-resales-single.php
 │   ├── gallery-helper.php
 │   ├── lusso-ping-endpoint.php
-│   └── rest-filters-v6.php
+│   ├── rest-filters-v6.php
 ├── languages
 │   ├── resales-api-es.mo
 │   ├── resales-api-es.po
 │   └── resales-api.pot
-├── package.json
 ├── package-lock.json
-├── playwright.config.ts
 ├── playwright-report
 │   └── index.html
-├── README.md
-├── resales.php
-├── single-property.php
 ├── templates
 │   └── single-development.php
-├── test-gallery.php
-├── test-gallery-root.php
-├── test-gallery-standalone.php
-├── test-locations.php
-├── test-locations-slim.php
-├── test-resales-api.php
-├── test-resales-client-snippet.php
 ├── test-results
 │   └── .last-run.json
 ├── tests
@@ -75,6 +102,4 @@
 │   ├── README.md
 │   ├── responsive.spec.ts
 │   └── smoke.spec.ts
-└── TESTS.md
-
-13 directories, 64 files
+└── .gitignore

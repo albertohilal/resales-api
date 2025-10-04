@@ -304,6 +304,11 @@ add_action('admin_init', function(){
     if (!get_option('lusso_agency_filter_id')) update_option('lusso_agency_filter_id', 65503);
 });
 
+// Incluir la página de ajustes si existe
+if (file_exists(__DIR__ . '/includes/resales-api-settings.php')) {
+    require_once __DIR__ . '/includes/resales-api-settings.php';
+}
+
 function build_search_properties_params(array $args = []) : array {
     // Obtener el filtro de agencia desde la opción del plugin (ajusta el nombre si es necesario)
     $agency_filter_id = get_option('resales_api_filter_id'); // o 'lusso_agency_filter_id'
