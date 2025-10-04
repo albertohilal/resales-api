@@ -249,7 +249,8 @@ class Resales_Client {
         }
         // Mapear bedrooms
         if (!empty($_GET['bedrooms'])) {
-            $query['P_Beds'] = (int) $_GET['bedrooms'];
+            $beds = (int) $_GET['bedrooms'];
+            $query['P_Beds'] = $beds . 'x'; // "5x" para cinco o más dormitorios
         }
         // Nunca enviar "Area"
         // Merge otros params si vienen de la llamada

@@ -344,9 +344,18 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       }
 
       $props = $resp['Property'];
+
       if (isset($props['Reference'])) {
         // si viene 1 solo objeto
         $props = [ $props ];
+      }
+
+      // Filtro defensivo por dormitorios
+      $min_beds = isset($_GET['bedrooms']) ? (int)$_GET['bedrooms'] : 0;
+      if ($min_beds > 0) {
+        $props = array_filter($props, function($p) use ($min_beds) {
+          return isset($p['Bedrooms']) && (int)$p['Bedrooms'] >= $min_beds;
+        });
       }
 
       // Render

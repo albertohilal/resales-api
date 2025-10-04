@@ -85,7 +85,7 @@ class Resales_Filters_V6 {
             $params['P_PropertyType'] = sanitize_text_field($filters['type']);
         }
         if (!empty($filters['bedrooms'])) {
-            $params['P_Beds'] = intval($filters['bedrooms']);
+            $params['P_Beds'] = intval($filters['bedrooms']) . 'x'; // "5x" para cinco o más dormitorios
         }
 
         // Filtros de precio
