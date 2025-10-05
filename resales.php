@@ -46,11 +46,27 @@ function lusso_search_properties_ajax() {
         $params['P_ApiId'] = $apiid;
     }
     // 3. Mapear argumentos
+    // Mapeo seguro de Type visible a OptionValue API
+    $type_map = [
+        'apartment' => '1-1',
+        'house'     => '2-1',
+        'plot'      => '3-1',
+    ];
+    $type_option = '';
+    $type = isset($_REQUEST['type']) ? strtolower(trim($_REQUEST['type'])) : '';
+    resales_log('DEBUG', '[Resales API][DEBUG] Valor recibido en type: ' . $type);
+    if ($type !== '') {
+        if (isset($type_map[$type])) {
+            $type_option = $type_map[$type];
+            resales_log('DEBUG', '[Resales API][DEBUG] Mapeo type: ' . $type . ' => ' . $type_option);
+            $params['P_PropertyTypes'] = $type_option;
+        } else {
+            resales_log('ERROR', '[Resales API][ERROR] Tipo de propiedad no válido: ' . $type);
+            wp_send_json_error(['error' => 'Tipo de propiedad no válido'], 400);
+        }
+    }
     if (!empty($_REQUEST['location'])) {
         $params['P_Location'] = sanitize_text_field($_REQUEST['location']);
-    }
-    if (!empty($_REQUEST['type'])) {
-        $params['P_PropertyTypes'] = sanitize_text_field($_REQUEST['type']);
     }
     $min_beds = null;
     if (!empty($_REQUEST['bedrooms']) && is_numeric($_REQUEST['bedrooms'])) {
@@ -58,7 +74,7 @@ function lusso_search_properties_ajax() {
         $params['P_Beds'] = $min_beds . 'x';
     }
     $params['p_new_devs'] = 'only';
-    error_log('[Resales API][LOG] Params enviados a API: ' . json_encode($params));
+    resales_log('DEBUG', '[Resales API][LOG] Params enviados a API: ' . json_encode($params));
     // Nunca enviar "Area"
     // 4. Construir URL y hacer GET
     $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
@@ -71,11 +87,11 @@ function lusso_search_properties_ajax() {
     $code = wp_remote_retrieve_response_code($res);
     $body = wp_remote_retrieve_body($res);
     $json = json_decode($body, true);
-    error_log('[Resales API][LOG] Respuesta API: ' . json_encode($json));
+    resales_log('DEBUG', '[Resales API][LOG] Respuesta API: ' . json_encode($json));
     if (isset($json['Property'])) {
-        error_log('[Resales API][LOG] Total propiedades recibidas: ' . count($json['Property']));
+    resales_log('DEBUG', '[Resales API][LOG] Total propiedades recibidas: ' . count($json['Property']));
         foreach ($json['Property'] as $prop) {
-            error_log('[Resales API][LOG] Propiedad: Ref=' . $prop['Reference'] . ' | Dormitorios=' . $prop['Bedrooms']);
+            resales_log('DEBUG', '[Resales API][LOG] Propiedad: Ref=' . $prop['Reference'] . ' | Dormitorios=' . $prop['Bedrooms']);
         }
     }
     // Filtro defensivo antes de enviar al frontend
@@ -86,7 +102,7 @@ function lusso_search_properties_ajax() {
     }
     // 5. Loguear transaction si existe
     if (isset($json['transaction'])) {
-        error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
+    resales_log('DEBUG', '[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
     }
     // 6. Salida JSON estándar
     if ($code !== 200) {

@@ -365,7 +365,7 @@ final class Resales_Filters_Shortcode {
 				ob_start();
 				?>
 								<div class="resales-filters-wrapper">
-									<form id="lusso-filters" class="resales-filters-form" method="get" action="">
+									<form id="lusso-filters" class="resales-filters-form lusso-filters" method="post" action="">
 				    <div class="filter-field">
 				      <?php
 								// Location agrupado por zonas
@@ -381,14 +381,12 @@ final class Resales_Filters_Shortcode {
 				      ?>
 				    </div>
 				    <div class="filter-field">
-				      <select id="resales-type" name="type" class="resales-type-filter lusso-type-static">
-				        <option value=""><?php esc_html_e('Type', 'resales-api'); ?></option>
-				        <option value="apartment" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'apartment'); ?>><?php esc_html_e('Apartment', 'resales-api'); ?></option>
-				        <option value="villa" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'villa'); ?>><?php esc_html_e('Villa', 'resales-api'); ?></option>
-				        <option value="townhouse" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'townhouse'); ?>><?php esc_html_e('Townhouse', 'resales-api'); ?></option>
-				        <option value="penthouse" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'penthouse'); ?>><?php esc_html_e('Penthouse', 'resales-api'); ?></option>
-				        <option value="plot" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'plot'); ?>><?php esc_html_e('Plot', 'resales-api'); ?></option>
-				      </select>
+					<select id="resales-type" name="type" class="resales-type-filter lusso-type-static">
+									<option value=""><?php esc_html_e('Type', 'resales-api'); ?></option>
+									<option value="apartment" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'apartment'); ?>><?php esc_html_e('Apartment', 'resales-api'); ?></option>
+									<option value="house" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'house'); ?>><?php esc_html_e('House', 'resales-api'); ?></option>
+									<option value="plot" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'plot'); ?>><?php esc_html_e('Plot', 'resales-api'); ?></option>
+								</select>
 				    </div>
 				    <div class="filter-field">
 				      <select id="resales-bedrooms" name="bedrooms" class="resales-bedrooms-filter lusso-bedrooms-static">
@@ -406,10 +404,11 @@ final class Resales_Filters_Shortcode {
 			</button>
 		</div>
 				  </form>
-				</div>
-				<?php
-				  // SHORTCODE: devolver, no echo.
-				  return ob_get_clean();
-				}
+								</div>
+								<div id="lusso-search-results"></div>
+								<?php
+									// SHORTCODE: devolver, no echo.
+									return ob_get_clean();
+								}
 }
 endif;

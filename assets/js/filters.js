@@ -1,70 +1,87 @@
-// assets/js/filters.js
-(function($){
-  // Inyectar la config PHP como window.LUSSO_FILTERS (esto lo hará wp_localize_script en prod)
-  // window.LUSSO_FILTERS = {...}
+jQuery(function($){
+  var $form = $('#lusso-filters');
+  var $results = $('#lusso-search-results');
 
-  // --- Filtros clásicos con jQuery (si existen en el DOM) ---
-  $(function(){
-    var $form = $('.lusso-filters');
-    var $results = $('#lusso-search-results');
-
-    var $location = $('#lusso-filter-location');
-    var $subarea = $('#lusso-filter-subarea');
-    var $searchBtn = $form.find('.lusso-filters__submit');
-
-    $form.on('keydown', function(e){
-      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !$(e.target).is($searchBtn)) {
-        e.preventDefault();
-        return false;
-      }
+  // Función auxiliar para renderizar el listado de propiedades
+  function renderProperties(properties) {
+    if (!properties || !properties.length) {
+      $results.html('<div class="lusso-error">No se encontraron propiedades.</div>');
+      return;
+    }
+    var html = '';
+    properties.forEach(function(p){
+      html += '<div class="property-card">';
+      html += '<strong>' + (p.Title || p.Reference || 'Property') + '</strong><br>';
+      html += (p.Location ? '<span>' + p.Location + '</span><br>' : '');
+      html += (p.Price ? '<span>' + p.Price + '</span>' : '');
+      html += '</div>';
     });
+    $results.html(html);
+  }
 
-    // Al cambiar provincia, poblar location y subarea usando SearchLocations (window.LUSSO_FILTERS)
-    var config = window.LUSSO_FILTERS || {};
-    var $province = $form.find('select[name="province"]');
-    $province.on('change', function(){
-      var pv = $(this).val();
-      var locs = (pv && config.locationsByProvince && config.locationsByProvince[pv]) ? config.locationsByProvince[pv] : [];
-      $location.html('<option value="">Localidad</option>');
-      locs.forEach(function(loc){
-        $location.append('<option value="'+loc.replace(/"/g,'&quot;')+'">'+loc+'</option>');
-      });
-      $location.val('');
-      $location.trigger('change');
-      $subarea.html('<option value="">Subárea</option>');
-      $subarea.val('');
-    });
+  // Función auxiliar para mostrar errores de filtro/AJAX
+  function showFilterError(msg) {
+    $results.html('<div class="lusso-error">' + msg + '</div>');
+  }
 
-    $location.on('change', function(){
-      var lv = $(this).val();
-      var subas = (lv && config.subareasByLocation && config.subareasByLocation[lv]) ? config.subareasByLocation[lv] : [];
-      $subarea.html('<option value="">Subárea</option>');
-      subas.forEach(function(sa){
-        $subarea.append('<option value="'+sa.replace(/"/g,'&quot;')+'">'+sa+'</option>');
-      });
-      $subarea.val('');
-    });
+  // Intercepta el submit del formulario de filtros
+  $form.on('submit', function(e){
+    e.preventDefault();
 
-    function focusResults(){
-      if ($results.length) $results.attr('tabindex', -1).focus();
+    // Leer valores visibles de los filtros
+    var type     = $form.find('select[name="type"]').val();
+    var location = $form.find('select[name="location"]').val();
+    var bedrooms = $form.find('select[name="bedrooms"]').val();
+
+    // Normalizar el tipo para el backend (case-insensitive)
+    var typeNormalized = type ? type.toLowerCase().trim() : '';
+
+    // Validar solo tipos permitidos
+    var allowedTypes = { apartment: true, house: true, plot: true };
+    if (typeNormalized && !allowedTypes[typeNormalized]) {
+      showFilterError('Tipo de propiedad no válido.');
+      console.log('Tipo no permitido:', typeNormalized);
+      return;
     }
 
-    function renderResults(data) {
-      if (!$results.length) return;
-      $results.removeAttr('aria-busy');
-      if (!data || !data.success || !data.data || !data.data.data) {
-        $results.html('<div class="lusso-error">No results found.</div>');
-        focusResults();
-        return;
+    // Mostrar loading
+    $results.html('<div class="lusso-loading">Cargando...</div>');
+
+    // Construir datos para AJAX
+    var ajaxData = {
+      action: 'lusso_search_properties_type',
+      type: typeNormalized,
+      location: location,
+      bedrooms: bedrooms
+    };
+
+    console.log('Enviando AJAX:', ajaxData);
+
+    // Enviar petición AJAX al endpoint PHP usando la URL localizada
+    $.ajax({
+      url: (typeof myAjax !== 'undefined' ? myAjax.ajaxurl : '/wp-admin/admin-ajax.php'),
+      method: 'POST',
+      dataType: 'json',
+      data: ajaxData
+    }).done(function(response){
+      console.log('Respuesta AJAX:', response);
+      if (response.success && response.data && response.data.properties) {
+        renderProperties(response.data.properties);
+      } else if (response.data && response.data.error) {
+        showFilterError(response.data.error);
+      } else {
+        showFilterError('No se encontraron propiedades.');
       }
-      var html = '';
-      data.data.data.forEach(function(item){
-        html += '<div class="lusso-result-item">';
-        html += '<strong>' + (item.Title || item.Reference || 'Property') + '</strong><br>';
-        html += (item.Location ? '<span>' + item.Location + '</span><br>' : '');
-        html += (item.Price ? '<span>' + item.Price + '</span>' : '');
-        html += '</div>';
-      });
+    }).fail(function(xhr){
+      var msg = 'Error al cargar resultados.';
+      if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.error) {
+        msg = xhr.responseJSON.data.error;
+      }
+      showFilterError(msg);
+      console.log('AJAX error:', xhr);
+    });
+  });
+});
       if (data.data.QueryId && data.data.PageNo < data.data.PageCount) {
         html += '<button class="lusso-load-more" data-queryid="'+data.data.QueryId+'" data-pageno="'+(data.data.PageNo+1)+'">'+LUSSO_NEWDEVS.loadMore+'</button>';
       }
@@ -80,18 +97,68 @@
       }
     }
 
+    // Intercepta el submit del formulario de filtros
+    // Intercepta el submit del formulario de filtros
     $form.on('submit', function(e){
       e.preventDefault();
-      // Solo enviar location, type, bedrooms en la URL
-      const location  = document.querySelector('select[name="location"]')?.value?.trim();
-      const type      = document.querySelector('select[name="type"]')?.value?.trim();
-      const bedrooms  = document.querySelector('select[name="bedrooms"]')?.value?.trim();
-      const qs = new URLSearchParams();
-      if (location) qs.set('location', location);
-      if (type)     qs.set('type', type);
-      if (bedrooms) qs.set('bedrooms', bedrooms);
-      const url = window.location.pathname + (qs.toString() ? '?' + qs.toString() : '');
-      window.location.assign(url);
+
+      // Leer valores de los filtros
+      var type     = $form.find('select[name="type"]').val();
+      var location = $form.find('select[name="location"]').val();
+      var bedrooms = $form.find('select[name="bedrooms"]').val();
+
+      // Normalizar el tipo para el backend (case-insensitive)
+      var typeNormalized = type ? type.toLowerCase().trim() : '';
+
+      // Validar solo tipos permitidos
+      var allowedTypes = { apartment: true, house: true, plot: true };
+      if (typeNormalized && !allowedTypes[typeNormalized]) {
+        $results.html('<div class="lusso-error">Tipo de propiedad no válido.</div>');
+        return;
+      }
+
+      // Mostrar loading
+      $results.html('<div class="lusso-loading">Cargando...</div>');
+
+      // Construir datos para AJAX
+      var ajaxData = {
+        action: 'lusso_search_properties_type',
+        type: typeNormalized,
+        location: location,
+        bedrooms: bedrooms
+      };
+
+      // Enviar petición AJAX al endpoint PHP
+      $.ajax({
+        url: window.ajaxurl || '/wp-admin/admin-ajax.php',
+        method: 'POST',
+        dataType: 'json',
+        data: ajaxData
+      }).done(function(resp){
+        // Manejo de respuesta y renderizado de resultados
+        if (resp.success && resp.data && resp.data.properties && resp.data.properties.length) {
+          var html = '';
+          resp.data.properties.forEach(function(p){
+            html += '<div class="property-card">';
+            html += '<strong>' + (p.Title || p.Reference || 'Property') + '</strong><br>';
+            html += (p.Location ? '<span>' + p.Location + '</span><br>' : '');
+            html += (p.Price ? '<span>' + p.Price + '</span>' : '');
+            html += '</div>';
+          });
+          $results.html(html);
+        } else if (resp.data && resp.data.error) {
+          $results.html('<div class="lusso-error">' + resp.data.error + '</div>');
+        } else {
+          $results.html('<div class="lusso-error">No se encontraron propiedades.</div>');
+        }
+      }).fail(function(xhr){
+        // Mostrar error de red o servidor
+        var msg = 'Error al cargar resultados.';
+        if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.error) {
+          msg = xhr.responseJSON.data.error;
+        }
+        $results.html('<div class="lusso-error">' + msg + '</div>');
+      });
     });
 
     $results.on('click', '.lusso-load-more', function(e){
