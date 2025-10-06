@@ -1,61 +1,280 @@
 <?php
 /**
- * Resales Filters (Location estático, Type dinámico con fallback, sin AJAX)
+ * Resales API – Filters (New Developments)
  * Archivo: includes/class-resales-filters.php
  */
-if (!defined('ABSPATH')) exit;
 
-/* ============================================================
- * HELPERS GLOBALES (fuera de la clase) - NO TOCAR DENTRO DE LA CLASE
- * ============================================================ */
+if ( ! defined( 'ABSPATH' ) ) exit;
 
-/** Lee credenciales/base desde wp_options */
-if (!function_exists('resales_get_settings')) {
-    function resales_get_settings(): array {
-        $p1   = (string) get_option('resales_api_p1', '');
-        $p2   = (string) get_option('resales_api_p2', '');
-        $fid  = (string) get_option('resales_api_agency_filterid', ''); // P_Agency_FilterId
-        $aid  = (string) get_option('resales_api_apiid', '');           // P_ApiId (alternativo)
-        $lang = (int)    get_option('resales_api_lang', 1);
+if ( ! class_exists( 'Resales_Filters' ) ):
 
-        $out = [
-            'p1'     => $p1,
-            'p2'     => $p2,
-            'P_Lang' => $lang ?: 1,
-        ];
-        if (!empty($fid)) {
-            $out['P_Agency_FilterId'] = $fid;
-        } elseif (!empty($aid)) {
-            $out['P_ApiId'] = $aid;
-        }
-        return $out;
+class Resales_Filters {
+
+    /**
+     * Shortcode principal: [lusso_filters]
+     */
+    public function __construct() {
+        add_shortcode( 'lusso_filters', [ $this, 'render_shortcode' ] );
     }
-}
 
-/** Construye parámetros base para cualquier endpoint V6 con settings */
-if (!function_exists('resales_api_base_params')) {
-    function resales_api_base_params(array $extra = []): array {
-        $s = resales_get_settings();
+    /**
+     * Render del formulario + listado.
+     */
+    public function render_shortcode( $atts = [] ) {
+
+        // --- FORMULARIO ---
+        ob_start();
+
+        $current_location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
+        $current_beds     = isset($_GET['bedrooms']) ? sanitize_text_field($_GET['bedrooms']) : '';
+        $current_type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
+        $current_newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
+
+        ?>
+        <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:16px 0 24px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+                <!-- Location -->
+                <div>
+                    <label for="resales-filter-location" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Location', 'resales-api'); ?></label>
+                    <select id="resales-filter-location" name="location" style="min-width:220px;padding:6px 8px;">
+                        <option value=""><?php esc_html_e('Any', 'resales-api'); ?></option>
+                        <?php foreach ( self::locations_static() as $province => $cities ): ?>
+                            <optgroup label="<?php echo esc_attr( $province ); ?>">
+                                <?php foreach ( $cities as $c ): ?>
+                                    <option value="<?php echo esc_attr( $c['value'] ); ?>" <?php selected( $current_location, $c['value'] ); ?>>
+                                        <?php echo esc_html( $c['label'] ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Bedrooms -->
+                <div>
+                    <label for="resales-filter-bedrooms" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Bedrooms', 'resales-api'); ?></label>
+                    <select id="resales-filter-bedrooms" name="bedrooms" style="min-width:150px;padding:6px 8px;">
+                        <option value=""><?php esc_html_e('Any', 'resales-api'); ?></option>
+                        <?php foreach ( self::bedroom_options() as $val => $label ): ?>
+                            <option value="<?php echo esc_attr($val); ?>" <?php selected( $current_beds, (string)$val ); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Type (estático de 5 opciones) -->
+                <div>
+                    <label for="resales-filter-type" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Type', 'resales-api'); ?></label>
+                    <select id="resales-filter-type" name="type" style="min-width:200px;padding:6px 8px;">
+                        <option value=""><?php esc_html_e('All Types', 'resales-api'); ?></option>
+                        <?php foreach ( self::property_types_static() as $t ): ?>
+                            <option value="<?php echo esc_attr($t['value']); ?>" <?php selected( $current_type, $t['value'] ); ?>>
+                                <?php echo esc_html($t['label']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- newdevs (oculto si querés fijarlo a only) -->
+                <?php
+                // Si querés exponerlo, cambiá a un <select>. Por ahora, fijamos / respetamos valor.
+                $default_newdevs = get_option('resales_api_newdevs', 'only'); // tu preferencia
+                $hidden_newdevs  = $current_newdevs !== '' ? $current_newdevs : $default_newdevs;
+                ?>
+                <input type="hidden" name="newdevs" value="<?php echo esc_attr($hidden_newdevs); ?>" />
+
+                <!-- Search -->
+                <div>
+                    <button type="submit" style="padding:8px 14px;font-weight:600;cursor:pointer;">
+                        <?php esc_html_e('Search', 'resales-api'); ?>
+                    </button>
+                </div>
+            </div>
+        </form>
+        <?php
+
+        // --- LISTADO (llamada a API) ---
+        $params = $this->build_search_params_from_get();
+        $params = $this->resales_api_base_params( $params );
+
+        // Log de GET "seguro"
+        $safe_get = $_GET;
+        if ( isset($safe_get['p2']) ) { $safe_get['p2'] = substr($safe_get['p2'], 0, 6) . '…'; }
+        error_log('[Resales API][LOG] GET params: ' . wp_json_encode($safe_get));
+
+        // Aviso si type no se mapeó
+        if ( !empty($_GET['type']) && empty($params['P_PropertyTypes']) ) {
+            error_log('[Resales API][WARN] type recibido ('.sanitize_text_field($_GET['type']).') pero P_PropertyTypes no se añadió a $params');
+        }
+
+        $res = $this->run_search( $params );
+        echo $res; // HTML del grid (o mensaje de error)
+
+        return ob_get_clean();
+    }
+
+    /**
+     * Construye parámetros desde $_GET
+     */
+    private function build_search_params_from_get(): array {
+        $p = [];
+
+        // Location
+        if ( isset($_GET['location']) && $_GET['location'] !== '' ) {
+            $p['P_Location'] = sanitize_text_field( $_GET['location'] );
+        }
+
+        // Bedrooms
+        if ( isset($_GET['bedrooms']) && $_GET['bedrooms'] !== '' ) {
+            $p['P_Beds'] = (int) $_GET['bedrooms'];
+        }
+
+        // TYPE -> P_PropertyTypes (lista blanca)
+        if ( isset($_GET['type']) && $_GET['type'] !== '' ) {
+            $allowed = wp_list_pluck( self::property_types_static(), 'value' ); // ['1-1','2-2','5-1','1-6','4-1']
+            $val = sanitize_text_field( $_GET['type'] );
+            if ( in_array( $val, $allowed, true ) ) {
+                $p['P_PropertyTypes'] = $val;
+            }
+        }
+
+        // newdevs (respetar GET; por defecto "only")
+        if ( isset($_GET['newdevs']) && $_GET['newdevs'] !== '' ) {
+            $opt = sanitize_text_field($_GET['newdevs']);
+            if ( in_array( $opt, ['only','include','exclude'], true ) ) {
+                $p['p_new_devs'] = $opt;
+            }
+        }
+
+        // Log corto para validar
+        error_log('[resales-api][SAFELOG] SHORTCODE ARGS | ' . wp_json_encode([
+            'location_get'        => isset($_GET['location']) && $_GET['location'] !== '' ? 'yes' : 'no',
+            'args_has_P_Location' => isset($p['P_Location']) ? 'yes' : 'no',
+            'P_Location_val'      => $p['P_Location'] ?? 'empty',
+            'beds_get'            => isset($_GET['bedrooms']) && $_GET['bedrooms'] !== '' ? 'yes' : 'no',
+            'type_get'            => isset($_GET['type']) && $_GET['type'] !== '' ? 'yes' : 'no',
+            'P_PropertyTypes'     => $p['P_PropertyTypes'] ?? 'empty',
+            'newdevs'             => $p['p_new_devs'] ?? '(default later)',
+        ]));
+
+        return $p;
+    }
+
+    /**
+     * Agrega credenciales y parámetros base (sin pisar lo ya definido)
+     */
+    private function resales_api_base_params( array $p ): array {
         $base = [
-            'p1'     => $s['p1'] ?? '',
-            'p2'     => $s['p2'] ?? '',
-            'P_Lang' => $s['P_Lang'] ?? 1,
+            'p1'         => get_option('resales_api_p1'),
+            'p2'         => get_option('resales_api_p2'),
+            'p_output'   => 'JSON',
+            'P_ApiId'    => (string) get_option('resales_api_apiid'),
+            'P_Lang'     => (int) get_option('resales_api_lang', 1),
+            'P_PageNo'   => 1,
+            'P_PageSize' => (int) get_option('resales_api_pagesize', 12),
+            'P_SortType' => 3,
         ];
-        if (!empty($s['P_Agency_FilterId'])) {
-            $base['P_Agency_FilterId'] = $s['P_Agency_FilterId'];
-        } elseif (!empty($s['P_ApiId'])) {
-            $base['P_ApiId'] = $s['P_ApiId'];
-        }
-        return array_filter($base) + $extra;
-    }
-}
 
-/**
- * Tipos de propiedad estáticos para New Developments.
- * Simplificado según pedido del cliente: Apartment, Villa, Townhouse, Penthouse, Plot.
- */
-if (!function_exists('resales_property_types_static')) {
-    function resales_property_types_static(): array {
+        // Sólo fijar por defecto si NO vino en $p
+        if ( empty( $p['p_new_devs'] ) ) {
+            $p['p_new_devs'] = get_option('resales_api_newdevs', 'only'); // tu caso: ONLY (New Developments)
+        }
+
+        return array_merge( $base, $p );
+    }
+
+    /**
+     * Llama a la API (Search Properties) y pinta un grid básico.
+     */
+    private function run_search( array $params ): string {
+
+        // Log antes de llamar
+        $safe = $params;
+        if ( ! empty( $safe['p2'] ) ) $safe['p2'] = substr( $safe['p2'], 0, 6 ) . '…';
+        error_log('[Resales API][LOG] Params enviados a API: ' . wp_json_encode( $safe ));
+
+        // Endpoint oficial V6 (ForSale -> Search Properties)
+        $endpoint = 'https://webapi-v6.learning.resales-online.com/ForSale';
+
+        $url = add_query_arg( $params, $endpoint );
+
+        $resp = wp_remote_get( $url, [
+            'timeout' => (int) get_option('resales_api_timeout', 20),
+            'headers' => [
+                'Accept' => 'application/json',
+            ],
+        ]);
+
+        if ( is_wp_error( $resp ) ) {
+            return '<p>' . esc_html__( 'Error contacting the API', 'resales-api' ) . '</p>';
+        }
+
+        $code = wp_remote_retrieve_response_code( $resp );
+        $body = wp_remote_retrieve_body( $resp );
+        error_log('[Resales API][LOG] Respuesta API: ' . $body);
+
+        if ( $code !== 200 || empty( $body ) ) {
+            return '<p>' . esc_html__( 'Empty or invalid response', 'resales-api' ) . '</p>';
+        }
+
+        $data = json_decode( $body, true );
+        if ( ! is_array( $data ) ) {
+            return '<p>' . esc_html__( 'Unexpected API response', 'resales-api' ) . '</p>';
+        }
+
+        // Pinta un grid simple de resultados
+        $html = '<div class="lusso-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">';
+
+        $props = $data['Property'] ?? [];
+        $count = is_array($props) ? count($props) : 0;
+
+        error_log('[Resales API][LOG] Total propiedades renderizadas: ' . $count);
+
+        if ( $count === 0 ) {
+            $html .= '<p>' . esc_html__( 'No results found', 'resales-api' ) . '</p>';
+            $html .= '</div>';
+            return $html;
+        }
+
+        foreach ( $props as $p ) {
+            $ref   = $p['Reference'] ?? '';
+            $loc   = $p['Location'] ?? '';
+            $beds  = $p['Bedrooms'] ?? '';
+            $typeN = $p['PropertyType']['Subtype1'] ?? ($p['PropertyType']['Type'] ?? '');
+            $price = $p['Price'] ?? '';
+            $pic   = '';
+            if ( ! empty($p['Pictures']['Picture'][0]['PictureURL']) ) {
+                $pic = esc_url( $p['Pictures']['Picture'][0]['PictureURL'] );
+            }
+
+            error_log('[Resales API][LOG] Propiedad: Ref=' . $ref . ' | Dormitorios=' . $beds);
+
+            $html .= '<article style="border:1px solid #eee;border-radius:10px;overflow:hidden;background:#fff">';
+            if ( $pic ) {
+                $html .= '<div style="aspect-ratio:16/9;overflow:hidden;"><img src="'. $pic .'" alt="" style="width:100%;height:100%;object-fit:cover;"></div>';
+            }
+            $html .= '<div style="padding:12px 14px">';
+            $html .= '<div style="font-weight:700;margin-bottom:4px;">' . esc_html( $typeN ) . '</div>';
+            $html .= '<div style="opacity:.8;margin-bottom:6px;">' . esc_html( $loc ) . '</div>';
+            $html .= '<div style="display:flex;justify-content:space-between;align-items:center">';
+            $html .= '<span>' . esc_html__( 'Ref', 'resales-api' ) . ': ' . esc_html( $ref ) . '</span>';
+            if ( $price ) {
+                $html .= '<span style="font-weight:700;">€ ' . esc_html( number_format( (float)$price, 0, ',', '.' ) ) . '</span>';
+            }
+            $html .= '</div>';
+            $html .= '</div>';
+            $html .= '</article>';
+        }
+
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * LISTA ESTÁTICA: 5 tipos (con códigos V6 correctos)
+     */
+    public static function property_types_static(): array {
         return [
             [ 'value' => '1-1', 'label' => 'Apartment' ],
             [ 'value' => '2-2', 'label' => 'Villa' ],
@@ -64,19 +283,12 @@ if (!function_exists('resales_property_types_static')) {
             [ 'value' => '4-1', 'label' => 'Plot' ],
         ];
     }
-}
 
-// property types solo estático
-
-/* ============================================================
- * CLASE DEL FORMULARIO (sin AJAX) + LISTADO ESTÁTICO DE LOCATIONS
- * ============================================================ */
-
-if (!class_exists('Resales_Filters')) {
-    class Resales_Filters {
-
-        /** Listado estático de localidades por provincia (optgroups) */
-        public static $LOCATIONS = [
+    /**
+     * Ubicaciones estáticas (corto, editable)
+     */
+    public static function locations_static(): array {
+        return [
             'Málaga' => [
                 [ 'value' => 'Benahavís',    'label' => 'Benahavís'    ],
                 [ 'value' => 'Benalmadena',  'label' => 'Benalmádena'  ],
@@ -93,133 +305,24 @@ if (!class_exists('Resales_Filters')) {
                 [ 'value' => 'Sotogrande',   'label' => 'Sotogrande'   ],
             ],
         ];
-
-        public function __construct() {
-            // Compatibilidad total con ambos shortcodes
-            add_shortcode('resales_filters', [$this, 'shortcode']);
-            add_shortcode('lusso_filters',   [$this, 'shortcode']);
-        }
-
-        /** Shortcode principal */
-        public function shortcode($atts = [], $content = null) {
-            ob_start();
-            $this->render_filters_form();
-            return ob_get_clean();
-        }
-
-        /** Render del formulario (sin AJAX) */
-        public function render_filters_form() {
-            // Valores actuales desde la URL
-            $current_location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
-            $current_type     = isset($_GET['type'])     ? sanitize_text_field($_GET['type'])     : '';
-            $current_beds     = isset($_GET['bedrooms']) ? intval($_GET['bedrooms'])               : 0;
-
-            // Forzar/Respetar New Developments
-            $opt_newdevs = get_option('resales_api_newdevs', 'only'); // include | only | exclude
-            if (empty($opt_newdevs) || !in_array($opt_newdevs, ['include','only','exclude'], true)) {
-                $opt_newdevs = 'only';
-            }
-
-            // Tipos solo estáticos
-            $types  = resales_property_types_static();
-
-            // Action del formulario: misma página sin duplicar query args
-            $action = home_url(add_query_arg([], remove_query_arg(array_keys($_GET))));
-            ?>
-            <form class="resales-filters lusso-filters" method="get" action="<?php echo esc_url($action); ?>">
-                <div class="lusso-filters__row" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
-                    <div class="filter-group">
-                        <select id="resales-filter-location" name="location" style="min-width:120px;">
-                            <option value=""><?php esc_html_e('Location', 'resales-api'); ?></option>
-                            <?php
-                            foreach (self::$LOCATIONS as $province => $cities) {
-                                echo '<optgroup label="' . esc_attr($province) . '">';
-                                foreach ($cities as $city) {
-                                    $val = esc_attr($city['value']);
-                                    $lab = esc_html($city['label']);
-                                    $sel = ($current_location === $val) ? ' selected' : '';
-                                    echo '<option value="' . $val . '"' . $sel . '>' . $lab . '</option>';
-                                }
-                                echo '</optgroup>';
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <select id="resales-filter-bedrooms" name="bedrooms" style="min-width:80px;">
-                            <option value=""><?php esc_html_e('Bedrooms', 'resales-api'); ?></option>
-                            <?php
-                            $beds_options = [1=>1, 2=>2, 3=>3, 4=>4, 5=>5];
-                            foreach ($beds_options as $val => $label) {
-                                $sel = (string)$current_beds === (string)$val ? ' selected' : '';
-                                echo '<option value="'.esc_attr($val).'"'.$sel.'>'.esc_html($label).'</option>';
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <select id="resales-filter-type" name="type" style="min-width:120px;">
-                            <option value="">All Types</option>
-                            <?php foreach (resales_property_types_static() as $t): ?>
-                                <option value="<?php echo esc_attr($t['value']); ?>"<?php echo ($current_type === $t['value']) ? ' selected' : ''; ?>>
-                                    <?php echo esc_html($t['label']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="filter-group filter-actions">
-                        <button type="submit" class="btn btn-primary" style="height:38px;min-width:100px;">
-                            <?php echo esc_html__('Search', 'resales-api'); ?>
-                        </button>
-                    </div>
-                </div>
-                <input type="hidden" name="newdevs" value="<?php echo esc_attr($opt_newdevs); ?>" />
-            </form>
-            <?php
-        }
-
-        /* =================================================================
-         * (Opcional) utilidades si esta clase también arma la request
-         * ================================================================= */
-
-        /** Construye parámetros para SearchProperties desde $_GET */
-        private function build_search_params_from_get(): array {
-            $p = [];
-            if (!empty($_GET['location'])) $p['P_Location']      = sanitize_text_field($_GET['location']);
-            if (!empty($_GET['bedrooms'])) $p['P_Beds']          = (int) $_GET['bedrooms'];
-            if (!empty($_GET['type']))     $p['P_PropertyTypes'] = sanitize_text_field($_GET['type']); // OptionValue
-            $newdevs = !empty($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : get_option('resales_api_newdevs','only');
-            if (!in_array($newdevs, ['only','include','exclude'], true)) $newdevs = 'only';
-            $p['p_new_devs'] = $newdevs;
-
-            if (!empty($_GET['page']) && ctype_digit((string)$_GET['page'])) {
-                $p['P_PageNo'] = (int) $_GET['page'];
-            }
-            if (!empty($_GET['lang']) && ctype_digit((string)$_GET['lang'])) {
-                $p['P_Lang'] = (int) $_GET['lang'];
-            }
-
-            $p = resales_api_base_params($p);
-            return $p;
-        }
-
-        /** Ejecuta SearchProperties (wp_remote_get) */
-        private function run_search(array $params): array {
-            $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
-            $r   = wp_remote_get($url, ['timeout' => 25]);
-            if (is_wp_error($r)) return ['ok' => false, 'error' => $r->get_error_message()];
-            $code = (int) wp_remote_retrieve_response_code($r);
-            $body = wp_remote_retrieve_body($r);
-            $json = json_decode($body, true);
-            if ($code !== 200 || !is_array($json)) return ['ok' => false, 'http' => $code, 'raw' => $body];
-            return ['ok' => true, 'data' => $json];
-        }
     }
+
+    /**
+     * Opciones de dormitorios
+     */
+    public static function bedroom_options(): array {
+        return [
+            '1' => '1+',
+            '2' => '2+',
+            '3' => '3+',
+            '4' => '4+',
+            '5' => '5+',
+        ];
+    }
+
 }
 
-/* ============================================================
- * Instancia única
- * ============================================================ */
-if (class_exists('Resales_Filters')) {
-    new Resales_Filters();
-}
+// Bootstrap de la clase
+new Resales_Filters();
+
+endif;
