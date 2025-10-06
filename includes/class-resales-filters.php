@@ -1,414 +1,266 @@
 <?php
 /**
- * Devuelve la configuración de filtros (provincias, locations y subáreas) para exponer al JS.
- *
- * @return array{
- *   provinces: string[],
- *   locationsByProvince: array<string, string[]>,
- *   subareasByLocation: array<string, string[]>
- * }
+ * Resales Filters (Location estático, Type dinámico con fallback, sin AJAX)
+ * Archivo: includes/class-resales-filters.php
  */
-function lusso_filters_get_config(): array {
-	$provinces = array_keys(Resales_Filters::$LOCATIONS);
-	$locationsByProvince = [];
-	$subareasByLocation = [];
-	foreach (Resales_Filters::$LOCATIONS as $province => $locs) {
-		$locationsByProvince[$province] = [];
-		foreach ($locs as $item) {
-			$loc = $item['value'];
-			$locationsByProvince[$province][] = $loc;
-			// Si hay subáreas, agregarlas aquí (en este ejemplo no hay, pero estructura lista)
-			$subareasByLocation[$loc] = [];
-		}
-	}
-	return [
-		'provinces' => $provinces,
-		'locationsByProvince' => $locationsByProvince,
-		'subareasByLocation' => $subareasByLocation,
-	];
+if (!defined('ABSPATH')) exit;
+
+/* ============================================================
+ * HELPERS GLOBALES (fuera de la clase) - NO TOCAR DENTRO DE LA CLASE
+ * ============================================================ */
+
+/** Lee credenciales/base desde wp_options */
+if (!function_exists('resales_get_settings')) {
+    function resales_get_settings(): array {
+        $p1   = (string) get_option('resales_api_p1', '');
+        $p2   = (string) get_option('resales_api_p2', '');
+        $fid  = (string) get_option('resales_api_agency_filterid', ''); // P_Agency_FilterId
+        $aid  = (string) get_option('resales_api_apiid', '');           // P_ApiId (alternativo)
+        $lang = (int)    get_option('resales_api_lang', 1);
+
+        $out = [
+            'p1'     => $p1,
+            'p2'     => $p2,
+            'P_Lang' => $lang ?: 1,
+        ];
+        if (!empty($fid)) {
+            $out['P_Agency_FilterId'] = $fid;
+        } elseif (!empty($aid)) {
+            $out['P_ApiId'] = $aid;
+        }
+        return $out;
+    }
 }
 
-/**
- * Devuelve la ubicación formateada para mostrar en la tarjeta.
- *
- * @param array $p Array asociativo con claves 'Province', 'Location', 'SubArea'.
- * @return string Ubicación formateada y escapada.
- */
-function get_card_place_label(array $p): string {
-	$province = isset($p['Province']) ? trim((string)$p['Province']) : '';
-	$location = isset($p['Location']) ? trim((string)$p['Location']) : '';
-	$subarea  = isset($p['SubArea'])  ? trim((string)$p['SubArea'])  : '';
-
-	if ($subarea !== '') {
-		$label = $subarea;
-		if ($location !== '') {
-			$label .= ', ' . $location;
-		}
-	} elseif ($location !== '') {
-		$label = $location;
-		if ($province !== '') {
-			$label .= ', ' . $province;
-		}
-	} else {
-		$label = $province;
-	}
-	return esc_html($label);
+/** Construye parámetros base para cualquier endpoint V6 con settings */
+if (!function_exists('resales_api_base_params')) {
+    function resales_api_base_params(array $extra = []): array {
+        $s = resales_get_settings();
+        $base = [
+            'p1'     => $s['p1'] ?? '',
+            'p2'     => $s['p2'] ?? '',
+            'P_Lang' => $s['P_Lang'] ?? 1,
+        ];
+        if (!empty($s['P_Agency_FilterId'])) {
+            $base['P_Agency_FilterId'] = $s['P_Agency_FilterId'];
+        } elseif (!empty($s['P_ApiId'])) {
+            $base['P_ApiId'] = $s['P_ApiId'];
+        }
+        return array_filter($base) + $extra;
+    }
 }
-/**
- * Resales Filters – lista predefinida para Área y Location + shortcode [lusso_filters]
- *
- * - Renderiza selects de Área y Location con <optgroup>.
- * - Los value de <option> coinciden con los valores que entiende la API V6.
- * - Los label pueden tener tildes para UI.
- *
- * @package resales-api
- */
 
-if ( ! defined( 'ABSPATH' ) ) { exit; }
-
-if ( ! class_exists( 'Resales_Filters' ) ) :
-
-final class Resales_Filters {
-	/**
-	 * Normaliza un string eliminando etiquetas HTML y convirtiendo a minúsculas.
-	 * @param string $s
-	 * @return string
-	 */
-	private function norm($s) {
-		$s = wp_strip_all_tags($s);
-		$s = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-		$s = remove_accents($s);
-		$s = strtolower($s);
-		$s = preg_replace('/\s+/', ' ', $s);
-		return trim($s);
-	}
-
-	/**
-	 * Singleton.
-	 *
-	 * @var Resales_Filters|null
-	 */
-	private static $instance = null;
-
-	/**
-	 * Mapa de ubicaciones.
-	 *
-	 * Clave del array = label del Área (lo que ve el usuario).
-	 * Cada localidad = ['value' => <para API>, 'label' => <para UI>].
-	 *
-	 * Basado en SearchLocations (V6):
-	 *   Málaga  → Benahavís, Benalmadena, Casares, Estepona, Fuengirola, Málaga, Manilva, Marbella, Mijas, Torremolinos
-	 *   Cádiz   → Sotogrande
-	 */
-	public static $LOCATIONS = [
-		'Málaga' => [
-			[ 'value' => 'Benahavís',    'label' => 'Benahavís'    ],
-			[ 'value' => 'Benalmadena',  'label' => 'Benalmádena'  ],
-			[ 'value' => 'Casares',      'label' => 'Casares'      ],
-			[ 'value' => 'Estepona',     'label' => 'Estepona'     ],
-			[ 'value' => 'Fuengirola',   'label' => 'Fuengirola'   ],
-			[ 'value' => 'Málaga',       'label' => 'Málaga'       ],
-			[ 'value' => 'Manilva',      'label' => 'Manilva'      ],
-			[ 'value' => 'Marbella',     'label' => 'Marbella'     ],
-			[ 'value' => 'Mijas',        'label' => 'Mijas'        ],
-			[ 'value' => 'Torremolinos', 'label' => 'Torremolinos' ],
-		],
-		'Cádiz' => [
-			[ 'value' => 'Sotogrande',   'label' => 'Sotogrande'   ],
-		],
-	];
-
-	private function __construct() {}
-
-	/**
-	 * @return Resales_Filters
-	 */
-	public static function instance() {
-		if ( null === self::$instance ) {
-			self::$instance = new self();
-		}
-		return self::$instance;
-	}
-
-	/**
-	 * Devuelve las áreas disponibles (labels).
-	 *
-	 * @return string[]
-	 */
-	public function get_areas() {
-		return array_keys( self::$LOCATIONS );
-	}
-
-	/**
-	 * Devuelve localidades (value/label) por área.
-	 *
-	 * @param string $area_label Label de área.
-	 * @return array<int, array{value:string,label:string}>
-	 */
-	public function get_locations_by_area( $area_label ) {
-		return isset( self::$LOCATIONS[ $area_label ] ) ? self::$LOCATIONS[ $area_label ] : [];
-	}
-
-	/**
-	 * <select> de Área (labels como value).
-	 *
-	 * @param string $selected Label de área seleccionada.
-	 * @param array  $attrs    Atributos extra para el select.
-	 * @return string HTML
-	 */
-	public function render_area_select( $selected = '', $attrs = [] ) {
-		// Si llega vía query string, tiene prioridad.
-		if ( isset( $_GET['area'] ) && '' === $selected ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$selected = sanitize_text_field( wp_unslash( (string) $_GET['area'] ) ); // phpcs:ignore
-		}
-
-		$attrs = wp_parse_args(
-			$attrs,
-			[
-				'id'    => 'resales-area',
-				'name'  => 'area',
-				'class' => 'resales-area-filter',
-			]
-		);
-
-		$attr_html = '';
-		foreach ( $attrs as $k => $v ) {
-			$attr_html .= sprintf( ' %s="%s"', esc_attr( $k ), esc_attr( $v ) );
-		}
-
-		$html  = '<select' . $attr_html . '>';
-		$html .= '<option value="">' . esc_html__( 'Area', 'resales-api' ) . '</option>';
-
-		foreach ( $this->get_areas() as $area_label ) {
-			$html .= sprintf(
-				'<option value="%1$s"%2$s>%3$s</option>',
-				esc_attr( $area_label ),
-				selected( $selected, $area_label, false ),
-				esc_html( $area_label )
-			);
-		}
-
-		$html .= '</select>';
-		return $html;
-	}
-
-	/**
-	 * <select> de Location con <optgroup> por Área.
-	 *
-	 * @param string      $selected       Location (value de API) seleccionado.
-	 * @param string|null $selected_area  Área (label) para filtrar (opcional).
-	 * @param array       $attrs          Atributos extra del select.
-	 * @return string HTML
-	 */
-	public function render_location_select( $selected = '', $selected_area = null, $attrs = [] ) {
-	// Permite inyectar set de localidades de la API para marcar estado visual
-	$api_locs = isset($attrs['api_locs']) && is_array($attrs['api_locs']) ? array_map([$this, 'norm'], $attrs['api_locs']) : [];
-		if ( isset( $_GET['location'] ) && '' === $selected ) {
-			$selected = sanitize_text_field( wp_unslash( (string) $_GET['location'] ) );
-		}
-		if ( isset( $_GET['area'] ) && null === $selected_area ) {
-			$selected_area = sanitize_text_field( wp_unslash( (string) $_GET['area'] ) );
-		}
-
-		$attrs = wp_parse_args(
-			$attrs,
-			[
-				'id'    => 'resales-location',
-				'name'  => 'location',
-				'class' => 'resales-location-filter',
-			]
-		);
-
-		$attr_html = '';
-		foreach ( $attrs as $k => $v ) {
-			$attr_html .= sprintf( ' %s="%s"', esc_attr( $k ), esc_attr( $v ) );
-		}
-
-		$zonas_map = [
-			'BENAHAVÍS' => [
-				'Altos de los Monteros', 'Benahavís', 'El Madroñal', 'La Heredia', 'La Quinta', 'La Zagaleta', 'Los Almendros', 'Los Arqueros', 'Monte Halcones'
-			],
-			'BENALMÁDENA' => [
-				'Arroyo de la Miel', 'Benalmadena', 'Benalmadena Costa', 'Benalmadena Pueblo', 'Carvajal', 'La Capellanía', 'Torremar', 'Torrequebrada', 'Torremuelle'
-			],
-			'CÁDIZ – CAMPO DE GIBRALTAR' => [
-				'Guadiaro', 'La Alcaidesa', 'Pueblo Nuevo de Guadiaro', 'Punta Chullera', 'San Diego', 'San Enrique', 'San Roque', 'San Roque Club', 'Sotogrande', 'Sotogrande Alto', 'Sotogrande Costa', 'Sotogrande Marina', 'Sotogrande Playa', 'Sotogrande Puerto', 'Torreguadiaro'
-			],
-			'ESTEPONA & NEW GOLDEN MILE' => [
-				'Atalaya', 'Bel Air', 'Benamara', 'Benavista', 'Cancelada', 'Costalita', 'El Padron', 'El Paraiso', 'El Presidente', 'Estepona', 'Los Flamingos', 'New Golden Mile'
-			],
-			'FUENGIROLA' => [
-				'Fuengirola', 'Los Alamos', 'Los Boliches', 'Los Pacos', 'Miraflores'
-			],
-			'MÁLAGA CAPITAL (COSTA)' => [
-				'Higueron', 'Málaga', 'Málaga Centro', 'Málaga Este', 'Playamar', 'Puerto de la Torre'
-			],
-			'MANILVA' => [
-				'Casares', 'Casares Playa', 'Casares Pueblo', 'Doña Julia', 'La Duquesa', 'Manilva', 'San Luis de Sabinillas'
-				// 'Selwo' (si lo consideras zona limítrofe)
-			],
-			'MARBELLA' => [
-				'Aloha', 'Artola', 'Bahía de Marbella', 'Cabopino', 'Carib Playa', 'Cerros del Aguila', 'Cortijo Blanco', 'Costabella', 'Diana Park', 'El Rosario', 'Elviria', 'Guadalmina Alta', 'Guadalmina Baja', 'Hacienda del Sol', 'Hacienda Las Chapas', 'La Campana', 'La Mairena', 'Las Brisas', 'Las Chapas', 'Los Monteros', 'Marbella', 'Marbesa', 'Nagüeles', 'Nueva Andalucía', 'Ojén', 'Puerto Banús', 'Puerto de Cabopino', 'Reserva de Marbella', 'Río Real', 'San Pedro de Alcántara', 'Sierra Blanca', 'Torre Real', 'Valle Romano', 'Valtocado'
-			],
-			'MIJAS COSTA' => [
-				'Calahonda', 'Calanova Golf', 'Calypso', 'Campo Mijas', 'El Chaparral', 'El Coto', 'El Faro', 'La Cala de Mijas', 'La Cala Golf', 'La Cala Hills', 'Las Lagunas', 'Mijas', 'Mijas Costa', 'Mijas Golf', 'Riviera del Sol', 'Sierrezuela', 'Torrenueva'
-			],
-			'TORREMOLINOS' => [
-				'Bajondillo', 'El Calvario', 'El Pinillo', 'La Carihuela', 'La Colina', 'Montemar', 'Torreblanca', 'Torremolinos', 'Torremolinos Centro', 'Torremar'
-			],
-		];
-		// Siempre renderiza todas las zonas/localidades del mapping estático
-		$agrupadas = $zonas_map;
-
-		$html  = '<select' . $attr_html . '>';
-		$html .= '<option value="">' . esc_html__( 'Location', 'resales-api' ) . '</option>';
-
-		foreach ( $agrupadas as $zona => $locs ) {
-			// Si se selecciona área, filtra por label de zona
-			if ($selected_area && $this->norm($selected_area) !== $this->norm($zona)) {
-				continue;
-			}
-			$html .= sprintf( '<optgroup label="%s">', esc_attr( $zona ) );
-			foreach ( $locs as $loc ) {
-				$value = (string)$loc;
-				$value_norm = $this->norm($value);
-				$has_api = empty($api_locs) || in_array($value_norm, $api_locs, true) ? '1' : '0';
-				$data_attr = $has_api === '0' ? ' data-has-api="0"' : '';
-				$html .= sprintf(
-					'<option value="%1$s"%2$s%3$s>%4$s</option>',
-					esc_attr( $value ),
-					selected( $selected, $value, false ),
-					$data_attr,
-					esc_html( $value )
-				);
-			}
-			$html .= '</optgroup>';
-		}
-		if ( ! empty( $otras ) ) {
-			$html .= sprintf( '<optgroup label="%s">', esc_html__( 'OTRAS', 'resales-api' ) );
-			foreach ( $otras as $item ) {
-				$html .= sprintf(
-					'<option value="%1$s"%2$s>%3$s</option>',
-					esc_attr( $item['value'] ),
-					selected( $selected, $item['value'], false ),
-					esc_html( $item['label'] )
-				);
-			}
-			$html .= '</optgroup>';
-		}
-
-		$html .= '</select>';
-		return $html;
-	}
+/** Fallback estático para tipos (pensado para New Developments) */
+if (!function_exists('resales_property_types_static')) {
+    function resales_property_types_static(): array {
+        return [
+            ['value' => '2-2', 'label' => 'Apartment'],
+            ['value' => '2-6', 'label' => 'Penthouse'],
+            ['value' => '2-5', 'label' => 'Ground Floor Apartment'],
+            ['value' => '2-4', 'label' => 'Middle Floor Apartment'],
+            ['value' => '5-1', 'label' => 'Townhouse'],
+            ['value' => '4-1', 'label' => 'Villa'],
+            ['value' => '3-1', 'label' => 'Duplex'],
+        ];
+    }
 }
-endif;
 
-/**
- * Shortcode [lusso_filters]
- *
- * IMPORTANTE: los shortcodes deben **devolver** contenido, no imprimirlo,
- * según la Shortcode API de WordPress. :contentReference[oaicite:2]{index=2}
- */
-if ( ! class_exists( 'Resales_Filters_Shortcode' ) ) :
+/** Carga tipos desde SearchPropertyTypes (cache 24h) */
+if (!function_exists('resales_property_types_dynamic')) {
+    function resales_property_types_dynamic(): array {
+        $lang = (int) (resales_get_settings()['P_Lang'] ?? 1);
+        $cache_key = 'resales_prop_types_' . $lang;
 
+        $cached = get_transient($cache_key);
+        if (is_array($cached)) return $cached;
 
+        $url = 'https://webapi.resales-online.com/V6/SearchPropertyTypes?' . http_build_query(resales_api_base_params());
+        $resp = wp_remote_get($url, ['timeout' => 20]);
+        if (is_wp_error($resp)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[resales-api][ERR] PropertyTypes: ' . $resp->get_error_message());
+            }
+            return [];
+        }
 
-final class Resales_Filters_Shortcode {
+        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        $out  = [];
+        if (!empty($json['PropertyTypes']['PropertyType']) && is_array($json['PropertyTypes']['PropertyType'])) {
+            foreach ($json['PropertyTypes']['PropertyType'] as $opt) {
+                $text = isset($opt['OptionText']) ? (string)$opt['OptionText'] : '';
+                $val  = isset($opt['OptionValue']) ? (string)$opt['OptionValue'] : '';
+                if ($text !== '' && $val !== '') $out[] = ['value' => $val, 'label' => $text];
+            }
+        }
 
-	public function __construct() {
-		add_shortcode( 'lusso_filters', [ $this, 'render_shortcode' ] ); // registra el shortcode
-	}
-
-	/**
-	 * Callback del shortcode: devuelve el formulario de filtros.
-	 *
-	 * @param array  $atts
-	 * @param string $content
-	 * @param string $tag
-	 * @return string HTML
-	 */
-	public function render_shortcode( $atts = [], $content = '', $tag = '' ) {
-		// Logging de banderas GET para location
-		if (function_exists('resales_safe_log')) {
-			resales_safe_log('SC GET', [
-				'has_location' => isset($_GET['location']) ? 'yes' : 'no',
-				'location_val' => isset($_GET['location']) && $_GET['location'] !== '' ? '***' : 'empty'
-			]);
-		}
-		// Leer location y area desde GET, sanitizar
-		$selected_area = isset($_GET['area']) ? sanitize_text_field(wp_unslash((string)$_GET['area'])) : '';
-		$selected_location = isset($_GET['location']) ? sanitize_text_field(wp_unslash((string)$_GET['location'])) : '';
-
-		$area_inferred = 'no';
-		// Si no hay área pero sí location, inferir área
-		if ($selected_area === '' && $selected_location !== '') {
-			foreach (Resales_Filters::$LOCATIONS as $area_label => $locs) {
-				foreach ($locs as $item) {
-					if (isset($item['value']) && $item['value'] === $selected_location) {
-						$selected_area = $area_label;
-						$area_inferred = 'yes';
-						break 2;
-					}
-				}
-			}
-		}
-
-		// Log banderas de GET y área inferida
-		if (function_exists('resales_safe_log')) {
-			resales_safe_log('SHORTCODE ARGS', [
-				'location_get' => $selected_location !== '' ? 'yes' : 'no',
-				'area_inferred' => ($selected_area !== '' && !isset($_GET['area'])) ? 'yes' : 'no',
-			]);
-		}
-		$filters = Resales_Filters::instance();
-
-				ob_start();
-				?>
-								<div class="resales-filters-wrapper">
-									<form id="lusso-filters" class="resales-filters-form lusso-filters" method="post" action="">
-				    <div class="filter-field">
-				      <?php
-								// Location agrupado por zonas
-								echo $filters->render_location_select(
-									$selected_location,
-									null,
-									[
-										'id'    => 'resales-location',
-										'name'  => 'location',
-										'class' => 'resales-location-filter lusso-location-static',
-									]
-								);
-				      ?>
-				    </div>
-				    <div class="filter-field">
-					<select id="resales-type" name="type" class="resales-type-filter lusso-type-static">
-									<option value=""><?php esc_html_e('Type', 'resales-api'); ?></option>
-									<option value="apartment" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'apartment'); ?>><?php esc_html_e('Apartment', 'resales-api'); ?></option>
-									<option value="house" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'house'); ?>><?php esc_html_e('House', 'resales-api'); ?></option>
-									<option value="plot" <?php selected(isset($_GET['type']) ? $_GET['type'] : '', 'plot'); ?>><?php esc_html_e('Plot', 'resales-api'); ?></option>
-								</select>
-				    </div>
-				    <div class="filter-field">
-				      <select id="resales-bedrooms" name="bedrooms" class="resales-bedrooms-filter lusso-bedrooms-static">
-				        <option value=""><?php esc_html_e('Bedrooms', 'resales-api'); ?></option>
-				        <option value="1" <?php selected(isset($_GET['bedrooms']) ? $_GET['bedrooms'] : '', '1'); ?>>1+</option>
-				        <option value="2" <?php selected(isset($_GET['bedrooms']) ? $_GET['bedrooms'] : '', '2'); ?>>2+</option>
-				        <option value="3" <?php selected(isset($_GET['bedrooms']) ? $_GET['bedrooms'] : '', '3'); ?>>3+</option>
-				        <option value="4" <?php selected(isset($_GET['bedrooms']) ? $_GET['bedrooms'] : '', '4'); ?>>4+</option>
-				        <option value="5" <?php selected(isset($_GET['bedrooms']) ? $_GET['bedrooms'] : '', '5'); ?>>5+</option>
-				      </select>
-				    </div>
-										<div class="filter-field lusso-filters__submit">
-	<button type="submit" data-role="search" class="button">
-				<?php esc_html_e( 'Search', 'resales-api' ); ?>
-			</button>
-		</div>
-				  </form>
-								</div>
-								<div id="lusso-search-results"></div>
-								<?php
-									// SHORTCODE: devolver, no echo.
-									return ob_get_clean();
-								}
+        set_transient($cache_key, $out, DAY_IN_SECONDS);
+        return $out;
+    }
 }
-endif;
+
+/** Selector final: intenta dinámico; si falla, usa fallback estático */
+if (!function_exists('resales_property_types')) {
+    function resales_property_types(): array {
+        $types = resales_property_types_dynamic();
+        return !empty($types) ? $types : resales_property_types_static();
+    }
+}
+
+/* ============================================================
+ * CLASE DEL FORMULARIO (sin AJAX) + LISTADO ESTÁTICO DE LOCATIONS
+ * ============================================================ */
+
+if (!class_exists('Resales_Filters')) {
+    class Resales_Filters {
+
+        /** Listado estático de localidades por provincia (optgroups) */
+        public static $LOCATIONS = [
+            'Málaga' => [
+                [ 'value' => 'Benahavís',    'label' => 'Benahavís'    ],
+                [ 'value' => 'Benalmadena',  'label' => 'Benalmádena'  ],
+                [ 'value' => 'Casares',      'label' => 'Casares'      ],
+                [ 'value' => 'Estepona',     'label' => 'Estepona'     ],
+                [ 'value' => 'Fuengirola',   'label' => 'Fuengirola'   ],
+                [ 'value' => 'Málaga',       'label' => 'Málaga'       ],
+                [ 'value' => 'Manilva',      'label' => 'Manilva'      ],
+                [ 'value' => 'Marbella',     'label' => 'Marbella'     ],
+                [ 'value' => 'Mijas',        'label' => 'Mijas'        ],
+                [ 'value' => 'Torremolinos', 'label' => 'Torremolinos' ],
+            ],
+            'Cádiz' => [
+                [ 'value' => 'Sotogrande',   'label' => 'Sotogrande'   ],
+            ],
+        ];
+
+        public function __construct() {
+            // Compatibilidad total con ambos shortcodes
+            add_shortcode('resales_filters', [$this, 'shortcode']);
+            add_shortcode('lusso_filters',   [$this, 'shortcode']);
+        }
+
+        /** Shortcode principal */
+        public function shortcode($atts = [], $content = null) {
+            ob_start();
+            $this->render_filters_form();
+            return ob_get_clean();
+        }
+
+        /** Render del formulario (sin AJAX) */
+        public function render_filters_form() {
+            // Valores actuales desde la URL
+            $current_location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
+            $current_type     = isset($_GET['type'])     ? sanitize_text_field($_GET['type'])     : '';
+            $current_beds     = isset($_GET['bedrooms']) ? intval($_GET['bedrooms'])               : 0;
+
+            // Forzar/Respetar New Developments
+            $opt_newdevs = get_option('resales_api_newdevs', 'only'); // include | only | exclude
+            if (empty($opt_newdevs) || !in_array($opt_newdevs, ['include','only','exclude'], true)) {
+                $opt_newdevs = 'only';
+            }
+
+            // Tipos desde API con fallback
+            $types  = resales_property_types();
+
+            // Action del formulario: misma página sin duplicar query args
+            $action = home_url(add_query_arg([], remove_query_arg(array_keys($_GET))));
+            ?>
+            <form class="resales-filters lusso-filters" method="get" action="<?php echo esc_url($action); ?>">
+                <div class="lusso-filters__row" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+                    <div class="filter-group">
+                        <select id="resales-filter-location" name="location" style="min-width:120px;">
+                            <option value=""><?php esc_html_e('Location', 'resales-api'); ?></option>
+                            <?php
+                            foreach (self::$LOCATIONS as $province => $cities) {
+                                echo '<optgroup label="' . esc_attr($province) . '">';
+                                foreach ($cities as $city) {
+                                    $val = esc_attr($city['value']);
+                                    $lab = esc_html($city['label']);
+                                    $sel = ($current_location === $val) ? ' selected' : '';
+                                    echo '<option value="' . $val . '"' . $sel . '>' . $lab . '</option>';
+                                }
+                                echo '</optgroup>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select id="resales-filter-bedrooms" name="bedrooms" style="min-width:80px;">
+                            <option value=""><?php esc_html_e('Bedrooms', 'resales-api'); ?></option>
+                            <?php
+                            $beds_options = [1=>1, 2=>2, 3=>3, 4=>4, 5=>5];
+                            foreach ($beds_options as $val => $label) {
+                                $sel = (string)$current_beds === (string)$val ? ' selected' : '';
+                                echo '<option value="'.esc_attr($val).'"'.$sel.'>'.esc_html($label).'</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select id="resales-filter-type" name="type" style="min-width:120px;">
+                            <option value=""><?php echo esc_html__('Type', 'resales-api'); ?></option>
+                            <?php
+                            foreach ($types as $t) {
+                                $val = esc_attr($t['value']);  // OptionValue (2-2, 4-1, ...)
+                                $lab = esc_html($t['label']);  // OptionText
+                                $sel = ($current_type === $val) ? ' selected' : '';
+                                echo '<option value="'.$val.'"'.$sel.'>'.$lab.'</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="filter-group filter-actions">
+                        <button type="submit" class="btn btn-primary" style="height:38px;min-width:100px;">
+                            <?php echo esc_html__('Search', 'resales-api'); ?>
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" name="newdevs" value="<?php echo esc_attr($opt_newdevs); ?>" />
+            </form>
+            <?php
+        }
+
+        /* =================================================================
+         * (Opcional) utilidades si esta clase también arma la request
+         * ================================================================= */
+
+        /** Construye parámetros para SearchProperties desde $_GET */
+        private function build_search_params_from_get(): array {
+            $p = [];
+            if (!empty($_GET['location'])) $p['P_Location']      = sanitize_text_field($_GET['location']);
+            if (!empty($_GET['bedrooms'])) $p['P_Beds']          = (int) $_GET['bedrooms'];
+            if (!empty($_GET['type']))     $p['P_PropertyTypes'] = sanitize_text_field($_GET['type']); // OptionValue
+            $newdevs = !empty($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : get_option('resales_api_newdevs','only');
+            if (!in_array($newdevs, ['only','include','exclude'], true)) $newdevs = 'only';
+            $p['p_new_devs'] = $newdevs;
+
+            if (!empty($_GET['page']) && ctype_digit((string)$_GET['page'])) {
+                $p['P_PageNo'] = (int) $_GET['page'];
+            }
+            if (!empty($_GET['lang']) && ctype_digit((string)$_GET['lang'])) {
+                $p['P_Lang'] = (int) $_GET['lang'];
+            }
+
+            $p = resales_api_base_params($p);
+            return $p;
+        }
+
+        /** Ejecuta SearchProperties (wp_remote_get) */
+        private function run_search(array $params): array {
+            $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
+            $r   = wp_remote_get($url, ['timeout' => 25]);
+            if (is_wp_error($r)) return ['ok' => false, 'error' => $r->get_error_message()];
+            $code = (int) wp_remote_retrieve_response_code($r);
+            $body = wp_remote_retrieve_body($r);
+            $json = json_decode($body, true);
+            if ($code !== 200 || !is_array($json)) return ['ok' => false, 'http' => $code, 'raw' => $body];
+            return ['ok' => true, 'data' => $json];
+        }
+    }
+}
+
+/* ============================================================
+ * Instancia única
+ * ============================================================ */
+if (class_exists('Resales_Filters')) {
+    new Resales_Filters();
+}
