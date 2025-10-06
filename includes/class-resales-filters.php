@@ -50,61 +50,23 @@ if (!function_exists('resales_api_base_params')) {
     }
 }
 
-/** Fallback estático para tipos (pensado para New Developments) */
+/**
+ * Tipos de propiedad estáticos para New Developments.
+ * Simplificado según pedido del cliente: Apartment, Villa, Townhouse, Penthouse, Plot.
+ */
 if (!function_exists('resales_property_types_static')) {
     function resales_property_types_static(): array {
         return [
-            ['value' => '2-2', 'label' => 'Apartment'],
-            ['value' => '2-6', 'label' => 'Penthouse'],
-            ['value' => '2-5', 'label' => 'Ground Floor Apartment'],
-            ['value' => '2-4', 'label' => 'Middle Floor Apartment'],
-            ['value' => '5-1', 'label' => 'Townhouse'],
-            ['value' => '4-1', 'label' => 'Villa'],
-            ['value' => '3-1', 'label' => 'Duplex'],
+            [ 'value' => '1-1', 'label' => 'Apartment' ],
+            [ 'value' => '2-2', 'label' => 'Villa' ],
+            [ 'value' => '5-1', 'label' => 'Townhouse' ],
+            [ 'value' => '1-6', 'label' => 'Penthouse' ],
+            [ 'value' => '4-1', 'label' => 'Plot' ],
         ];
     }
 }
 
-/** Carga tipos desde SearchPropertyTypes (cache 24h) */
-if (!function_exists('resales_property_types_dynamic')) {
-    function resales_property_types_dynamic(): array {
-        $lang = (int) (resales_get_settings()['P_Lang'] ?? 1);
-        $cache_key = 'resales_prop_types_' . $lang;
-
-        $cached = get_transient($cache_key);
-        if (is_array($cached)) return $cached;
-
-        $url = 'https://webapi.resales-online.com/V6/SearchPropertyTypes?' . http_build_query(resales_api_base_params());
-        $resp = wp_remote_get($url, ['timeout' => 20]);
-        if (is_wp_error($resp)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[resales-api][ERR] PropertyTypes: ' . $resp->get_error_message());
-            }
-            return [];
-        }
-
-        $json = json_decode(wp_remote_retrieve_body($resp), true);
-        $out  = [];
-        if (!empty($json['PropertyTypes']['PropertyType']) && is_array($json['PropertyTypes']['PropertyType'])) {
-            foreach ($json['PropertyTypes']['PropertyType'] as $opt) {
-                $text = isset($opt['OptionText']) ? (string)$opt['OptionText'] : '';
-                $val  = isset($opt['OptionValue']) ? (string)$opt['OptionValue'] : '';
-                if ($text !== '' && $val !== '') $out[] = ['value' => $val, 'label' => $text];
-            }
-        }
-
-        set_transient($cache_key, $out, DAY_IN_SECONDS);
-        return $out;
-    }
-}
-
-/** Selector final: intenta dinámico; si falla, usa fallback estático */
-if (!function_exists('resales_property_types')) {
-    function resales_property_types(): array {
-        $types = resales_property_types_dynamic();
-        return !empty($types) ? $types : resales_property_types_static();
-    }
-}
+// property types solo estático
 
 /* ============================================================
  * CLASE DEL FORMULARIO (sin AJAX) + LISTADO ESTÁTICO DE LOCATIONS
@@ -158,8 +120,8 @@ if (!class_exists('Resales_Filters')) {
                 $opt_newdevs = 'only';
             }
 
-            // Tipos desde API con fallback
-            $types  = resales_property_types();
+            // Tipos solo estáticos
+            $types  = resales_property_types_static();
 
             // Action del formulario: misma página sin duplicar query args
             $action = home_url(add_query_arg([], remove_query_arg(array_keys($_GET))));
@@ -197,15 +159,12 @@ if (!class_exists('Resales_Filters')) {
                     </div>
                     <div class="filter-group">
                         <select id="resales-filter-type" name="type" style="min-width:120px;">
-                            <option value=""><?php echo esc_html__('Type', 'resales-api'); ?></option>
-                            <?php
-                            foreach ($types as $t) {
-                                $val = esc_attr($t['value']);  // OptionValue (2-2, 4-1, ...)
-                                $lab = esc_html($t['label']);  // OptionText
-                                $sel = ($current_type === $val) ? ' selected' : '';
-                                echo '<option value="'.$val.'"'.$sel.'>'.$lab.'</option>';
-                            }
-                            ?>
+                            <option value="">All Types</option>
+                            <?php foreach (resales_property_types_static() as $t): ?>
+                                <option value="<?php echo esc_attr($t['value']); ?>"<?php echo ($current_type === $t['value']) ? ' selected' : ''; ?>>
+                                    <?php echo esc_html($t['label']); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="filter-group filter-actions">
