@@ -63,23 +63,26 @@ class Resales_Filters {
                     </select>
                 </div>
 
-                <!-- Type (estático de 5 opciones) -->
+                <!-- Type (agrupado por tipo principal y subtipos) -->
                 <div>
                     <label for="resales-filter-type" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Type', 'resales-api'); ?></label>
                     <select id="resales-filter-type" name="type" style="min-width:200px;padding:6px 8px;">
                         <option value=""><?php esc_html_e('All Types', 'resales-api'); ?></option>
-                        <?php foreach ( self::property_types_static() as $t ): ?>
-                            <option value="<?php echo esc_attr($t['value']); ?>" <?php selected( $current_type, $t['value'] ); ?>>
-                                <?php echo esc_html($t['label']); ?>
-                            </option>
+                        <?php foreach ( self::property_types_static() as $group => $subtypes ): ?>
+                            <optgroup label="<?php echo esc_attr($group); ?>">
+                                <?php foreach ($subtypes as $t): ?>
+                                    <option value="<?php echo esc_attr($t['value']); ?>" <?php selected( $current_type, $t['value'] ); ?> >
+                                        <?php echo esc_html($t['label']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
                 <!-- newdevs (oculto si querés fijarlo a only) -->
                 <?php
-                // Si querés exponerlo, cambiá a un <select>. Por ahora, fijamos / respetamos valor.
-                $default_newdevs = get_option('resales_api_newdevs', 'only'); // tu preferencia
+                $default_newdevs = get_option('resales_api_newdevs', 'only'); // preferencia
                 $hidden_newdevs  = $current_newdevs !== '' ? $current_newdevs : $default_newdevs;
                 ?>
                 <input type="hidden" name="newdevs" value="<?php echo esc_attr($hidden_newdevs); ?>" />
@@ -98,12 +101,13 @@ class Resales_Filters {
         $params = $this->build_search_params_from_get();
         $params = $this->resales_api_base_params( $params );
 
-        // Log de GET "seguro"
+        // Log de GET "seguro" y depuración de type
         $safe_get = $_GET;
         if ( isset($safe_get['p2']) ) { $safe_get['p2'] = substr($safe_get['p2'], 0, 6) . '…'; }
         error_log('[Resales API][LOG] GET params: ' . wp_json_encode($safe_get));
+        error_log('[Resales API][DEBUG] type recibido en GET: ' . (isset($_GET['type']) ? $_GET['type'] : '(no enviado)'));
+        error_log('[Resales API][DEBUG] P_PropertyTypes enviado a API: ' . (isset($params['P_PropertyTypes']) ? $params['P_PropertyTypes'] : '(no enviado)'));
 
-        // Aviso si type no se mapeó
         if ( !empty($_GET['type']) && empty($params['P_PropertyTypes']) ) {
             error_log('[Resales API][WARN] type recibido ('.sanitize_text_field($_GET['type']).') pero P_PropertyTypes no se añadió a $params');
         }
@@ -130,11 +134,16 @@ class Resales_Filters {
             $p['P_Beds'] = (int) $_GET['bedrooms'];
         }
 
-        // TYPE -> P_PropertyTypes (lista blanca)
+        // TYPE -> P_PropertyTypes (lista blanca, agrupado)
         if ( isset($_GET['type']) && $_GET['type'] !== '' ) {
-            $allowed = wp_list_pluck( self::property_types_static(), 'value' ); // ['1-1','2-2','5-1','1-6','4-1']
+            $all_types = [];
+            foreach ( self::property_types_static() as $group => $subtypes ) {
+                foreach ( $subtypes as $t ) {
+                    $all_types[] = $t['value'];
+                }
+            }
             $val = sanitize_text_field( $_GET['type'] );
-            if ( in_array( $val, $allowed, true ) ) {
+            if ( in_array( $val, $all_types, true ) ) {
                 $p['P_PropertyTypes'] = $val;
             }
         }
@@ -178,7 +187,7 @@ class Resales_Filters {
 
         // Sólo fijar por defecto si NO vino en $p
         if ( empty( $p['p_new_devs'] ) ) {
-            $p['p_new_devs'] = get_option('resales_api_newdevs', 'only'); // tu caso: ONLY (New Developments)
+            $p['p_new_devs'] = get_option('resales_api_newdevs', 'only'); // ONLY (New Developments) por defecto
         }
 
         return array_merge( $base, $p );
@@ -194,10 +203,11 @@ class Resales_Filters {
         if ( ! empty( $safe['p2'] ) ) $safe['p2'] = substr( $safe['p2'], 0, 6 ) . '…';
         error_log('[Resales API][LOG] Params enviados a API: ' . wp_json_encode( $safe ));
 
-        // Endpoint oficial V6 (ForSale -> Search Properties)
-        $endpoint = 'https://webapi-v6.learning.resales-online.com/ForSale';
+        // ✅ PRODUCCIÓN (no learning)
+        $endpoint = 'https://webapi.resales-online.com/V6/SearchProperties';
 
         $url = add_query_arg( $params, $endpoint );
+        error_log('[Resales API][LOG] API URL: ' . $url);
 
         $resp = wp_remote_get( $url, [
             'timeout' => (int) get_option('resales_api_timeout', 20),
@@ -207,19 +217,27 @@ class Resales_Filters {
         ]);
 
         if ( is_wp_error( $resp ) ) {
+            error_log('[Resales API][HTTP ERROR] ' . $resp->get_error_message());
             return '<p>' . esc_html__( 'Error contacting the API', 'resales-api' ) . '</p>';
         }
 
         $code = wp_remote_retrieve_response_code( $resp );
         $body = wp_remote_retrieve_body( $resp );
-        error_log('[Resales API][LOG] Respuesta API: ' . $body);
+        error_log('[Resales API][LOG] Respuesta API: ' . substr($body, 0, 300)); // recorta para el log
 
         if ( $code !== 200 || empty( $body ) ) {
             return '<p>' . esc_html__( 'Empty or invalid response', 'resales-api' ) . '</p>';
         }
 
+        // Si por algún motivo el servidor devolviera HTML (credenciales/endpoint incorrecto), lo detectamos
+        if ( stripos($body, '<!DOCTYPE html') !== false || stripos($body, '<html') !== false ) {
+            error_log('[Resales API][INVALID OUTPUT] Se recibió HTML. Revisa dominio/credenciales.');
+            return '<p>' . esc_html__( 'Empty or invalid response', 'resales-api' ) . '</p>';
+        }
+
         $data = json_decode( $body, true );
         if ( ! is_array( $data ) ) {
+            error_log('[Resales API][JSON ERROR] ' . json_last_error_msg());
             return '<p>' . esc_html__( 'Unexpected API response', 'resales-api' ) . '</p>';
         }
 
@@ -275,12 +293,36 @@ class Resales_Filters {
      * LISTA ESTÁTICA: 5 tipos (con códigos V6 correctos)
      */
     public static function property_types_static(): array {
+        // Agrupado por tipo principal y subtipos, con OptionValue oficial
         return [
-            [ 'value' => '1-1', 'label' => 'Apartment' ],
-            [ 'value' => '2-2', 'label' => 'Villa' ],
-            [ 'value' => '5-1', 'label' => 'Townhouse' ],
-            [ 'value' => '1-6', 'label' => 'Penthouse' ],
-            [ 'value' => '4-1', 'label' => 'Plot' ],
+            'Apartamento' => [
+                [ 'value' => '1-2', 'label' => 'Apartamento Planta Baja' ],
+                [ 'value' => '1-4', 'label' => 'Apartamento Planta Media' ],
+                [ 'value' => '1-5', 'label' => 'Apartamento en Planta Última' ],
+                [ 'value' => '1-6', 'label' => 'Ático' ],
+                [ 'value' => '1-7', 'label' => 'Ático Dúplex' ],
+                [ 'value' => '1-8', 'label' => 'Dúplex' ],
+                [ 'value' => '1-9', 'label' => 'Estudio en Planta Baja' ],
+                [ 'value' => '1-10', 'label' => 'Estudio Planta Media' ],
+                [ 'value' => '1-11', 'label' => 'Estudio Planta Superior' ],
+            ],
+            'Casa' => [
+                [ 'value' => '2-2', 'label' => 'Villa - Chalet' ],
+                [ 'value' => '2-4', 'label' => 'Pareada' ],
+                [ 'value' => '2-5', 'label' => 'Adosada' ],
+                [ 'value' => '2-6', 'label' => 'Finca - Cortijo' ],
+                [ 'value' => '2-7', 'label' => 'Bungalow' ],
+                [ 'value' => '2-8', 'label' => 'Cabaña de Madera' ],
+                [ 'value' => '2-9', 'label' => 'Quad' ],
+                [ 'value' => '2-10', 'label' => 'Casa de Madera' ],
+                [ 'value' => '2-11', 'label' => 'Castillo' ],
+                [ 'value' => '2-12', 'label' => 'Autocaravana' ],
+                [ 'value' => '2-13', 'label' => 'Palacete de Ciudad' ],
+                [ 'value' => '2-14', 'label' => 'Casa Cueva' ],
+            ],
+            'Terreno' => [
+                [ 'value' => '4-1', 'label' => 'Terreno' ],
+            ],
         ];
     }
 
