@@ -1,3 +1,16 @@
+/* Fondo blanco para el contenedor de tarjetas */
+.lusso-cards-bg {
+  background: #fff;
+}
+/* Fondo blanco para la zona de tarjetas */
+.lusso-grid {
+  background: #fff;
+}
+/* Fondo solo para el formulario de filtros */
+.lusso-filters-wrap {
+  background: #FFFFFF; /*F5F1EA;*/
+  padding: 24px 0;
+}
 .lusso-filters .filter-group{
   flex: 0 0 auto;
   min-width: auto;
