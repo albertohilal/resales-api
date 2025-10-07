@@ -1,189 +1,190 @@
-jQuery(function($){
-  var $form = $('#lusso-filters');
-  var $results = $('#lusso-search-results');
+/**
+ * LUSSO Filters (GET-only, sin AJAX)
+ * - Envía el formulario por GET al cambiar filtros.
+ * - Limpia parámetros vacíos y valida valores básicos.
+ * - Preserva parámetros ajenos al form (ej: utm_*).
+ * - Evita doble envío y hace scroll al grid de resultados.
+ *
+ * Requisitos:
+ * - Form con class="lusso-filters"
+ * - Selects: name="location" | name="bedrooms" | name="type"
+ * - input[type=hidden] name="newdevs" (opcional, lo respeta)
+ * - El shortcode imprime el grid con class="lusso-grid"
+ */
+jQuery(function ($) {
+  'use strict';
 
-  // Función auxiliar para renderizar el listado de propiedades
-  function renderProperties(properties) {
-    if (!properties || !properties.length) {
-      $results.html('<div class="lusso-error">No se encontraron propiedades.</div>');
-      return;
-    }
-    var html = '';
-    properties.forEach(function(p){
-      html += '<div class="property-card">';
-      html += '<strong>' + (p.Title || p.Reference || 'Property') + '</strong><br>';
-      html += (p.Location ? '<span>' + p.Location + '</span><br>' : '');
-      html += (p.Price ? '<span>' + p.Price + '</span>' : '');
-      html += '</div>';
-    });
-    $results.html(html);
+  /** -----------------------------------------
+   * Utilidades
+   * ----------------------------------------- */
+  const qs = new URLSearchParams(window.location.search);
+
+  const dom = {
+    $form: $('.lusso-filters'),
+  };
+
+  if (!dom.$form.length) return;
+
+  // Mapa de campos que maneja el form
+  const FIELDS = ['location', 'bedrooms', 'type', 'newdevs'];
+
+  // Selectores de form
+  const $location = dom.$form.find('select[name="location"]');
+  const $beds     = dom.$form.find('select[name="bedrooms"]');
+  const $type     = dom.$form.find('select[name="type"]');
+  const $newdevs  = dom.$form.find('input[name="newdevs"], select[name="newdevs"]'); // por si lo expones como select
+
+  // Patrón V6 para OptionValue de property types (p.ej. 2-2, 1-6, 4-1)
+  const TYPE_PATTERN = /^\d+-\d+$/;
+
+  // Evita dobles envíos
+  let submitting = false;
+  const DEBOUNCE_MS = 80;
+
+  // Helper: obtiene valor “limpio” de un control
+  function valOf($el) {
+    if (!$el.length) return '';
+    const v = ($el.val() || '').toString().trim();
+    return v;
   }
 
-  // Función auxiliar para mostrar errores de filtro/AJAX
-  function showFilterError(msg) {
-    $results.html('<div class="lusso-error">' + msg + '</div>');
+  // Helper: valida “type” según patrón V6
+  function isValidType(v) {
+    if (!v) return true; // vacío se permite
+    return TYPE_PATTERN.test(v);
   }
 
-  // Intercepta el submit del formulario de filtros
-  $form.on('submit', function(e){
-    e.preventDefault();
+  // Helper: bedrooms numérico entero positivo
+  function isValidBedrooms(v) {
+    if (!v) return true;
+    return /^\d+$/.test(v);
+  }
 
-    // Leer valores visibles de los filtros
-    var type     = $form.find('select[name="type"]').val();
-    var location = $form.find('select[name="location"]').val();
-    var bedrooms = $form.find('select[name="bedrooms"]').val();
+  // Helper: deshabilita selects vacíos para no generar ?param=
+  function disableEmptyFields($form) {
+    $form.find('select').each(function () {
+      const v = ( $(this).val() || '' ).toString().trim();
+      if (v === '') $(this).prop('disabled', true);
+    });
+  }
 
-    // Normalizar el tipo para el backend (case-insensitive)
-    var typeNormalized = type ? type.toLowerCase().trim() : '';
+  // Helper: restaura cualquier select deshabilitado (navegador atrás)
+  function enableAllFields($form) {
+    $form.find('select:disabled,input:disabled').prop('disabled', false);
+  }
 
-    // Validar solo tipos permitidos
-    var allowedTypes = { apartment: true, house: true, plot: true };
-    if (typeNormalized && !allowedTypes[typeNormalized]) {
-      showFilterError('Tipo de propiedad no válido.');
-      console.log('Tipo no permitido:', typeNormalized);
-      return;
+  // Helper: preserva params ajenos al form
+  function appendForeignParams($form) {
+    // Construye un Set con nombres que maneja el form
+    const FORM_FIELD_NAMES = new Set(
+      $form
+        .find('input[name],select[name],textarea[name]')
+        .map(function () { return this.name; })
+        .get()
+    );
+
+    // Agrega campos de la URL que NO estén en el form
+    qs.forEach((value, key) => {
+      if (!FORM_FIELD_NAMES.has(key)) {
+        // crear un hidden dinámico
+        const $hidden = $('<input>', {
+          type: 'hidden',
+          name: key,
+          value: value
+        });
+        $form.append($hidden);
+      }
+    });
+  }
+
+  // Helper: hace scroll hacia el grid de resultados si existe
+  function scrollToResults() {
+    const $grid = $('.lusso-grid').first();
+    if ($grid.length) {
+      const top = $grid.offset().top - 80; // margen por header fijo
+      window.scrollTo({ top: top, behavior: 'smooth' });
+    }
+  }
+
+  // Helper: submit con seguridad (debounce + validaciones)
+  function safeSubmit() {
+    if (submitting) return;
+    submitting = true;
+    setTimeout(() => (submitting = false), DEBOUNCE_MS);
+
+    // Validaciones suaves
+    const vType = valOf($type);
+    const vBeds = valOf($beds);
+
+    if (!isValidType(vType)) {
+      // Si no es válido, lo vaciamos para evitar enviar basura
+      $type.val('');
+    }
+    if (!isValidBedrooms(vBeds)) {
+      $beds.val('');
     }
 
-    // Mostrar loading
-    $results.html('<div class="lusso-loading">Cargando...</div>');
+    // Deshabilitar vacíos para limpiar URL
+    disableEmptyFields(dom.$form);
 
-    // Construir datos para AJAX
-    var ajaxData = {
-      action: 'lusso_search_properties_type',
-      type: typeNormalized,
-      location: location,
-      bedrooms: bedrooms
-    };
+    // Preservar parámetros externos (utm, ref, etc.)
+    appendForeignParams(dom.$form);
 
-    console.log('Enviando AJAX:', ajaxData);
+    // En sandbox solemos querer p_sandbox=true; producción no.
+    // Si alguna vez agregás el switch en Settings, lo puedes inyectar aquí leyendo una variable global.
+    // Por ahora, no agregamos parámetros extra.
 
-    // Enviar petición AJAX al endpoint PHP usando la URL localizada
-    $.ajax({
-      url: (typeof myAjax !== 'undefined' ? myAjax.ajaxurl : '/wp-admin/admin-ajax.php'),
-      method: 'POST',
-      dataType: 'json',
-      data: ajaxData
-    }).done(function(response){
-      console.log('Respuesta AJAX:', response);
-      if (response.success && response.data && response.data.properties) {
-        renderProperties(response.data.properties);
-      } else if (response.data && response.data.error) {
-        showFilterError(response.data.error);
-      } else {
-        showFilterError('No se encontraron propiedades.');
-      }
-    }).fail(function(xhr){
-      var msg = 'Error al cargar resultados.';
-      if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.error) {
-        msg = xhr.responseJSON.data.error;
-      }
-      showFilterError(msg);
-      console.log('AJAX error:', xhr);
-    });
+    dom.$form.trigger('submit');
+  }
+
+  /** -----------------------------------------
+   * Eventos
+   * ----------------------------------------- */
+
+  // Enviar automáticamente al cambiar cualquiera de los selects
+  dom.$form.on('change', 'select[name="location"], select[name="bedrooms"], select[name="type"]', function () {
+    safeSubmit();
   });
+
+  // Limpieza y preservación al enviar manualmente (por botón “Search”)
+  dom.$form.on('submit', function () {
+    // Si el submit no viene de safeSubmit(), aún limpiamos
+    disableEmptyFields(dom.$form);
+    appendForeignParams(dom.$form);
+    // dejamos continuar el envío
+  });
+
+  // Restaurar campos deshabilitados al volver con botón “Atrás”
+  $(window).on('pageshow', function (e) {
+    // pageshow con persisted=true indica bfcache; restauramos controles
+    enableAllFields(dom.$form);
+  });
+
+  /** -----------------------------------------
+   * Mejora UX tras carga si hay resultados
+   * ----------------------------------------- */
+  // Si hay querystring (búsqueda) y existe el grid, hacemos un scroll suave tras un tiempito
+  if (window.location.search && $('.lusso-grid').length) {
+    // pequeño delay para evitar saltos si aún está pintando
+    setTimeout(scrollToResults, 120);
+  }
+
+  /** -----------------------------------------
+   * Sincronización defensiva (opcional)
+   * - Si el usuario borró a mano un param en la URL y vuelve,
+   *   mantenemos el valor visual de los selects (servido por PHP).
+   * - Si querés forzar que los selects reflejen exactamente la URL,
+   *   descomenta el bloque de abajo.
+   * ----------------------------------------- */
+
+  // // Forzar que los selects reflejen parámetros actuales de la URL:
+  // if ($location.length && qs.has('location')) $location.val(qs.get('location'));
+  // if ($beds.length && qs.has('bedrooms'))    $beds.val(qs.get('bedrooms'));
+  // if ($type.length && qs.has('type'))        $type.val(qs.get('type'));
+  // if ($newdevs.length && qs.has('newdevs'))  $newdevs.val(qs.get('newdevs'));
+
+  /** -----------------------------------------
+   * Depuración (silenciar en producción si quieres)
+   * ----------------------------------------- */
+  // console.debug('[LUSSO] filters.js cargado. GET=', Object.fromEntries(qs.entries()));
 });
-      if (data.data.QueryId && data.data.PageNo < data.data.PageCount) {
-        html += '<button class="lusso-load-more" data-queryid="'+data.data.QueryId+'" data-pageno="'+(data.data.PageNo+1)+'">'+LUSSO_NEWDEVS.loadMore+'</button>';
-      }
-      $results.html(html);
-      focusResults();
-    }
-
-    function setLoading(on) {
-      if (on) {
-        $results.attr('aria-busy', 'true').html('<div class="lusso-loading">'+(LUSSO_NEWDEVS.loading||'Loading...')+'</div>');
-      } else {
-        $results.removeAttr('aria-busy');
-      }
-    }
-
-    // Intercepta el submit del formulario de filtros
-    // Intercepta el submit del formulario de filtros
-    $form.on('submit', function(e){
-      e.preventDefault();
-
-      // Leer valores de los filtros
-      var type     = $form.find('select[name="type"]').val();
-      var location = $form.find('select[name="location"]').val();
-      var bedrooms = $form.find('select[name="bedrooms"]').val();
-
-      // Normalizar el tipo para el backend (case-insensitive)
-      var typeNormalized = type ? type.toLowerCase().trim() : '';
-
-      // Validar solo tipos permitidos
-      var allowedTypes = { apartment: true, house: true, plot: true };
-      if (typeNormalized && !allowedTypes[typeNormalized]) {
-        $results.html('<div class="lusso-error">Tipo de propiedad no válido.</div>');
-        return;
-      }
-
-      // Mostrar loading
-      $results.html('<div class="lusso-loading">Cargando...</div>');
-
-      // Construir datos para AJAX
-      var ajaxData = {
-        action: 'lusso_search_properties_type',
-        type: typeNormalized,
-        location: location,
-        bedrooms: bedrooms
-      };
-
-      // Enviar petición AJAX al endpoint PHP
-      $.ajax({
-        url: window.ajaxurl || '/wp-admin/admin-ajax.php',
-        method: 'POST',
-        dataType: 'json',
-        data: ajaxData
-      }).done(function(resp){
-        // Manejo de respuesta y renderizado de resultados
-        if (resp.success && resp.data && resp.data.properties && resp.data.properties.length) {
-          var html = '';
-          resp.data.properties.forEach(function(p){
-            html += '<div class="property-card">';
-            html += '<strong>' + (p.Title || p.Reference || 'Property') + '</strong><br>';
-            html += (p.Location ? '<span>' + p.Location + '</span><br>' : '');
-            html += (p.Price ? '<span>' + p.Price + '</span>' : '');
-            html += '</div>';
-          });
-          $results.html(html);
-        } else if (resp.data && resp.data.error) {
-          $results.html('<div class="lusso-error">' + resp.data.error + '</div>');
-        } else {
-          $results.html('<div class="lusso-error">No se encontraron propiedades.</div>');
-        }
-      }).fail(function(xhr){
-        // Mostrar error de red o servidor
-        var msg = 'Error al cargar resultados.';
-        if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.error) {
-          msg = xhr.responseJSON.data.error;
-        }
-        $results.html('<div class="lusso-error">' + msg + '</div>');
-      });
-    });
-
-    $results.on('click', '.lusso-load-more', function(e){
-      e.preventDefault();
-      setLoading(true);
-      var queryId = $(this).data('queryid');
-      var pageNo = $(this).data('pageno');
-      var formData = $form.serializeArray();
-      formData.push({name:'nonce', value:LUSSO_NEWDEVS.nonce});
-      formData.push({name:'lang', value:2});
-      formData.push({name:'query_id', value:queryId});
-      formData.push({name:'page_no', value:pageNo});
-      formData.push({name:'page_size', value:20});
-      fetch(LUSSO_NEWDEVS.ajaxUrl, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: $.param(formData)
-      })
-      .then(r => r.json())
-      .then(renderResults)
-      .catch(function(){
-        $results.html('<div class="lusso-error">Error loading results.</div>');
-      });
-    });
-  });
-
-
