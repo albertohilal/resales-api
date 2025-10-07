@@ -281,21 +281,17 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
     /* ---- Shortcode principal ---- */
 
     public function shortcode_properties($atts) {
-      // Logging seguro de location
-      $args = [];
-      if (isset($_GET['location']) && $_GET['location'] !== '') {
-        $args['P_Location'] = sanitize_text_field($_GET['location']);
-      }
-      resales_safe_log('SHORTCODE ARGS', [
-        'location_get' => isset($_GET['location']) ? 'yes' : 'no',
-        'args_has_P_Location' => isset($args['P_Location']) ? 'yes' : 'no',
-        'P_Location_val' => $args['P_Location'] ?? 'empty',
-      ]);
+      // Leer filtros desde $_GET
+      $location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
+      $bedrooms = isset($_GET['bedrooms']) ? sanitize_text_field($_GET['bedrooms']) : '';
+      $type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
+      $newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
+
       $atts = shortcode_atts([
-        'api_id'           => '',   // opcional: forzar P_ApiId
+        'api_id'           => '',
         'page'             => 1,
         'page_size'        => 12,
-        'strict_min'       => '0',  // si "1", no renderiza sliders con <2 imágenes (siempre <img>)
+        'strict_min'       => '0',
         'debug'            => '0',
       ], $atts, 'lusso_properties');
 
@@ -307,39 +303,56 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         return '<p>[Resales API] Faltan credenciales en Ajustes.</p>';
       }
 
-      // LOG: parámetros recibidos por GET
-      error_log('[Resales API][LOG] GET params: ' . json_encode($_GET));
+      // Construir parámetros base
+      $search_params = [
+        'p1'         => $opts['p1'],
+        'p2'         => $opts['p2'],
+        'p_output'   => 'JSON',
+        'P_ApiId'    => $opts['P_ApiId'],
+        'P_Lang'     => $opts['P_Lang'],
+        'P_PageNo'   => (int)$atts['page'],
+        'P_PageSize' => (int)$atts['page_size'],
+        'P_SortType' => 3,
+      ];
 
-      // Cache del resultado de SearchProperties
-      $tkey = sprintf('resales_nd_search_p%d_s%d', (int)$atts['page'], (int)$atts['page_size']);
-      $cached = get_transient($tkey);
+      // Filtros opcionales
+      if ($location !== '') {
+        $search_params['P_Location'] = $location;
+      }
+      if ($bedrooms !== '') {
+        $search_params['P_Beds'] = (int)$bedrooms;
+      }
+      // Validar type
+      if ($type !== '') {
+        $all_types = [];
+        foreach (Resales_Filters::property_types_static() as $group => $subtypes) {
+          foreach ($subtypes as $t) {
+            $all_types[] = $t['value'];
+          }
+        }
+        if (in_array($type, $all_types, true)) {
+          $search_params['P_PropertyTypes'] = $type;
+        }
+      }
+      // Validar newdevs
+      if (in_array($newdevs, ['only','include','exclude'], true)) {
+        $search_params['p_new_devs'] = $newdevs;
+      } else {
+        $search_params['p_new_devs'] = 'only';
+      }
+
+      // Cache por hash de parámetros
+      $search_hash = 'resales_nd_search_' . md5(serialize($search_params));
+      $cached = get_transient($search_hash);
       if ($cached) {
         $resp = $cached;
         error_log('[Resales API][LOG] Usando cache/transient para SearchProperties');
       } else {
-        $params = [
-          'p1'        => $opts['p1'],
-          'p2'        => $opts['p2'],
-          'p_output'  => 'JSON',
-          'P_ApiId'   => $opts['P_ApiId'],
-          'P_Lang'    => $opts['P_Lang'],
-          'P_PageNo'  => (int)$atts['page'],
-          'P_PageSize'=> (int)$atts['page_size'],
-          'P_SortType'=> 3,               // por precio asc/desc según filtro
-          'p_new_devs'=> 'only',          // ND
-          // No enviamos p_images ni p_sandbox aquí.
-        ];
-        // Si el filtro location está presente, añádelo a los parámetros
-        if (!empty($args['P_Location'])) {
-          $params['P_Location'] = $args['P_Location'];
-        }
-        // LOG: parámetros enviados a la API
-        error_log('[Resales API][LOG] Params enviados a API: ' . json_encode($params));
-        $resp = $this->http_get(self::SEARCH_ENDPOINT, $params, (int)$opts['timeout']);
+        error_log('[Resales API][LOG] Params enviados a API: ' . json_encode($search_params));
+        $resp = $this->http_get(self::SEARCH_ENDPOINT, $search_params, (int)$opts['timeout']);
         if (!is_wp_error($resp)) {
-          set_transient($tkey, $resp, self::SEARCH_TTL);
+          set_transient($search_hash, $resp, 5 * MINUTE_IN_SECONDS);
         }
-        // LOG: respuesta cruda de la API
         error_log('[Resales API][LOG] Respuesta API: ' . json_encode($resp));
       }
 
@@ -352,19 +365,10 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       }
 
       $props = $resp['Property'];
-
       if (isset($props['Reference'])) {
-        // si viene 1 solo objeto
         $props = [ $props ];
       }
-
-      // Filtro defensivo por dormitorios
-      $min_beds = isset($_GET['bedrooms']) ? (int)$_GET['bedrooms'] : 0;
-      if ($min_beds > 0) {
-        $props = array_filter($props, function($p) use ($min_beds) {
-          return isset($p['Bedrooms']) && (int)$p['Bedrooms'] >= $min_beds;
-        });
-      }
+      // Ya no filtrar defensivamente por dormitorios, la API lo hace
 
       // LOG: propiedades renderizadas y cantidad
       error_log('[Resales API][LOG] Total propiedades renderizadas: ' . count($props));
@@ -386,7 +390,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         echo "</pre></details>";
       }
 
-      echo '<section class="lusso-grid">';
+  echo '<section class="lusso-grid">';
 
       foreach ($props as $p) {
         $ref  = $p['Reference'] ?? '';
@@ -404,8 +408,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       // CSS mínimo para el placeholder / grid
       ?>
       <style>
-        .lusso-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
-        @media (max-width:900px){.lusso-grid{grid-template-columns:1fr}}
+        .lusso-grid { display: grid; gap: 24px; }
+        @media (min-width: 768px) {
+          .lusso-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 767px) {
+          .lusso-grid { grid-template-columns: 1fr; }
+        }
         .lusso-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.06)}
         .lusso-card__media{aspect-ratio:4/3;background:#f2f2f2;position:relative}
         .lusso-card__img,.lusso-swiper__slide img{width:100%;height:100%;object-fit:cover;display:block}
