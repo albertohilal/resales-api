@@ -34,15 +34,14 @@ class Resales_Filters {
         <div class="lusso-filters-wrap">
         <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:16px 0 24px">
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-                <!-- Location (estático) -->
+                <!-- Location (estático, sin etiqueta) -->
                 <div>
-                    <label for="resales-filter-location" style="display:block;font-weight:600;margin-bottom:6px;">Location</label>
                     <select id="resales-filter-location" name="location" style="min-width:220px;padding:6px 8px;">
-                        <option value="">Any</option>
+                        <option value="">Location</option>
                         <option value="Benahavís" <?php selected( $current_location, 'Benahavís' ); ?>>Benahavís</option>
                         <option value="Benalmadena" <?php selected( $current_location, 'Benalmadena' ); ?>>Benalmadena</option>
                         <option value="Casares" <?php selected( $current_location, 'Casares' ); ?>>Casares</option>
-                        <option value="Estepona" <?php selected( $current_location, 'Estepona' ); ?>>Estepona</option>
+                        <option value="Estepona" <?php selected( $current_location, 'Estepona' ); ?>>Estepona & New Golden Mile</option>
                         <option value="Fuengirola" <?php selected( $current_location, 'Fuengirola' ); ?>>Fuengirola</option>
                         <option value="Málaga" <?php selected( $current_location, 'Málaga' ); ?>>Málaga</option>
                         <option value="Manilva" <?php selected( $current_location, 'Manilva' ); ?>>Manilva</option>
@@ -53,11 +52,10 @@ class Resales_Filters {
                     </select>
                 </div>
 
-                <!-- Zona (desplegable estático) -->
+                <!-- Zona (desplegable estático, sin etiqueta) -->
                 <div>
-                    <label for="resales-filter-zona" style="display:block;font-weight:600;margin-bottom:6px;">Zona</label>
                     <select id="resales-filter-zona" name="zona" style="min-width:220px;padding:6px 8px;">
-                        <option value="">Any</option>
+                        <option value="">Subarea</option>
                         <option value="Aloha">Aloha</option>
                         <option value="Altos de los Monteros">Altos de los Monteros</option>
                         <option value="Arroyo de la Miel">Arroyo de la Miel</option>
@@ -185,11 +183,10 @@ class Resales_Filters {
                     </select>
                 </div>
 
-                <!-- Bedrooms -->
+                <!-- Bedrooms (sin etiqueta) -->
                 <div>
-                    <label for="resales-filter-bedrooms" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Bedrooms', 'resales-api'); ?></label>
                     <select id="resales-filter-bedrooms" name="bedrooms" style="min-width:150px;padding:6px 8px;">
-                        <option value=""><?php esc_html_e('Any', 'resales-api'); ?></option>
+                        <option value="">Bedrooms</option>
                         <?php foreach ( self::bedroom_options() as $val => $label ): ?>
                             <option value="<?php echo esc_attr($val); ?>" <?php selected( $current_beds, (string)$val ); ?>>
                                 <?php echo esc_html($label); ?>
@@ -198,11 +195,10 @@ class Resales_Filters {
                     </select>
                 </div>
 
-                <!-- Type (agrupado por tipo principal y subtipos) -->
+                <!-- Type (agrupado por tipo principal y subtipos, sin etiqueta) -->
                 <div>
-                    <label for="resales-filter-type" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Type', 'resales-api'); ?></label>
                     <select id="resales-filter-type" name="type" style="min-width:200px;padding:6px 8px;">
-                        <option value=""><?php esc_html_e('All Types', 'resales-api'); ?></option>
+                        <option value="">Type</option>
                         <?php foreach ( self::property_types_static() as $group => $subtypes ): ?>
                             <optgroup label="<?php echo esc_attr($group); ?>">
                                 <?php foreach ($subtypes as $t): ?>
