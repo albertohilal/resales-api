@@ -1,127 +1,148 @@
-/**
- * LUSSO Filters (GET-only, sin AJAX)
- * - Envía el formulario por GET al cambiar filtros.
- * - Limpia parámetros vacíos y valida valores básicos.
- * - Preserva parámetros ajenos al form (ej: utm_*).
- * - Evita doble envío y hace scroll al grid de resultados.
- *
- * Requisitos:
- * - Form con class="lusso-filters"
- * - Selects: name="location" | name="bedrooms" | name="type"
- * - input[type=hidden] name="newdevs" (opcional, lo respeta)
- * - El shortcode imprime el grid con class="lusso-grid"
+/*!
+ * Lusso Filters – Location/Subarea link
+ * Enlaza por name=, evita auto-submit prematuro y
+ * repuebla Subarea según Location.
+ * Requiere jQuery (WordPress lo trae).
  */
-jQuery(function ($) {
+(function ($) {
   'use strict';
 
-  /** -----------------------------------------
-  // Mapeo Location -> Subareas
-  const SUBAREAS_MAP = {
-    "Benahavís": ["El Madroñal","La Heredia","La Quinta","La Zagaleta","Los Almendros","Los Arqueros","Monte Halcones"],
-    "Benalmádena": ["Arroyo de la Miel","Benalmádena Costa","Benalmádena Pueblo","La Capellanía","Torremar","Torremuelle","Torrequebrada"],
-    "Casares": ["Casares Playa","Casares Pueblo","Doña Julia"],
-    "Estepona": ["Atalaya","Bel Air","Benamara","Benavista","Cancelada","Costalita","Diana Park","El Padrón","El Paraíso","El Presidente","Estepona","Hacienda del Sol","Los Flamingos","New Golden Mile","Selwo","Valle Romano"],
-    "Fuengirola": ["Carvajal","Fuengirola","Los Boliches","Los Pacos","Torreblanca"],
-    "Málaga": ["Higuerón","Málaga Centro","Málaga Este","Puerto de la Torre"],
-    "Manilva": ["Manilva Pueblo","Puerto de la Duquesa","Punta Chullera","San Diego","San Luis de Sabinillas"],
-    "Marbella": ["Aloha","Cortijo Blanco","Golden Mile - Nagüeles","Golden Mile - Sierra Blanca","Guadalmina Alta","Guadalmina Baja","La Campana","Las Brisas","Linda Vista","Marbella Centro","Nueva Andalucía","Puerto Banús","San Pedro de Alcántara","Marbella Este - Altos de los Monteros","Marbella Este - Artola","Marbella Este - Bahía de Marbella","Marbella Este - Cabopino","Marbella Este - Carib Playa","Marbella Este - Costabella","Marbella Este - El Rosario","Marbella Este - Elviria","Marbella Este - Hacienda Las Chapas","Marbella Este - La Mairena","Marbella Este - Las Chapas","Marbella Este - Los Monteros","Marbella Este - Marbesa","Marbella Este - Reserva de Marbella","Marbella Este - Río Real","Marbella Este - Santa Clara","Marbella Este - Torre Real"],
-    "Mijas": ["Calahonda","Calanova Golf","Calypso","Campo Mijas","Cerros del Águila","El Chaparral","El Coto","El Faro","La Cala de Mijas","La Cala Golf","La Cala Hills","Las Lagunas","Mijas Costa","Miraflores","Riviera del Sol","Sierrezuela","Torrenueva","Valtocado"],
-    "Torremolinos": ["Bajondillo","El Calvario","El Pinillo","La Carihuela","La Colina","Los Álamos","Montemar","Playamar","Torremolinos Centro"],
-    "Sotogrande": ["Guadiaro","La Alcaidesa","Los Barrios","Pueblo Nuevo de Guadiaro","San Diego","San Enrique","San Martín de Tesorillo","San Roque","San Roque Club","Sotogrande Alto","Sotogrande Costa","Sotogrande Marina","Sotogrande Playa","Sotogrande Puerto","Torreguadiaro"]
+  // ====== CONFIG: Mapa Location -> Subareas ======
+  // Ajustá este mapa a tu configuración real. SIN duplicarlo.
+  var SUBAREAS_MAP = {
+    "Marbella": [
+      "Aloha","Altos de los Monteros","Artola","Atalaya","Bahía de Marbella",
+      "Cabopino","El Rosario","Elviria","Guadalmina Alta","Guadalmina Baja",
+      "La Campana","Las Chapas","Los Monteros","Nagüeles","Nueva Andalucía",
+      "Río Real","Sierra Blanca"
+    ],
+    "Benalmadena": [
+      "Arroyo de la Miel","Benalmadena","Benalmadena Costa","Benalmadena Pueblo",
+      "Carvajal","Higueron","Torremuelle","Torrequebrada"
+    ],
+    "Benahavís": [
+      "Benahavís","El Madroñal","La Heredia","La Quinta","Los Almendros",
+      "Los Arqueros","Monte Halcones","Zagaleta"
+    ],
+    "Mijas": [
+      "Calahonda","Campo Mijas","La Cala de Mijas","La Cala Hills",
+      "Mijas Costa","Mijas Golf","Riviera del Sol","Sierrezuela"
+    ],
+    "Fuengirola": [
+      "Centro","Los Boliches","Los Pacos","Carvajal"
+    ],
+    "Estepona": [
+      "Bel Air","Cancelada","Diana Park","El Padrón","El Paraíso",
+      "Estepona","New Golden Mile","Selwo","Costalita","Atalaya"
+    ],
+    "Manilva": ["La Duquesa","Manilva","San Luis de Sabinillas","Chullera"],
+    "Sotogrande": [
+      "Sotogrande","Sotogrande Alto","Sotogrande Costa","Sotogrande Marina",
+      "Sotogrande Puerto","Sotogrande Playa"
+    ],
+    "Torremolinos": ["Bajondillo","La Carihuela","Playamar","El Pinillo","Montemar"],
+    "Málaga": ["Málaga Centro","Málaga Este","Puerto de la Torre"]
   };
 
-  // Actualiza el select de Subarea según Location
-  function updateSubareaOptions(location) {
-    var $zona = $('#resales-filter-zona');
-    $zona.empty();
-    $zona.append('<option value="">Subarea</option>');
-    if (location && SUBAREAS_MAP[location]) {
-      SUBAREAS_MAP[location].forEach(function(sub){
-        $zona.append('<option value="'+sub+'">'+sub+'</option>');
-      });
-    }
+  // ====== Helpers ======
+  function qs(name) {
+    var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.search);
+    return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
   }
 
-  // Al cambiar Location, actualizar Subarea
-  $('#resales-filter-location').on('change', function(){
-    updateSubareaOptions($(this).val());
-  });
+  function serializeNonEmpty($form) {
+    var params = [];
+    $form.find('select, input').each(function () {
+      var $el = $(this);
+      var n = $el.attr('name');
+      if (!n) return;
+      var v = ($el.val() || '').toString().trim();
+      if (v !== '' && v !== '0' && v !== 'Subarea' && v !== 'Location') {
+        params.push(encodeURIComponent(n) + '=' + encodeURIComponent(v));
+      }
+    });
+    return params.join('&');
+  }
 
-  // Inicializar Subarea según Location seleccionada al cargar
-  updateSubareaOptions($('#resales-filter-location').val());
-   * Utilidades
-   * ----------------------------------------- */
-  const qs = new URLSearchParams(window.location.search);
+  function safeSubmit(e) {
+    e && e.preventDefault && e.preventDefault();
+    var q = serializeNonEmpty(dom.$form);
+    var base = window.location.pathname.replace(/\/+$/, '') + '/';
+    window.location.href = q ? (base + '?' + q) : base;
+  }
 
-    'use strict';
+  function normalizeArray(arr) {
+    var seen = Object.create(null), out = [];
+    (arr || []).forEach(function (x) {
+      if (!x) return;
+      if (!seen[x]) { seen[x] = 1; out.push(x); }
+    });
+    return out;
+  }
 
-    // -----------------------------------------
-    // Mapeo Location → Subareas
-    // -----------------------------------------
-    const SUBAREAS_MAP = {
-      "Benahavís": ["El Madroñal", "La Heredia", "La Quinta", "La Zagaleta", "Los Almendros", "Los Arqueros", "Monte Halcones"],
-      "Benalmádena": ["Arroyo de la Miel", "Benalmádena Costa", "Benalmádena Pueblo", "La Capellanía", "Torremar", "Torremuelle", "Torrequebrada"],
-      "Casares": ["Casares Playa", "Casares Pueblo", "Doña Julia"],
-      "Estepona": ["Atalaya", "Bel Air", "Benamara", "Cancelada", "Costalita", "Diana Park", "El Paraíso", "Estepona", "New Golden Mile", "Selwo", "Valle Romano"],
-      "Fuengirola": ["Carvajal", "Fuengirola", "Los Boliches", "Los Pacos", "Torreblanca"],
-      "Málaga": ["Higuerón", "Málaga Centro", "Málaga Este", "Puerto de la Torre"],
-      "Manilva": ["Manilva Pueblo", "Puerto de la Duquesa", "Punta Chullera", "San Diego", "San Luis de Sabinillas"],
-      "Marbella": ["Aloha", "Guadalmina Alta", "Guadalmina Baja", "Nueva Andalucía", "Puerto Banús", "San Pedro de Alcántara", "Golden Mile - Nagüeles", "Golden Mile - Sierra Blanca", "Marbella Este - Elviria", "Marbella Este - Los Monteros", "Marbella Este - Río Real"],
-      "Mijas": ["La Cala de Mijas", "Mijas Costa", "Calahonda", "Riviera del Sol"],
-      "Torremolinos": ["Bajondillo", "Playamar", "La Carihuela", "Montemar"],
-      "Sotogrande": ["Sotogrande Alto", "Sotogrande Costa", "Sotogrande Marina", "Torreguadiaro"]
-    };
+  // ====== DOM cache (por name=, robusto ante cambios de IDs) ======
+  var dom = {
+    $form: $('.lusso-filters'),
+    $location: null,
+    $subarea: null
+  };
 
-    // -----------------------------------------
-    // Actualiza el select de Subarea según Location
-    // -----------------------------------------
-    function updateSubareaOptions(location) {
-      const $zona = $('#resales-filter-zona');
-      $zona.empty();
-      $zona.append('<option value="">Subarea</option>');
-      if (location && SUBAREAS_MAP[location]) {
-        SUBAREAS_MAP[location].forEach(sub => {
-          $zona.append(`<option value="${sub}">${sub}</option>`);
+  $(function () {
+    // Si no encontró .lusso-filters, busca el form que contiene location
+    if (!dom.$form.length) {
+      dom.$form = $('form').has('select[name="location"]');
+    }
+
+    dom.$location = dom.$form.find('select[name="location"]');
+    dom.$subarea  = dom.$form.find('select[name="area"], select[name="subarea"], select[name="zona"]');
+
+    // Placeholders
+    if (dom.$location.find('option[value=""]').length === 0) {
+      dom.$location.prepend('<option value="">Location</option>');
+    }
+    if (dom.$subarea.find('option[value=""]').length === 0) {
+      dom.$subarea.prepend('<option value="">Subarea</option>');
+    }
+
+    // ====== Poblar Subarea según Location ======
+    function updateSubareaOptions(locationVal) {
+      var list = normalizeArray(SUBAREAS_MAP[locationVal] || []);
+      dom.$subarea.empty().append('<option value="">Subarea</option>');
+      if (list.length) {
+        list.forEach(function (label) {
+          dom.$subarea.append('<option value="' + label + '">' + label + '</option>');
         });
+        dom.$subarea.prop('disabled', false);
+      } else {
+        dom.$subarea.prop('disabled', true);
       }
     }
 
-    // Al cambiar Location, actualizar Subarea
-    $('#resales-filter-location').on('change', function () {
+    // Cambia Location → repobla Subarea (no enviar todavía)
+    dom.$location.on('change', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
       updateSubareaOptions($(this).val());
+      dom.$subarea.focus();
+    });
+
+    // Cambia Subarea → ahora sí enviar
+    dom.$subarea.on('change', safeSubmit);
+
+    // Auto-submit del resto de selects (NO location/subarea)
+    dom.$form.on('change', 'select', function (e) {
+      var name = ($(this).attr('name') || '').toLowerCase();
+      if (name === 'location' || name === 'subarea' || name === 'zona' || name === 'area') return;
+      safeSubmit(e);
+    });
+
+    // ====== Inicialización desde querystring o estado actual ======
+    var locQS = qs('location') || dom.$location.val() || '';
+    if (locQS) dom.$location.val(locQS);
+
+    updateSubareaOptions(locQS);
+
+    var subQS = qs('area') || qs('subarea') || qs('zona') || '';
+    if (subQS) dom.$subarea.val(subQS);
   });
-
-    // Inicializar Subarea al cargar la página si hay Location seleccionada
-    updateSubareaOptions($('#resales-filter-location').val());
-
-    // -----------------------------------------
-    // Funcionalidad del formulario (GET)
-    // -----------------------------------------
-    const dom = {
-      $form: $('.lusso-filters'),
-    };
-    if (!dom.$form.length) return;
-
-    const $location = dom.$form.find('select[name="location"]');
-    const $beds     = dom.$form.find('select[name="bedrooms"]');
-    const $type     = dom.$form.find('select[name="type"]');
-
-    function valOf($el) {
-      if (!$el.length) return '';
-      return ($el.val() || '').toString().trim();
-    }
-
-    function safeSubmit() {
-      dom.$form.find('select').each(function () {
-        if (!$(this).val()) $(this).prop('disabled', true);
-      });
-      dom.$form.trigger('submit');
-    }
-
-    dom.$form.on('change', 'select', function () {
-      safeSubmit();
-    });
-
-    $(window).on('pageshow', function () {
-      dom.$form.find('select:disabled,input:disabled').prop('disabled', false);
-    });
+})(jQuery);
