@@ -31,22 +31,157 @@ class Resales_Filters {
         $current_newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
 
         ?>
+        <div class="lusso-filters-wrap">
         <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:16px 0 24px">
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-                <!-- Location -->
+                <!-- Location (estático) -->
                 <div>
-                    <label for="resales-filter-location" style="display:block;font-weight:600;margin-bottom:6px;"><?php esc_html_e('Location', 'resales-api'); ?></label>
+                    <label for="resales-filter-location" style="display:block;font-weight:600;margin-bottom:6px;">Location</label>
                     <select id="resales-filter-location" name="location" style="min-width:220px;padding:6px 8px;">
-                        <option value=""><?php esc_html_e('Any', 'resales-api'); ?></option>
-                        <?php foreach ( self::locations_static() as $province => $cities ): ?>
-                            <optgroup label="<?php echo esc_attr( $province ); ?>">
-                                <?php foreach ( $cities as $c ): ?>
-                                    <option value="<?php echo esc_attr( $c['value'] ); ?>" <?php selected( $current_location, $c['value'] ); ?>>
-                                        <?php echo esc_html( $c['label'] ); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
-                        <?php endforeach; ?>
+                        <option value="">Any</option>
+                        <option value="Benahavís" <?php selected( $current_location, 'Benahavís' ); ?>>Benahavís</option>
+                        <option value="Benalmadena" <?php selected( $current_location, 'Benalmadena' ); ?>>Benalmadena</option>
+                        <option value="Casares" <?php selected( $current_location, 'Casares' ); ?>>Casares</option>
+                        <option value="Estepona" <?php selected( $current_location, 'Estepona' ); ?>>Estepona</option>
+                        <option value="Fuengirola" <?php selected( $current_location, 'Fuengirola' ); ?>>Fuengirola</option>
+                        <option value="Málaga" <?php selected( $current_location, 'Málaga' ); ?>>Málaga</option>
+                        <option value="Manilva" <?php selected( $current_location, 'Manilva' ); ?>>Manilva</option>
+                        <option value="Marbella" <?php selected( $current_location, 'Marbella' ); ?>>Marbella</option>
+                        <option value="Mijas" <?php selected( $current_location, 'Mijas' ); ?>>Mijas</option>
+                        <option value="Torremolinos" <?php selected( $current_location, 'Torremolinos' ); ?>>Torremolinos</option>
+                        <option value="Sotogrande" <?php selected( $current_location, 'Sotogrande' ); ?>>Sotogrande</option>
+                    </select>
+                </div>
+
+                <!-- Zona (desplegable estático) -->
+                <div>
+                    <label for="resales-filter-zona" style="display:block;font-weight:600;margin-bottom:6px;">Zona</label>
+                    <select id="resales-filter-zona" name="zona" style="min-width:220px;padding:6px 8px;">
+                        <option value="">Any</option>
+                        <option value="Aloha">Aloha</option>
+                        <option value="Altos de los Monteros">Altos de los Monteros</option>
+                        <option value="Arroyo de la Miel">Arroyo de la Miel</option>
+                        <option value="Artola">Artola</option>
+                        <option value="Atalaya">Atalaya</option>
+                        <option value="Bahía de Marbella">Bahía de Marbella</option>
+                        <option value="Bajondillo">Bajondillo</option>
+                        <option value="Bel Air">Bel Air</option>
+                        <option value="Benahavís">Benahavís</option>
+                        <option value="Benalmadena">Benalmadena</option>
+                        <option value="Benalmadena Costa">Benalmadena Costa</option>
+                        <option value="Benalmadena Pueblo">Benalmadena Pueblo</option>
+                        <option value="Benamara">Benamara</option>
+                        <option value="Benavista">Benavista</option>
+                        <option value="Cabopino">Cabopino</option>
+                        <option value="Calahonda">Calahonda</option>
+                        <option value="Calanova Golf">Calanova Golf</option>
+                        <option value="Calypso">Calypso</option>
+                        <option value="Campo Mijas">Campo Mijas</option>
+                        <option value="Cancelada">Cancelada</option>
+                        <option value="Carib Playa">Carib Playa</option>
+                        <option value="Carvajal">Carvajal</option>
+                        <option value="Casares">Casares</option>
+                        <option value="Casares Playa">Casares Playa</option>
+                        <option value="Casares Pueblo">Casares Pueblo</option>
+                        <option value="Cerros del Aguila">Cerros del Aguila</option>
+                        <option value="Cortijo Blanco">Cortijo Blanco</option>
+                        <option value="Costabella">Costabella</option>
+                        <option value="Costalita">Costalita</option>
+                        <option value="Diana Park">Diana Park</option>
+                        <option value="Doña Julia">Doña Julia</option>
+                        <option value="El Calvario">El Calvario</option>
+                        <option value="El Chaparral">El Chaparral</option>
+                        <option value="El Coto">El Coto</option>
+                        <option value="El Faro">El Faro</option>
+                        <option value="El Madroñal">El Madroñal</option>
+                        <option value="El Padron">El Padron</option>
+                        <option value="El Paraiso">El Paraiso</option>
+                        <option value="El Pinillo">El Pinillo</option>
+                        <option value="El Presidente">El Presidente</option>
+                        <option value="El Rosario">El Rosario</option>
+                        <option value="Elviria">Elviria</option>
+                        <option value="Estepona">Estepona</option>
+                        <option value="Fuengirola">Fuengirola</option>
+                        <option value="Guadalmina Alta">Guadalmina Alta</option>
+                        <option value="Guadalmina Baja">Guadalmina Baja</option>
+                        <option value="Guadiaro">Guadiaro</option>
+                        <option value="Hacienda del Sol">Hacienda del Sol</option>
+                        <option value="Hacienda Las Chapas">Hacienda Las Chapas</option>
+                        <option value="Higueron">Higueron</option>
+                        <option value="La Alcaidesa">La Alcaidesa</option>
+                        <option value="La Cala de Mijas">La Cala de Mijas</option>
+                        <option value="La Cala Golf">La Cala Golf</option>
+                        <option value="La Cala Hills">La Cala Hills</option>
+                        <option value="La Campana">La Campana</option>
+                        <option value="La Capellania">La Capellania</option>
+                        <option value="La Carihuela">La Carihuela</option>
+                        <option value="La Colina">La Colina</option>
+                        <option value="La Duquesa">La Duquesa</option>
+                        <option value="La Heredia">La Heredia</option>
+                        <option value="La Mairena">La Mairena</option>
+                        <option value="La Quinta">La Quinta</option>
+                        <option value="La Zagaleta">La Zagaleta</option>
+                        <option value="Las Brisas">Las Brisas</option>
+                        <option value="Las Chapas">Las Chapas</option>
+                        <option value="Las Lagunas">Las Lagunas</option>
+                        <option value="Los Alamos">Los Alamos</option>
+                        <option value="Los Almendros">Los Almendros</option>
+                        <option value="Los Arqueros">Los Arqueros</option>
+                        <option value="Los Boliches">Los Boliches</option>
+                        <option value="Los Flamingos">Los Flamingos</option>
+                        <option value="Los Monteros">Los Monteros</option>
+                        <option value="Los Pacos">Los Pacos</option>
+                        <option value="Málaga">Málaga</option>
+                        <option value="Málaga Centro">Málaga Centro</option>
+                        <option value="Málaga Este">Málaga Este</option>
+                        <option value="Manilva">Manilva</option>
+                        <option value="Marbella">Marbella</option>
+                        <option value="Marbesa">Marbesa</option>
+                        <option value="Mijas">Mijas</option>
+                        <option value="Mijas Costa">Mijas Costa</option>
+                        <option value="Mijas Golf">Mijas Golf</option>
+                        <option value="Miraflores">Miraflores</option>
+                        <option value="Monte Halcones">Monte Halcones</option>
+                        <option value="Montemar">Montemar</option>
+                        <option value="Nagüeles">Nagüeles</option>
+                        <option value="New Golden Mile">New Golden Mile</option>
+                        <option value="Nueva Andalucía">Nueva Andalucía</option>
+                        <option value="Ojén">Ojén</option>
+                        <option value="Playamar">Playamar</option>
+                        <option value="Pueblo Nuevo de Guadiaro">Pueblo Nuevo de Guadiaro</option>
+                        <option value="Puerto Banús">Puerto Banús</option>
+                        <option value="Puerto de Cabopino">Puerto de Cabopino</option>
+                        <option value="Puerto de la Torre">Puerto de la Torre</option>
+                        <option value="Punta Chullera">Punta Chullera</option>
+                        <option value="Reserva de Marbella">Reserva de Marbella</option>
+                        <option value="Río Real">Río Real</option>
+                        <option value="Riviera del Sol">Riviera del Sol</option>
+                        <option value="San Diego">San Diego</option>
+                        <option value="San Enrique">San Enrique</option>
+                        <option value="San Luis de Sabinillas">San Luis de Sabinillas</option>
+                        <option value="San Martín de Tesorillo">San Martín de Tesorillo</option>
+                        <option value="San Pedro de Alcántara">San Pedro de Alcántara</option>
+                        <option value="San Roque">San Roque</option>
+                        <option value="San Roque Club">San Roque Club</option>
+                        <option value="Santa Clara">Santa Clara</option>
+                        <option value="Selwo">Selwo</option>
+                        <option value="Sierra Blanca">Sierra Blanca</option>
+                        <option value="Sierrezuela">Sierrezuela</option>
+                        <option value="Sotogrande">Sotogrande</option>
+                        <option value="Sotogrande Alto">Sotogrande Alto</option>
+                        <option value="Sotogrande Costa">Sotogrande Costa</option>
+                        <option value="Sotogrande Marina">Sotogrande Marina</option>
+                        <option value="Sotogrande Playa">Sotogrande Playa</option>
+                        <option value="Sotogrande Puerto">Sotogrande Puerto</option>
+                        <option value="Torre Real">Torre Real</option>
+                        <option value="Torreblanca">Torreblanca</option>
+                        <option value="Torreguadiaro">Torreguadiaro</option>
+                        <option value="Torremar">Torremar</option>
+                        <option value="Torremolinos">Torremolinos</option>
+                        <option value="Torremolinos Centro">Torremolinos Centro</option>
+                        <option value="Torremuelle">Torremuelle</option>
+                        <option value="Torrenueva">Torrenueva</option>
+                        <option value="Torrequebrada">Torrequebrada</option>
                     </select>
                 </div>
 
@@ -97,24 +232,8 @@ class Resales_Filters {
         </form>
         <?php
 
-        // --- LISTADO (llamada a API) ---
-        $params = $this->build_search_params_from_get();
-        $params = $this->resales_api_base_params( $params );
-
-        // Log de GET "seguro" y depuración de type
-        $safe_get = $_GET;
-        if ( isset($safe_get['p2']) ) { $safe_get['p2'] = substr($safe_get['p2'], 0, 6) . '…'; }
-        error_log('[Resales API][LOG] GET params: ' . wp_json_encode($safe_get));
-        error_log('[Resales API][DEBUG] type recibido en GET: ' . (isset($_GET['type']) ? $_GET['type'] : '(no enviado)'));
-        error_log('[Resales API][DEBUG] P_PropertyTypes enviado a API: ' . (isset($params['P_PropertyTypes']) ? $params['P_PropertyTypes'] : '(no enviado)'));
-
-        if ( !empty($_GET['type']) && empty($params['P_PropertyTypes']) ) {
-            error_log('[Resales API][WARN] type recibido ('.sanitize_text_field($_GET['type']).') pero P_PropertyTypes no se añadió a $params');
-        }
-
-        $res = $this->run_search( $params );
-        echo $res; // HTML del grid (o mensaje de error)
-
+        // --- Integración con [lusso_properties] ---
+        echo do_shortcode('[lusso_properties]');
         return ob_get_clean();
     }
 
