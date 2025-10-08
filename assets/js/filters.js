@@ -15,176 +15,113 @@ jQuery(function ($) {
   'use strict';
 
   /** -----------------------------------------
+  // Mapeo Location -> Subareas
+  const SUBAREAS_MAP = {
+    "Benahavís": ["El Madroñal","La Heredia","La Quinta","La Zagaleta","Los Almendros","Los Arqueros","Monte Halcones"],
+    "Benalmádena": ["Arroyo de la Miel","Benalmádena Costa","Benalmádena Pueblo","La Capellanía","Torremar","Torremuelle","Torrequebrada"],
+    "Casares": ["Casares Playa","Casares Pueblo","Doña Julia"],
+    "Estepona": ["Atalaya","Bel Air","Benamara","Benavista","Cancelada","Costalita","Diana Park","El Padrón","El Paraíso","El Presidente","Estepona","Hacienda del Sol","Los Flamingos","New Golden Mile","Selwo","Valle Romano"],
+    "Fuengirola": ["Carvajal","Fuengirola","Los Boliches","Los Pacos","Torreblanca"],
+    "Málaga": ["Higuerón","Málaga Centro","Málaga Este","Puerto de la Torre"],
+    "Manilva": ["Manilva Pueblo","Puerto de la Duquesa","Punta Chullera","San Diego","San Luis de Sabinillas"],
+    "Marbella": ["Aloha","Cortijo Blanco","Golden Mile - Nagüeles","Golden Mile - Sierra Blanca","Guadalmina Alta","Guadalmina Baja","La Campana","Las Brisas","Linda Vista","Marbella Centro","Nueva Andalucía","Puerto Banús","San Pedro de Alcántara","Marbella Este - Altos de los Monteros","Marbella Este - Artola","Marbella Este - Bahía de Marbella","Marbella Este - Cabopino","Marbella Este - Carib Playa","Marbella Este - Costabella","Marbella Este - El Rosario","Marbella Este - Elviria","Marbella Este - Hacienda Las Chapas","Marbella Este - La Mairena","Marbella Este - Las Chapas","Marbella Este - Los Monteros","Marbella Este - Marbesa","Marbella Este - Reserva de Marbella","Marbella Este - Río Real","Marbella Este - Santa Clara","Marbella Este - Torre Real"],
+    "Mijas": ["Calahonda","Calanova Golf","Calypso","Campo Mijas","Cerros del Águila","El Chaparral","El Coto","El Faro","La Cala de Mijas","La Cala Golf","La Cala Hills","Las Lagunas","Mijas Costa","Miraflores","Riviera del Sol","Sierrezuela","Torrenueva","Valtocado"],
+    "Torremolinos": ["Bajondillo","El Calvario","El Pinillo","La Carihuela","La Colina","Los Álamos","Montemar","Playamar","Torremolinos Centro"],
+    "Sotogrande": ["Guadiaro","La Alcaidesa","Los Barrios","Pueblo Nuevo de Guadiaro","San Diego","San Enrique","San Martín de Tesorillo","San Roque","San Roque Club","Sotogrande Alto","Sotogrande Costa","Sotogrande Marina","Sotogrande Playa","Sotogrande Puerto","Torreguadiaro"]
+  };
+
+  // Actualiza el select de Subarea según Location
+  function updateSubareaOptions(location) {
+    var $zona = $('#resales-filter-zona');
+    $zona.empty();
+    $zona.append('<option value="">Subarea</option>');
+    if (location && SUBAREAS_MAP[location]) {
+      SUBAREAS_MAP[location].forEach(function(sub){
+        $zona.append('<option value="'+sub+'">'+sub+'</option>');
+      });
+    }
+  }
+
+  // Al cambiar Location, actualizar Subarea
+  $('#resales-filter-location').on('change', function(){
+    updateSubareaOptions($(this).val());
+  });
+
+  // Inicializar Subarea según Location seleccionada al cargar
+  updateSubareaOptions($('#resales-filter-location').val());
    * Utilidades
    * ----------------------------------------- */
   const qs = new URLSearchParams(window.location.search);
 
-  const dom = {
-    $form: $('.lusso-filters'),
-  };
+    'use strict';
 
-  if (!dom.$form.length) return;
+    // -----------------------------------------
+    // Mapeo Location → Subareas
+    // -----------------------------------------
+    const SUBAREAS_MAP = {
+      "Benahavís": ["El Madroñal", "La Heredia", "La Quinta", "La Zagaleta", "Los Almendros", "Los Arqueros", "Monte Halcones"],
+      "Benalmádena": ["Arroyo de la Miel", "Benalmádena Costa", "Benalmádena Pueblo", "La Capellanía", "Torremar", "Torremuelle", "Torrequebrada"],
+      "Casares": ["Casares Playa", "Casares Pueblo", "Doña Julia"],
+      "Estepona": ["Atalaya", "Bel Air", "Benamara", "Cancelada", "Costalita", "Diana Park", "El Paraíso", "Estepona", "New Golden Mile", "Selwo", "Valle Romano"],
+      "Fuengirola": ["Carvajal", "Fuengirola", "Los Boliches", "Los Pacos", "Torreblanca"],
+      "Málaga": ["Higuerón", "Málaga Centro", "Málaga Este", "Puerto de la Torre"],
+      "Manilva": ["Manilva Pueblo", "Puerto de la Duquesa", "Punta Chullera", "San Diego", "San Luis de Sabinillas"],
+      "Marbella": ["Aloha", "Guadalmina Alta", "Guadalmina Baja", "Nueva Andalucía", "Puerto Banús", "San Pedro de Alcántara", "Golden Mile - Nagüeles", "Golden Mile - Sierra Blanca", "Marbella Este - Elviria", "Marbella Este - Los Monteros", "Marbella Este - Río Real"],
+      "Mijas": ["La Cala de Mijas", "Mijas Costa", "Calahonda", "Riviera del Sol"],
+      "Torremolinos": ["Bajondillo", "Playamar", "La Carihuela", "Montemar"],
+      "Sotogrande": ["Sotogrande Alto", "Sotogrande Costa", "Sotogrande Marina", "Torreguadiaro"]
+    };
 
-  // Mapa de campos que maneja el form
-  const FIELDS = ['location', 'bedrooms', 'type', 'newdevs'];
-
-  // Selectores de form
-  const $location = dom.$form.find('select[name="location"]');
-  const $beds     = dom.$form.find('select[name="bedrooms"]');
-  const $type     = dom.$form.find('select[name="type"]');
-  const $newdevs  = dom.$form.find('input[name="newdevs"], select[name="newdevs"]'); // por si lo expones como select
-
-  // Patrón V6 para OptionValue de property types (p.ej. 2-2, 1-6, 4-1)
-  const TYPE_PATTERN = /^\d+-\d+$/;
-
-  // Evita dobles envíos
-  let submitting = false;
-  const DEBOUNCE_MS = 80;
-
-  // Helper: obtiene valor “limpio” de un control
-  function valOf($el) {
-    if (!$el.length) return '';
-    const v = ($el.val() || '').toString().trim();
-    return v;
-  }
-
-  // Helper: valida “type” según patrón V6
-  function isValidType(v) {
-    if (!v) return true; // vacío se permite
-    return TYPE_PATTERN.test(v);
-  }
-
-  // Helper: bedrooms numérico entero positivo
-  function isValidBedrooms(v) {
-    if (!v) return true;
-    return /^\d+$/.test(v);
-  }
-
-  // Helper: deshabilita selects vacíos para no generar ?param=
-  function disableEmptyFields($form) {
-    $form.find('select').each(function () {
-      const v = ( $(this).val() || '' ).toString().trim();
-      if (v === '') $(this).prop('disabled', true);
-    });
-  }
-
-  // Helper: restaura cualquier select deshabilitado (navegador atrás)
-  function enableAllFields($form) {
-    $form.find('select:disabled,input:disabled').prop('disabled', false);
-  }
-
-  // Helper: preserva params ajenos al form
-  function appendForeignParams($form) {
-    // Construye un Set con nombres que maneja el form
-    const FORM_FIELD_NAMES = new Set(
-      $form
-        .find('input[name],select[name],textarea[name]')
-        .map(function () { return this.name; })
-        .get()
-    );
-
-    // Agrega campos de la URL que NO estén en el form
-    qs.forEach((value, key) => {
-      if (!FORM_FIELD_NAMES.has(key)) {
-        // crear un hidden dinámico
-        const $hidden = $('<input>', {
-          type: 'hidden',
-          name: key,
-          value: value
+    // -----------------------------------------
+    // Actualiza el select de Subarea según Location
+    // -----------------------------------------
+    function updateSubareaOptions(location) {
+      const $zona = $('#resales-filter-zona');
+      $zona.empty();
+      $zona.append('<option value="">Subarea</option>');
+      if (location && SUBAREAS_MAP[location]) {
+        SUBAREAS_MAP[location].forEach(sub => {
+          $zona.append(`<option value="${sub}">${sub}</option>`);
         });
-        $form.append($hidden);
       }
+    }
+
+    // Al cambiar Location, actualizar Subarea
+    $('#resales-filter-location').on('change', function () {
+      updateSubareaOptions($(this).val());
+  });
+
+    // Inicializar Subarea al cargar la página si hay Location seleccionada
+    updateSubareaOptions($('#resales-filter-location').val());
+
+    // -----------------------------------------
+    // Funcionalidad del formulario (GET)
+    // -----------------------------------------
+    const dom = {
+      $form: $('.lusso-filters'),
+    };
+    if (!dom.$form.length) return;
+
+    const $location = dom.$form.find('select[name="location"]');
+    const $beds     = dom.$form.find('select[name="bedrooms"]');
+    const $type     = dom.$form.find('select[name="type"]');
+
+    function valOf($el) {
+      if (!$el.length) return '';
+      return ($el.val() || '').toString().trim();
+    }
+
+    function safeSubmit() {
+      dom.$form.find('select').each(function () {
+        if (!$(this).val()) $(this).prop('disabled', true);
+      });
+      dom.$form.trigger('submit');
+    }
+
+    dom.$form.on('change', 'select', function () {
+      safeSubmit();
     });
-  }
 
-  // Helper: hace scroll hacia el grid de resultados si existe
-  function scrollToResults() {
-    const $grid = $('.lusso-grid').first();
-    if ($grid.length) {
-      const top = $grid.offset().top - 80; // margen por header fijo
-      window.scrollTo({ top: top, behavior: 'smooth' });
-    }
-  }
-
-  // Helper: submit con seguridad (debounce + validaciones)
-  function safeSubmit() {
-    if (submitting) return;
-    submitting = true;
-    setTimeout(() => (submitting = false), DEBOUNCE_MS);
-
-    // Validaciones suaves
-    const vType = valOf($type);
-    const vBeds = valOf($beds);
-
-    if (!isValidType(vType)) {
-      // Si no es válido, lo vaciamos para evitar enviar basura
-      $type.val('');
-    }
-    if (!isValidBedrooms(vBeds)) {
-      $beds.val('');
-    }
-
-    // Deshabilitar vacíos para limpiar URL
-    disableEmptyFields(dom.$form);
-
-    // Preservar parámetros externos (utm, ref, etc.)
-    appendForeignParams(dom.$form);
-
-    // En sandbox solemos querer p_sandbox=true; producción no.
-    // Si alguna vez agregás el switch en Settings, lo puedes inyectar aquí leyendo una variable global.
-    // Por ahora, no agregamos parámetros extra.
-
-    dom.$form.trigger('submit');
-  }
-
-  /** -----------------------------------------
-   * Eventos
-   * ----------------------------------------- */
-
-  // Enviar automáticamente al cambiar cualquiera de los selects
-  dom.$form.on('change', 'select[name="location"], select[name="bedrooms"], select[name="type"]', function () {
-    safeSubmit();
-  });
-
-  // Limpieza y preservación al enviar manualmente (por botón “Search”)
-  dom.$form.on('submit', function () {
-    // Si el submit no viene de safeSubmit(), aún limpiamos
-    disableEmptyFields(dom.$form);
-    appendForeignParams(dom.$form);
-    // dejamos continuar el envío
-  });
-
-  // Restaurar campos deshabilitados al volver con botón “Atrás”
-  $(window).on('pageshow', function (e) {
-    // pageshow con persisted=true indica bfcache; restauramos controles
-    enableAllFields(dom.$form);
-  });
-
-  /** -----------------------------------------
-   * Mejora UX tras carga si hay resultados
-   * ----------------------------------------- */
-  // Si hay querystring (búsqueda) y existe el grid, hacemos un scroll suave tras un tiempito
-  if (window.location.search && $('.lusso-grid').length) {
-    // pequeño delay para evitar saltos si aún está pintando
-    setTimeout(scrollToResults, 120);
-  }
-
-  /** -----------------------------------------
-   * Sincronización defensiva (opcional)
-   * - Si el usuario borró a mano un param en la URL y vuelve,
-   *   mantenemos el valor visual de los selects (servido por PHP).
-   * - Si querés forzar que los selects reflejen exactamente la URL,
-   *   descomenta el bloque de abajo.
-   * ----------------------------------------- */
-
-  // // Forzar que los selects reflejen parámetros actuales de la URL:
-  // if ($location.length && qs.has('location')) $location.val(qs.get('location'));
-  // if ($beds.length && qs.has('bedrooms'))    $beds.val(qs.get('bedrooms'));
-  // if ($type.length && qs.has('type'))        $type.val(qs.get('type'));
-  // if ($newdevs.length && qs.has('newdevs'))  $newdevs.val(qs.get('newdevs'));
-
-  /** -----------------------------------------
-   * Depuración (silenciar en producción si quieres)
-   * ----------------------------------------- */
-  // console.debug('[LUSSO] filters.js cargado. GET=', Object.fromEntries(qs.entries()));
-});
+    $(window).on('pageshow', function () {
+      dom.$form.find('select:disabled,input:disabled').prop('disabled', false);
+    });
