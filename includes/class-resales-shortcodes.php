@@ -12,8 +12,11 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
   class Lusso_Resales_Shortcodes {
     /* ---- Helpers de paginación ---- */
     private function lusso_build_page_url($overrides = []) {
-      $base = get_permalink();
-      $keep = ['location','area','bedrooms','type','newdevs','sort','lang','p_rta'];
+      $base = get_permalink(); // /properties/
+      $keep = [
+        'location','area','bedrooms','type','newdevs','sort','lang','p_rta',
+        'qid', 'pg' // <- añadidos
+      ];
       $params = [];
       foreach ($keep as $k) {
         if (isset($_GET[$k]) && $_GET[$k] !== '') {
@@ -24,7 +27,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         if ($v === null) unset($params[$k]); else $params[$k] = $v;
       }
       $q = http_build_query($params);
-      return $q ? ($base . '?' . $q) : $base;
+      return $q ? "{$base}?{$q}" : $base;
     }
 
     private function lusso_render_pagination($meta) {
@@ -35,23 +38,23 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
 
       echo '<nav class="lusso-pagination" aria-label="Property results pagination"><ul class="lusso-page-list">';
       if ($current > 1) {
-        $prev = esc_url($this->lusso_build_page_url(['page'=>$current-1,'qid'=>$qid]));
-        echo '<li class="lusso-page-item prev"><a href="'.$prev.'">&laquo;</a></li>';
+        $prevUrl = esc_url($this->lusso_build_page_url(['pg'=>$current-1,'qid'=>$qid]));
+        echo '<li class="lusso-page-item prev"><a href="'.$prevUrl.'">&laquo;</a></li>';
       }
       $window = 2; $start=max(1,$current-$window); $end=min($pages,$current+$window);
-      if ($start>1){ $first=esc_url($this->lusso_build_page_url(['page'=>1,'qid'=>$qid])); echo '<li class="lusso-page-item"><a href="'.$first.'">1</a></li>'; if($start>2) echo '<li class="lusso-page-item ellipsis">…</li>'; }
+      if ($start>1){ $firstUrl=esc_url($this->lusso_build_page_url(['pg'=>1,'qid'=>$qid])); echo '<li class="lusso-page-item"><a href="'.$firstUrl.'">1</a></li>'; if($start>2) echo '<li class="lusso-page-item ellipsis">…</li>'; }
       for($i=$start;$i<=$end;$i++){
         if($i===$current){ echo '<li class="lusso-page-item active"><span>'.esc_html($i).'</span></li>'; }
-        else{ $u=esc_url($this->lusso_build_page_url(['page'=>$i,'qid'=>$qid])); echo '<li class="lusso-page-item"><a href="'.$u.'">'.esc_html($i).'</a></li>'; }
+        else{ $url=esc_url($this->lusso_build_page_url(['pg'=>$i,'qid'=>$qid])); echo '<li class="lusso-page-item"><a href="'.$url.'">'.esc_html($i).'</a></li>'; }
       }
       if ($end < $pages){
         if ($end < $pages-1) echo '<li class="lusso-page-item ellipsis">…</li>';
-        $last=esc_url($this->lusso_build_page_url(['page'=>$pages,'qid'=>$qid]));
-        echo '<li class="lusso-page-item"><a href="'.$last.'">'.esc_html($pages).'</a></li>';
+        $lastUrl=esc_url($this->lusso_build_page_url(['pg'=>$pages,'qid'=>$qid]));
+        echo '<li class="lusso-page-item"><a href="'.$lastUrl.'">'.esc_html($pages).'</a></li>';
       }
       if ($current < $pages){
-        $next=esc_url($this->lusso_build_page_url(['page'=>$current+1,'qid'=>$qid]));
-        echo '<li class="lusso-page-item next"><a href="'.$next.'">&raquo;</a></li>';
+        $nextUrl=esc_url($this->lusso_build_page_url(['pg'=>$current+1,'qid'=>$qid]));
+        echo '<li class="lusso-page-item next"><a href="'.$nextUrl.'">&raquo;</a></li>';
       }
       echo '</ul></nav>';
     }
@@ -423,8 +426,8 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       $type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
       $newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
 
-    $page     = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $qid      = isset($_GET['qid']) ? sanitize_text_field($_GET['qid']) : '';
+  $page     = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
+  $qid      = isset($_GET['qid']) ? sanitize_text_field($_GET['qid']) : '';
 
       $atts = shortcode_atts([
         'api_id'           => '',
@@ -454,10 +457,10 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         'P_SortType' => 3,
       ];
 
-        // Si viene qid en la URL, usamos P_QueryId para paginar la misma búsqueda
-        if ($qid !== '') {
-          $search_params['P_QueryId'] = $qid;
-        }
+      // Si viene qid en la URL, usamos P_QueryId para paginar la misma búsqueda
+      if ($qid !== '') {
+        $search_params['P_QueryId'] = $qid;
+      }
 
       // Filtros opcionales
       if ($location !== '') {
