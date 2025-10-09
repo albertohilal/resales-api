@@ -126,8 +126,8 @@
       dom.$subarea.focus();
     });
 
-    // Cambia Subarea → ahora sí enviar
-    dom.$subarea.on('change', safeSubmit);
+  // Cambia Subarea → solo repuebla, NO enviar automáticamente
+  // dom.$subarea.on('change', safeSubmit);
 
     // Auto-submit del resto de selects (NO location/subarea)
     dom.$form.on('change', 'select', function (e) {
@@ -140,9 +140,14 @@
     var locQS = qs('location') || dom.$location.val() || '';
     if (locQS) dom.$location.val(locQS);
 
+    // Poblar subareas y seleccionar la opción del querystring si existe
     updateSubareaOptions(locQS);
-
-    var subQS = qs('area') || qs('subarea') || qs('zona') || '';
-    if (subQS) dom.$subarea.val(subQS);
+    var subQS = qs('zona') || '';
+    if (subQS) {
+      // Esperar a que las opciones estén pobladas antes de seleccionar
+      setTimeout(function() {
+        dom.$subarea.val(subQS);
+      }, 0);
+    }
   });
 })(jQuery);
