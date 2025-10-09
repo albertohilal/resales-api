@@ -390,7 +390,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         echo "</pre></details>";
       }
 
-  echo '<section class="lusso-grid">';
+  echo '<div class="lusso-cards-bg"><section class="lusso-grid">';
 
       foreach ($props as $p) {
         $ref  = $p['Reference'] ?? '';
@@ -403,7 +403,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         echo $html;
       }
 
-      echo '</section>';
+  echo '</section></div>';
 
       // CSS mínimo para el placeholder / grid
       ?>

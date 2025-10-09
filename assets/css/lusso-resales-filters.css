@@ -8,8 +8,9 @@
 }
 /* Fondo solo para el formulario de filtros */
 .lusso-filters-wrap {
-  background: #FFFFFF; /*F5F1EA;*/
-  padding: 24px 0;
+  background: #F5F1EA; /*FFFFFF;*/
+  padding: 10px 0;
+  margin-bottom: 10px;
 }
 .lusso-filters .filter-group{
   flex: 0 0 auto;

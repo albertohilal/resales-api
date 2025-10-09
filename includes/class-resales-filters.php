@@ -244,6 +244,11 @@ class Resales_Filters {
             $p['P_Location'] = sanitize_text_field( $_GET['location'] );
         }
 
+            // Area (subzona) - solo si hay valor válido
+            if ( isset($_GET['area']) && $_GET['area'] !== '' && $_GET['area'] !== 'Subarea' ) {
+                $p['P_Area'] = sanitize_text_field( $_GET['area'] );
+            }
+
         // Bedrooms
         if ( isset($_GET['bedrooms']) && $_GET['bedrooms'] !== '' ) {
             $p['P_Beds'] = (int) $_GET['bedrooms'];
@@ -371,6 +376,8 @@ class Resales_Filters {
         }
 
         foreach ( $props as $p ) {
+                // DEBUG: Mostrar estructura completa de la propiedad para depurar campos disponibles
+                error_log('[DEBUG] Campos propiedad: ' . print_r($p, true));
             $ref   = $p['Reference'] ?? '';
             $loc   = $p['Location'] ?? '';
             $beds  = $p['Bedrooms'] ?? '';
@@ -381,6 +388,18 @@ class Resales_Filters {
                 $pic = esc_url( $p['Pictures']['Picture'][0]['PictureURL'] );
             }
 
+            // Bloque para Area_Name, Location y Province
+            $area = $p['Area_Name'] ?? '';
+            $prov = $p['Province'] ?? '';
+            $ubicacion = '';
+            if ($area && $area !== '') {
+                $ubicacion .= esc_html($area) . ', ';
+            }
+            $ubicacion .= esc_html($loc);
+            if ($prov && $prov !== '') {
+                $ubicacion .= ', ' . esc_html($prov);
+            }
+
             error_log('[Resales API][LOG] Propiedad: Ref=' . $ref . ' | Dormitorios=' . $beds);
 
             $html .= '<article style="border:1px solid #eee;border-radius:10px;overflow:hidden;background:#fff">';
@@ -389,7 +408,7 @@ class Resales_Filters {
             }
             $html .= '<div style="padding:12px 14px">';
             $html .= '<div style="font-weight:700;margin-bottom:4px;">' . esc_html( $typeN ) . '</div>';
-            $html .= '<div style="opacity:.8;margin-bottom:6px;">' . esc_html( $loc ) . '</div>';
+            $html .= '<div style="opacity:.8;margin-bottom:6px;">' . $ubicacion . '</div>';
             $html .= '<div style="display:flex;justify-content:space-between;align-items:center">';
             $html .= '<span>' . esc_html__( 'Ref', 'resales-api' ) . ': ' . esc_html( $ref ) . '</span>';
             if ( $price ) {

@@ -146,6 +146,8 @@
     if (subQS) {
       // Esperar a que las opciones estén pobladas antes de seleccionar
       setTimeout(function() {
+        var exists = dom.$subarea.find('option[value="' + subQS + '"]').length > 0;
+        console.log('[DEBUG] Intentando seleccionar subarea:', subQS, '| Existe en opciones:', exists);
         dom.$subarea.val(subQS);
       }, 0);
     }

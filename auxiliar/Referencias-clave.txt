@@ -1,35 +1,17 @@
-Aquí tienes referencias clave para la llamada a SearchProperties V6 y el uso de parámetros de diagnóstico:
+lussogroup.es/wp-json/resales/v6/search?location=Sotogrande&P_APId=65503
 
-Parámetros principales de SearchProperties V6
-P_Location: string. Localización o lista CSV de localizaciones.
-P_Beds: número exacto (ej: 3) o mínimo con sufijo "x" (ej: 3x para "3 o más").
-P_PropertyTypes: string. IDs de tipos de propiedad, separados por coma (ej: "1,2,3").
-P_ApiId / P_Agency_FilterId: identificador de agencia o API (uno es obligatorio).
-p_new_devs: 'only', 'include', 'exclude'. Para filtrar solo obra nueva.
-p_sandbox: 'true' (string, no booleano). Activa modo diagnóstico/sandbox (no afecta datos reales, útil para pruebas).
-Uso de sandbox/diagnóstico
-Si p_sandbox = 'true' y la API lo soporta, la petición se procesa en modo de pruebas.
-Es útil para entornos de desarrollo o cuando WP_DEBUG está activo.
-Puedes loguear la query enviada para depuración, como ya implementaste:
+ p_agency_filterid=1
+
+ https://lussogroup.es//wp-json/resales/v6/search?location=Sotogrande&P_APId=65503
+
+ https://lussogroup.es/wp-json/resales/v6/search?location=Sotogrande&P_APId=65503&p1=TU_P1&p2=TU_P2
 
 
-<?php
-if (defined('WP_DEBUG') && WP_DEBUG) {
-  $query['p_sandbox'] = 'true';
-  error_log('[V6 OUT] ' . json_encode($query, JSON_UNESCAPED_UNICODE));
-}
+https://lussogroup.es/wp-json/resales/v6/search?location=Sotogrande&P_APId=65503&p1=1035049&p2=5df9cb0f7ad59c80f11ec3c2d4c17f105aaf8918
 
-Ejemplo de payload típico
 
-<?php
-[
-  'p1' => 'usuario',
-  'p2' => 'clave',
-  'P_Location' => 'Marbella',
-  'P_Beds' => '3x',
-  'P_PropertyTypes' => '1,2',
-  'P_ApiId' => '12345',
-  'p_new_devs' => 'only',
-  'p_sandbox' => 'true'
-]
+P1 = 1035049
+P2 = 5df9cb0f7ad59c80f11ec3c2d4c17f105aaf8918
+
+https://lussogroup.es/wp-json/resales/v6/search?location=Sotogrande&P_APId=65503&p1=1035049&p2=5df9cb0f7ad59c80f11ec3c2d4c17f105aaf8918
 
