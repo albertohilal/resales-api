@@ -25,14 +25,15 @@ class Resales_Filters {
         // --- FORMULARIO ---
         ob_start();
 
-        $current_location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
-        $current_beds     = isset($_GET['bedrooms']) ? sanitize_text_field($_GET['bedrooms']) : '';
-        $current_type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
-        $current_newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
+    $current_location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
+    $current_beds     = isset($_GET['bedrooms']) ? sanitize_text_field($_GET['bedrooms']) : '';
+    $current_type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
+    $current_newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
+    $current_page     = isset($_GET['page']) && is_numeric($_GET['page']) ? intval($_GET['page']) : 1;
 
         ?>
         <div class="lusso-filters-wrap">
-        <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:16px 0 24px">
+    <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:16px 0 24px">
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
                 <!-- Location (estático, sin etiqueta) -->
                 <div>
@@ -218,6 +219,8 @@ class Resales_Filters {
                 ?>
                 <input type="hidden" name="newdevs" value="<?php echo esc_attr($hidden_newdevs); ?>" />
 
+                <!-- Paginación oculta -->
+                <input type="hidden" name="page" value="<?php echo esc_attr($current_page); ?>" />
                 <!-- Search -->
                 <div>
                     <button type="submit" style="padding:8px 14px;font-weight:600;cursor:pointer;">
@@ -228,9 +231,12 @@ class Resales_Filters {
         </form>
         <?php
 
-        // --- Integración con [lusso_properties] ---
-        echo do_shortcode('[lusso_properties]');
-        return ob_get_clean();
+    // --- Integración con resultados y paginación ---
+    $params = $this->build_search_params_from_get();
+    $params['P_PageNo'] = $current_page;
+    $params = $this->resales_api_base_params($params);
+    echo $this->run_search($params);
+    return ob_get_clean();
     }
 
     /**
@@ -426,14 +432,13 @@ class Resales_Filters {
 
         $html .= '</div>';
 
-        // --- Paginación ---
-        $total = isset($data['TotalCount']) ? intval($data['TotalCount']) : 0;
+        // --- Paginación usando QueryInfo.PropertyCount ---
+        $total = isset($data['QueryInfo']['PropertyCount']) ? intval($data['QueryInfo']['PropertyCount']) : 0;
         $page_size = isset($params['P_PageSize']) ? intval($params['P_PageSize']) : 20;
         $current_page = isset($params['P_PageNo']) ? intval($params['P_PageNo']) : 1;
-        $total_pages = $page_size > 0 ? ceil($total / $page_size) : 1;
+        $total_pages = ($page_size > 0) ? ceil($total / $page_size) : 1;
 
         if ($total_pages > 1) {
-            // Construir base de URL manteniendo filtros
             $base_url = strtok($_SERVER['REQUEST_URI'], '?');
             $query = $_GET;
             $html .= '<div class="lusso-pagination">';
