@@ -237,11 +237,16 @@ class Resales_Filters {
      * Construye parámetros desde $_GET
      */
     private function build_search_params_from_get(): array {
-        $p = [];
+    $p = [];
 
         // Location
         if ( isset($_GET['location']) && $_GET['location'] !== '' ) {
             $p['P_Location'] = sanitize_text_field( $_GET['location'] );
+        }
+
+        // Paginación: si page > 1, asignar a P_PageNo
+        if ( isset($_GET['page']) && is_numeric($_GET['page']) && intval($_GET['page']) > 1 ) {
+            $p['P_PageNo'] = intval($_GET['page']);
         }
 
             // Area (subzona) - solo si hay valor válido
@@ -420,6 +425,30 @@ class Resales_Filters {
         }
 
         $html .= '</div>';
+
+        // --- Paginación ---
+        $total = isset($data['TotalCount']) ? intval($data['TotalCount']) : 0;
+        $page_size = isset($params['P_PageSize']) ? intval($params['P_PageSize']) : 20;
+        $current_page = isset($params['P_PageNo']) ? intval($params['P_PageNo']) : 1;
+        $total_pages = $page_size > 0 ? ceil($total / $page_size) : 1;
+
+        if ($total_pages > 1) {
+            // Construir base de URL manteniendo filtros
+            $base_url = strtok($_SERVER['REQUEST_URI'], '?');
+            $query = $_GET;
+            $html .= '<div class="lusso-pagination">';
+            for ($i = 1; $i <= $total_pages; $i++) {
+                $query['page'] = $i;
+                $url = $base_url . '?' . http_build_query($query);
+                if ($i == $current_page) {
+                    $html .= '<span class="current-page">' . $i . '</span>';
+                } else {
+                    $html .= '<a href="' . esc_url($url) . '">' . $i . '</a>';
+                }
+            }
+            $html .= '</div>';
+        }
+
         return $html;
     }
 
