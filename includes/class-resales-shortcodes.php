@@ -559,10 +559,11 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
 
   // ---- Paginación ----
   $qi   = $resp['QueryInfo'] ?? [];
-  $qid2 = isset($qi['QueryId']) ? $qi['QueryId'] : ($qid ?: '');
-  $count= isset($qi['PropertyCount']) ? (int)$qi['PropertyCount'] : 0;
+  // Asegura que el qid sea el devuelto por la API, nunca el de entrada
+  $qid2 = isset($qi['QueryId']) ? $qi['QueryId'] : '';
   $ppp  = isset($qi['PropertiesPerPage']) ? (int)$qi['PropertiesPerPage'] : (int)$search_params['P_PageSize'];
   $cur  = isset($qi['CurrentPage']) ? (int)$qi['CurrentPage'] : (int)$page;
+  $count= isset($qi['PropertyCount']) ? (int)$qi['PropertyCount'] : 0;
   $pages= $ppp > 0 ? (int)ceil($count / $ppp) : 1;
 
   $this->lusso_render_pagination([
