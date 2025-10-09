@@ -10,6 +10,142 @@ if (!defined('ABSPATH')) exit;
 
 if (!class_exists('Lusso_Resales_Shortcodes')) {
   class Lusso_Resales_Shortcodes {
+    /* ---- Helpers de paginación ---- */
+    private function lusso_build_page_url($overrides = []) {
+      $base = get_permalink();
+      $keep = ['location','area','bedrooms','type','newdevs','sort','lang','p_rta'];
+      $params = [];
+      foreach ($keep as $k) {
+        if (isset($_GET[$k]) && $_GET[$k] !== '') {
+          $params[$k] = sanitize_text_field(wp_unslash($_GET[$k]));
+        }
+      }
+      foreach ($overrides as $k => $v) {
+        if ($v === null) unset($params[$k]); else $params[$k] = $v;
+      }
+      $q = http_build_query($params);
+      return $q ? ($base . '?' . $q) : $base;
+    }
+
+    private function lusso_render_pagination($meta) {
+      $current = max(1, (int)($meta['current'] ?? 1));
+      $pages   = max(1, (int)($meta['pages'] ?? 1));
+      $qid     = isset($meta['qid']) ? $meta['qid'] : '';
+      if ($pages <= 1 || empty($qid)) return;
+
+      echo '<nav class="lusso-pagination" aria-label="Property results pagination"><ul class="lusso-page-list">';
+      if ($current > 1) {
+        $prev = esc_url($this->lusso_build_page_url(['page'=>$current-1,'qid'=>$qid]));
+        echo '<li class="lusso-page-item prev"><a href="'.$prev.'">&laquo;</a></li>';
+      }
+      $window = 2; $start=max(1,$current-$window); $end=min($pages,$current+$window);
+      if ($start>1){ $first=esc_url($this->lusso_build_page_url(['page'=>1,'qid'=>$qid])); echo '<li class="lusso-page-item"><a href="'.$first.'">1</a></li>'; if($start>2) echo '<li class="lusso-page-item ellipsis">…</li>'; }
+      for($i=$start;$i<=$end;$i++){
+        if($i===$current){ echo '<li class="lusso-page-item active"><span>'.esc_html($i).'</span></li>'; }
+        else{ $u=esc_url($this->lusso_build_page_url(['page'=>$i,'qid'=>$qid])); echo '<li class="lusso-page-item"><a href="'.$u.'">'.esc_html($i).'</a></li>'; }
+      }
+      if ($end < $pages){
+        if ($end < $pages-1) echo '<li class="lusso-page-item ellipsis">…</li>';
+        $last=esc_url($this->lusso_build_page_url(['page'=>$pages,'qid'=>$qid]));
+        echo '<li class="lusso-page-item"><a href="'.$last.'">'.esc_html($pages).'</a></li>';
+      }
+      if ($current < $pages){
+        $next=esc_url($this->lusso_build_page_url(['page'=>$current+1,'qid'=>$qid]));
+        echo '<li class="lusso-page-item next"><a href="'.$next.'">&raquo;</a></li>';
+      }
+      echo '</ul></nav>';
+    }
+  /**
+   * Ejecuta la búsqueda a WebAPI con paginación real (P_QueryId + P_PageNo)
+   * Devuelve array con ['query' => [], 'props' => [], 'meta' => []]
+   */
+  private function lusso_api_search_with_pagination() {
+    $location  = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
+    $area      = isset($_GET['area']) ? sanitize_text_field($_GET['area']) : '';
+    $beds      = isset($_GET['bedrooms']) ? (int) $_GET['bedrooms'] : 0;
+    $types     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
+    $newdevs   = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : 'include';
+    $sort      = isset($_GET['sort']) ? (int) $_GET['sort'] : 3;
+    $p_rta     = isset($_GET['p_rta']) ? sanitize_text_field($_GET['p_rta']) : '';
+    $lang      = isset($_GET['lang']) ? (int) $_GET['lang'] : 1;
+
+    $page      = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $qid       = isset($_GET['qid']) ? sanitize_text_field($_GET['qid']) : '';
+    $pageSize  = 12;
+    $filterId  = defined('RESALES_AGENCY_FILTER_ID') ? RESALES_AGENCY_FILTER_ID : '';
+    $p1        = defined('RESALES_P1') ? RESALES_P1 : '';
+    $p2        = defined('RESALES_P2') ? RESALES_P2 : '';
+
+    $params = [
+      'p_agency_filterid' => $filterId,
+      'p1'                => $p1,
+      'p2'                => $p2,
+      'p_output'          => 'JSON',
+      'P_Lang'            => $lang,
+      'P_PageSize'        => $pageSize,
+      'P_SortType'        => $sort,
+      'p_new_devs'        => $newdevs,
+    ];
+
+    if ($location !== '') $params['P_Location'] = $location;
+    if ($area !== '')     $params['P_Area']     = $area;
+    if ($beds > 0)        $params['P_Beds']     = $beds;
+    if ($types !== '')    $params['P_PropertyTypes'] = $types;
+    if ($p_rta !== '')    $params['p_rta'] = $p_rta;
+
+    if ($qid !== '') {
+      $params['P_QueryId'] = $qid;
+      $params['P_PageNo']  = $page;
+    } else {
+      $params['P_PageNo'] = 1;
+    }
+
+    $endpoint = 'https://webapi.resales-online.com/V6/SearchProperties';
+    $url = $endpoint . '?' . http_build_query($params);
+
+    $resp = wp_remote_get($url, ['timeout' => 15]);
+    if (is_wp_error($resp)) {
+      return [
+        'query' => $params,
+        'props' => [],
+        'meta'  => ['error' => $resp->get_error_message()]
+      ];
+    }
+
+    $body = wp_remote_retrieve_body($resp);
+    $data = json_decode($body, true);
+
+    if (!is_array($data) || empty($data['Property'])) {
+      return [
+        'query' => $params,
+        'props' => [],
+        'meta'  => [
+          'error' => 'Empty or invalid response',
+        ],
+      ];
+    }
+
+    $qi   = isset($data['QueryInfo']) ? $data['QueryInfo'] : [];
+    $qid2 = isset($qi['QueryId']) ? $qi['QueryId'] : ( $qid ?: '' );
+    $count= isset($qi['PropertyCount']) ? (int)$qi['PropertyCount'] : 0;
+    $ppp  = isset($qi['PropertiesPerPage']) ? (int)$qi['PropertiesPerPage'] : $pageSize;
+    $cur  = isset($qi['CurrentPage']) ? (int)$qi['CurrentPage'] : $page;
+    $pages= $ppp > 0 ? (int)ceil($count / $ppp) : 1;
+
+    return [
+      'query' => $params,
+      'props' => $data['Property'],
+      'meta'  => [
+        'qid'         => $qid2,
+        'count'       => $count,
+        'per_page'    => $ppp,
+        'current'     => $cur,
+        'pages'       => $pages,
+        'rawQueryInfo'=> $qi,
+      ],
+    ];
+  }
+
 
     const API_BASE = 'https://webapi.resales-online.com/V6/';
     const SEARCH_ENDPOINT = 'SearchProperties';
@@ -287,6 +423,9 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       $type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
       $newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
 
+    $page     = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $qid      = isset($_GET['qid']) ? sanitize_text_field($_GET['qid']) : '';
+
       $atts = shortcode_atts([
         'api_id'           => '',
         'page'             => 1,
@@ -310,10 +449,15 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         'p_output'   => 'JSON',
         'P_ApiId'    => $opts['P_ApiId'],
         'P_Lang'     => $opts['P_Lang'],
-        'P_PageNo'   => (int)$atts['page'],
+        'P_PageNo'   => (int)$page,
         'P_PageSize' => (int)$atts['page_size'],
         'P_SortType' => 3,
       ];
+
+        // Si viene qid en la URL, usamos P_QueryId para paginar la misma búsqueda
+        if ($qid !== '') {
+          $search_params['P_QueryId'] = $qid;
+        }
 
       // Filtros opcionales
       if ($location !== '') {
@@ -341,8 +485,12 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         $search_params['p_new_devs'] = 'only';
       }
 
-      // Cache por hash de parámetros
-      $search_hash = 'resales_nd_search_' . md5(serialize($search_params));
+      // Cache por hash de parámetros (incluye qid y page para evitar resultados obsoletos)
+      $cache_key_parts = $search_params;
+      // Forzar inclusión explícita de qid y page en el hash
+      $cache_key_parts['qid'] = $qid;
+      $cache_key_parts['page'] = $page;
+      $search_hash = 'resales_nd_search_' . md5(serialize($cache_key_parts));
       $cached = get_transient($search_hash);
       if ($cached) {
         $resp = $cached;
@@ -403,7 +551,22 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         echo $html;
       }
 
+
   echo '</section></div>';
+
+  // ---- Paginación ----
+  $qi   = $resp['QueryInfo'] ?? [];
+  $qid2 = isset($qi['QueryId']) ? $qi['QueryId'] : ($qid ?: '');
+  $count= isset($qi['PropertyCount']) ? (int)$qi['PropertyCount'] : 0;
+  $ppp  = isset($qi['PropertiesPerPage']) ? (int)$qi['PropertiesPerPage'] : (int)$search_params['P_PageSize'];
+  $cur  = isset($qi['CurrentPage']) ? (int)$qi['CurrentPage'] : (int)$page;
+  $pages= $ppp > 0 ? (int)ceil($count / $ppp) : 1;
+
+  $this->lusso_render_pagination([
+    'current' => $cur,
+    'pages'   => $pages,
+    'qid'     => $qid2,
+  ]);
 
       // CSS mínimo para el placeholder / grid
       ?>
