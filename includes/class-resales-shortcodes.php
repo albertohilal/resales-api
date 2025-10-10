@@ -63,14 +63,16 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
    * Devuelve array con ['query' => [], 'props' => [], 'meta' => []]
    */
   private function lusso_api_search_with_pagination() {
-    $location  = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
-    $area      = isset($_GET['area']) ? sanitize_text_field($_GET['area']) : '';
-    $beds      = isset($_GET['bedrooms']) ? (int) $_GET['bedrooms'] : 0;
-    $types     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
-    $newdevs   = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : 'include';
-    $sort      = isset($_GET['sort']) ? (int) $_GET['sort'] : 3;
-    $p_rta     = isset($_GET['p_rta']) ? sanitize_text_field($_GET['p_rta']) : '';
-    $lang      = isset($_GET['lang']) ? (int) $_GET['lang'] : 1;
+
+      $location    = isset($_GET['location'])    ? sanitize_text_field($_GET['location'])    : '';
+      $subLocation = isset($_GET['subLocation']) ? sanitize_text_field($_GET['subLocation']) : '';
+      $area        = isset($_GET['area'])        ? sanitize_text_field($_GET['area'])        : '';
+      $beds        = isset($_GET['bedrooms'])    ? (int) $_GET['bedrooms']                   : 0;
+      $types       = isset($_GET['type'])        ? sanitize_text_field($_GET['type'])        : '';
+      $newdevs     = isset($_GET['newdevs'])     ? sanitize_text_field($_GET['newdevs'])     : 'include';
+      $sort        = isset($_GET['sort'])        ? (int) $_GET['sort']                       : 3;
+      $p_rta       = isset($_GET['p_rta'])       ? sanitize_text_field($_GET['p_rta'])       : '';
+      $lang        = isset($_GET['lang'])        ? (int) $_GET['lang']                       : 1;
 
     $page      = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $qid       = isset($_GET['qid']) ? sanitize_text_field($_GET['qid']) : '';
@@ -90,11 +92,12 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       'p_new_devs'        => $newdevs,
     ];
 
-    if ($location !== '') $params['P_Location'] = $location;
-    if ($area !== '')     $params['P_Area']     = $area;
-    if ($beds > 0)        $params['P_Beds']     = $beds;
-    if ($types !== '')    $params['P_PropertyTypes'] = $types;
-    if ($p_rta !== '')    $params['p_rta'] = $p_rta;
+  if ($location !== '') $params['P_Location'] = $location;
+  if ($subLocation !== '') $params['P_SubLocation'] = $subLocation;
+  if ($area !== '')     $params['P_Area']     = $area;
+  if ($beds > 0)        $params['P_Beds']     = $beds;
+  if ($types !== '')    $params['P_PropertyTypes'] = $types;
+  if ($p_rta !== '')    $params['p_rta'] = $p_rta;
 
     if ($qid !== '') {
       $params['P_QueryId'] = $qid;
@@ -324,11 +327,20 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
   if (function_exists('get_card_place_label')) {
     $location = get_card_place_label($p);
   } else {
-    $province = isset($p['Province']) ? trim((string)$p['Province']) : '';
-    $loc = isset($p['Location']) ? trim((string)$p['Location']) : '';
-    $sub = isset($p['SubArea']) ? trim((string)$p['SubArea']) : '';
-    if ($sub !== '') {
-      $location = esc_html($sub . ($loc !== '' ? ', ' . $loc : ''));
+    $province    = isset($p['Province'])    ? trim((string)$p['Province'])    : '';
+    $loc         = isset($p['Location'])    ? trim((string)$p['Location'])    : '';
+    $subLocation = '';
+    if (!empty($p['SubLocation'])) {
+      $subLocation = trim((string)$p['SubLocation']);
+    } elseif (!empty($p['SubArea'])) {
+      $subLocation = trim((string)$p['SubArea']);
+    } elseif (!empty($p['zona'])) {
+      $subLocation = trim((string)$p['zona']);
+    } elseif (!empty($p['Zone'])) {
+      $subLocation = trim((string)$p['Zone']);
+    }
+    if ($subLocation !== '') {
+      $location = esc_html($subLocation . ($loc !== '' ? ', ' . $loc : '') . ($province !== '' ? ', ' . $province : ''));
     } elseif ($loc !== '') {
       $location = esc_html($loc . ($province !== '' ? ', ' . $province : ''));
     } else {

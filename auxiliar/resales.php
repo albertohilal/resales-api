@@ -1,102 +1,4 @@
 <?php
-add_action('wp_enqueue_scripts', function() {
-    wp_enqueue_script('lusso-filters', plugins_url('assets/js/filters.js', __FILE__), ['jquery'], '1.0', true);
-    wp_localize_script('lusso-filters', 'myAjax', [
-        'ajaxurl' => admin_url('admin-ajax.php')
-    ]);
-});
-add_action('wp_enqueue_scripts', function() {
-    wp_enqueue_script('lusso-filters', plugins_url('assets/js/filters.js', __FILE__), ['jquery'], '1.0', true);
-    wp_localize_script('lusso-filters', 'myAjax', [
-        'ajaxurl' => admin_url('admin-ajax.php')
-    ]);
-});
-/**
- * Plugin Name: Resales API
- * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
- * Version: 3.2.5
- * Author: Dev Team
- * Requires at least: 6.0
- * Requires PHP: 7.4
- */
-// Handler AJAX para filtro de propiedades con Type seguro (Apartment, House, Plot)
-add_action('wp_ajax_lusso_search_properties_type', 'lusso_search_properties_type_ajax');
-add_action('wp_ajax_nopriv_lusso_search_properties_type', 'lusso_search_properties_type_ajax');
-
-/**
- * AJAX handler para filtrar propiedades por Type (solo Apartment, House, Plot)
- * Recibe: type (apartment|house|plot), location, bedrooms, etc.
- * Mapea type a OptionValue, llama a SearchProperties y devuelve JSON seguro.
- */
-/**
- * AJAX handler para filtrar propiedades por Type (solo Apartment, House, Plot)
- * Recibe: type (apartment|house|plot), location, bedrooms, etc.
- * Mapea type a OptionValue, llama a SearchProperties y devuelve JSON seguro.
- */
-// ...duplicado eliminado...
-    // Obtener credenciales y filtros
-    $p1 = get_option('resales_api_p1');
-    $p2 = get_option('resales_api_p2');
-    $filter_id = get_option('resales_api_filter_id');
-    $sandbox = 'false';
-
-    // Normalizar y validar parámetros recibidos
-        $type     = isset($_POST['type']) ? sanitize_text_field($_POST['type']) : '';
-        $location = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : '';
-        $bedrooms = isset($_POST['bedrooms']) ? intval($_POST['bedrooms']) : '';
-
-    // Mapeo seguro de Type visible a OptionValue API
-    $type_map = [
-        'apartment' => '1-1', // Apartment
-        'house'     => '2-1', // House
-        'plot'      => '3-1', // Plot
-    ];
-    if ($type && !isset($type_map[$type])) {
-        wp_send_json_error(['error' => 'Invalid property type'], 400);
-    }
-    $type_api = $type ? $type_map[$type] : '';
-
-    // Construir parámetros para la API
-    $params = [
-        'p1' => $p1,
-        'p2' => $p2,
-        'p_agency_filterid' => $filter_id,
-        'p_sandbox' => $sandbox,
-        'p_output' => 'JSON',
-        'p_new_devs' => 'only',
-    ];
-    if ($type_api)   $params['P_PropertyTypes'] = $type_api;
-    if ($location)   $params['P_Location'] = $location;
-        if ($bedrooms)   $params['P_Beds'] = $bedrooms; // Sin sufijo 'x' si la API no lo requiere
-
-    // Construir URL y hacer la petición HTTP
-    $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
-    $response = wp_remote_get($url, ['timeout' => 20]);
-    if (is_wp_error($response)) {
-        wp_send_json_error(['error' => 'API request failed', 'details' => $response->get_error_message()], 500);
-    }
-    $body = wp_remote_retrieve_body($response);
-    $json = json_decode($body, true);
-
-    // Manejo de errores y compatibilidad con la estructura de respuesta
-    $properties = [];
-    if (is_array($json)) {
-        if (isset($json['Properties']) && is_array($json['Properties'])) {
-            $properties = $json['Properties'];
-        } elseif (isset($json['Property']) && is_array($json['Property'])) {
-            $properties = $json['Property'];
-        }
-    }
-    if (empty($properties)) {
-        wp_send_json_error(['error' => 'No properties found', 'raw' => $json], 200);
-    }
-    // Devolver solo la parte útil al frontend
-    wp_send_json_success([
-        'properties' => $properties,
-        'raw' => $json,
-    ]);
-}
-// ...existing code...
 require_once __DIR__ . '/includes/class-resales-rest.php';
 // Helper de logging para Resales API (debe estar disponible para todas las clases)
 if (!function_exists('resales_log')) {
@@ -144,11 +46,27 @@ function lusso_search_properties_ajax() {
         $params['P_ApiId'] = $apiid;
     }
     // 3. Mapear argumentos
+    // Mapeo seguro de Type visible a OptionValue API
+    $type_map = [
+        'apartment' => '1-1',
+        'house'     => '2-1',
+        'plot'      => '3-1',
+    ];
+    $type_option = '';
+    $type = isset($_REQUEST['type']) ? strtolower(trim($_REQUEST['type'])) : '';
+    resales_log('DEBUG', '[Resales API][DEBUG] Valor recibido en type: ' . $type);
+    if ($type !== '') {
+        if (isset($type_map[$type])) {
+            $type_option = $type_map[$type];
+            resales_log('DEBUG', '[Resales API][DEBUG] Mapeo type: ' . $type . ' => ' . $type_option);
+            $params['P_PropertyTypes'] = $type_option;
+        } else {
+            resales_log('ERROR', '[Resales API][ERROR] Tipo de propiedad no válido: ' . $type);
+            wp_send_json_error(['error' => 'Tipo de propiedad no válido'], 400);
+        }
+    }
     if (!empty($_REQUEST['location'])) {
         $params['P_Location'] = sanitize_text_field($_REQUEST['location']);
-    }
-    if (!empty($_REQUEST['type'])) {
-        $params['P_PropertyTypes'] = sanitize_text_field($_REQUEST['type']);
     }
     $min_beds = null;
     if (!empty($_REQUEST['bedrooms']) && is_numeric($_REQUEST['bedrooms'])) {
@@ -156,7 +74,7 @@ function lusso_search_properties_ajax() {
         $params['P_Beds'] = $min_beds . 'x';
     }
     $params['p_new_devs'] = 'only';
-    error_log('[Resales API][LOG] Params enviados a API: ' . json_encode($params));
+    resales_log('DEBUG', '[Resales API][LOG] Params enviados a API: ' . json_encode($params));
     // Nunca enviar "Area"
     // 4. Construir URL y hacer GET
     $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
@@ -169,11 +87,11 @@ function lusso_search_properties_ajax() {
     $code = wp_remote_retrieve_response_code($res);
     $body = wp_remote_retrieve_body($res);
     $json = json_decode($body, true);
-    error_log('[Resales API][LOG] Respuesta API: ' . json_encode($json));
+    resales_log('DEBUG', '[Resales API][LOG] Respuesta API: ' . json_encode($json));
     if (isset($json['Property'])) {
-        error_log('[Resales API][LOG] Total propiedades recibidas: ' . count($json['Property']));
+    resales_log('DEBUG', '[Resales API][LOG] Total propiedades recibidas: ' . count($json['Property']));
         foreach ($json['Property'] as $prop) {
-            error_log('[Resales API][LOG] Propiedad: Ref=' . $prop['Reference'] . ' | Dormitorios=' . $prop['Bedrooms']);
+            resales_log('DEBUG', '[Resales API][LOG] Propiedad: Ref=' . $prop['Reference'] . ' | Dormitorios=' . $prop['Bedrooms']);
         }
     }
     // Filtro defensivo antes de enviar al frontend
@@ -184,7 +102,7 @@ function lusso_search_properties_ajax() {
     }
     // 5. Loguear transaction si existe
     if (isset($json['transaction'])) {
-        error_log('[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
+    resales_log('DEBUG', '[resales-api][DEBUG] transaction=' . wp_json_encode($json['transaction']));
     }
     // 6. Salida JSON estándar
     if ($code !== 200) {
@@ -239,85 +157,85 @@ function lusso_debug_locations(){
     $data = lusso_fetch_locations($lang);
     is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
 }
+function lusso_debug_types(){
+    require_once LUSSO_PLUGIN_DIR.'includes/class-resales-data.php';
+    $lang = isset($_GET['lang']) ? (int)$_GET['lang'] : 1;
+    $data = lusso_fetch_property_types($lang);
+    is_wp_error($data) ? wp_send_json_error($data->get_error_message(),502) : wp_send_json_success($data);
+}
+/**
+ * Plugin Name: Resales API
+ * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
+ * Version: 3.2.5
+ * Author: Dev Team
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
+ */
 
-function lusso_search_properties_type_ajax() {
-    // Obtener credenciales y configuración de la API
-    $p1 = get_option('resales_api_p1');
-    $p2 = get_option('resales_api_p2');
-    $filter_id = get_option('resales_api_filter_id');
-    $sandbox = 'false';
+if (!defined('ABSPATH')) exit;
 
-    // Recoger y normalizar los valores POST
-    $type     = isset($_POST['type']) ? strtolower(trim(sanitize_text_field($_POST['type']))) : '';
-    $location = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : '';
-    $bedrooms = isset($_POST['bedrooms']) ? intval($_POST['bedrooms']) : '';
+/* =======================================
+ *  Host oficial WebAPI (NO cambiar)
+ *  (Las clases deben usar https://webapi.resales-online.com/V6/…)
+ * ======================================= */
+if (!defined('RESALES_API_HOST')) {
+    define('RESALES_API_HOST', 'webapi.resales-online.com');
+}
 
-    error_log("AJAX received: type=$type, location=$location, bedrooms=$bedrooms");
+/* =======================================
+ *  Pin DNS opcional (solo si el hosting falla resolviendo DNS)
+ *  - Déjalo '' para DESACTIVAR el pin.
+ *  - Si necesitas pin, pon una IPv4 válida del host:
+ *      dig +short webapi.resales-online.com
+ * ======================================= */
+if (!defined('RESALES_API_HOST_IP')) {
+    define('RESALES_API_HOST_IP', ''); // ej: '34.175.62.143'
+}
 
-    // Mapeo seguro de Type visible a OptionValue API
-    $type_map = [
-        'apartment' => '1-1',
-        'house'     => '2-1',
-        'plot'      => '3-1',
-    ];
-    if ($type && !isset($type_map[$type])) {
-        error_log("Invalid property type: $type");
-        wp_send_json_error(['error' => 'Invalid property type'], 400);
-        wp_die();
-    }
-    $type_api = $type ? $type_map[$type] : '';
+/* ===========================
+ *  Estilos / scripts frontend
+ * =========================== */
+add_action('wp_enqueue_scripts', function(){
+    wp_enqueue_style('lusso-resales', plugins_url('assets/css/lusso-resales.css', __FILE__), [], '1.0');
+    wp_enqueue_style('lusso-resales-filters', plugins_url('assets/css/lusso-resales-filters.css', __FILE__), [], '1.0');
+    wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11.0.0');
+    wp_enqueue_style('lusso-swiper-gallery', plugins_url('assets/css/swiper-gallery.css', __FILE__), ['swiper-css'], '1.0');
+    wp_enqueue_style('lusso-resales-detail', plugins_url('assets/css/lusso-resales-detail.css', __FILE__), [], '1.0');
+    wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
+    wp_enqueue_script('lusso-swiper-init', plugins_url('assets/js/swiper-init.js', __FILE__), ['swiper-js'], '1.0', true);
 
-    // Construir parámetros para la API
-    $params = [
-        'p1' => $p1,
-        'p2' => $p2,
-        'p_agency_filterid' => $filter_id,
-        'p_sandbox' => $sandbox,
-        'p_output' => 'JSON',
-        'p_new_devs' => 'only',
-    ];
-    if ($type_api)   $params['P_PropertyTypes'] = $type_api;
-    if ($location)   $params['P_Location'] = $location;
-    if ($bedrooms)   $params['P_Beds'] = $bedrooms;
-
-    $url = 'https://webapi.resales-online.com/V6/SearchProperties?' . http_build_query($params);
-    error_log("API URL: $url");
-
-    // Petición a la API
-    $response = wp_remote_get($url, ['timeout' => 20]);
-    if (is_wp_error($response)) {
-        error_log("API request failed: " . $response->get_error_message());
-        wp_send_json_error(['error' => 'API request failed', 'details' => $response->get_error_message()], 500);
-        wp_die();
-    }
-    $body = wp_remote_retrieve_body($response);
-    error_log("API Body: " . $body);
-
-    $json = json_decode($body, true);
-    error_log("API JSON: " . print_r($json, true));
-
-    // Manejo de errores y compatibilidad con la estructura de respuesta
-    $properties = [];
-    if (is_array($json)) {
-        if (isset($json['Properties']) && is_array($json['Properties'])) {
-            $properties = $json['Properties'];
-        } elseif (isset($json['Property']) && is_array($json['Property'])) {
-            $properties = $json['Property'];
+    // JS para el formulario de filtros V6 solo en LISTING_PATH y si flag ON
+    $listing_path = getenv('LISTING_PATH') ?: '/properties/';
+    if (get_option('filters_v6_enabled') && is_page() && untrailingslashit($_SERVER['REQUEST_URI']) === untrailingslashit($listing_path)) {
+        wp_enqueue_script(
+            'filters-js',
+            plugins_url('assets/js/filters.js', __FILE__),
+            [],
+            '1.0',
+            true
+        );
+        // Inyectar opciones de dormitorios
+        if (class_exists('Lusso_Resales_Filters_V6')) {
+            $provider = new Lusso_Resales_Filters_V6();
+            wp_localize_script('filters-js', 'LUSSO_BEDROOMS', $provider->get_bedrooms_options());
         }
     }
-    if (empty($properties)) {
-        error_log("No properties found in response.");
-        wp_send_json_error(['error' => 'No properties found', 'raw' => $json], 200);
-        wp_die();
+
+    // JS para el formulario de filtros legacy (si lo usas)
+    if (file_exists(plugin_dir_path(__FILE__).'assets/js/lusso-newdevs-filters.js')) {
+        wp_enqueue_script(
+            'lusso-newdevs-filters',
+            plugins_url('assets/js/lusso-newdevs-filters.js', __FILE__),
+            [],
+            '1.0',
+            true
+        );
+        wp_localize_script('lusso-newdevs-filters', 'LUSSO_NEWDEVS', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('lusso_newdevs_nonce'),
+        ]);
     }
-    // Devolver solo la parte útil al frontend
-    error_log("Returning " . count($properties) . " properties.");
-    wp_send_json_success([
-        'properties' => $properties,
-        'raw' => $json,
-    ]);
-    wp_die();
-}
+});
 
 /* ===========================
  *  Helper de carga de clases

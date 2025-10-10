@@ -61,16 +61,33 @@
 
   $(function () {
     // Corregir comportamiento al hacer "Search" para asegurar que se mantenga Subarea
-    dom.$form.on('submit', function () {
-      const subQS = qs('zona') || qs('area') || qs('subarea') || '';
-      if (subQS && dom.$subarea.find('option:selected').val() === '') {
-        dom.$subarea.find('option').each(function () {
-          if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
-            dom.$subarea.val($(this).val());
-            return false;
-          }
-        });
+    dom.$form.on('submit', function (e) {
+      e.preventDefault();
+      // Obtener valores seleccionados
+      var locationVal = dom.$location.val();
+      var subareaVal = dom.$subarea.val();
+
+      // Priorizar subárea como location si está seleccionada
+      var finalLocation = subareaVal ? subareaVal : locationVal;
+
+      // Construir nueva URL sin zona
+      var params = [];
+      if (finalLocation) {
+        params.push('location=' + encodeURIComponent(finalLocation));
       }
+      // Agregar otros filtros si es necesario (ejemplo: bedrooms, price, etc.)
+      dom.$form.find('select, input').each(function () {
+        var name = $(this).attr('name');
+        var value = $(this).val();
+        if (name && value && name !== 'location' && name !== 'zona' && name !== 'subarea' && name !== 'area') {
+          params.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
+        }
+      });
+
+      // Redirigir a la nueva URL
+      var baseUrl = window.location.pathname;
+      var newUrl = baseUrl + (params.length ? '?' + params.join('&') : '');
+      window.location.href = newUrl;
     });
     if (!dom.$form.length) {
       dom.$form = $('form').has('select[name="location"]');

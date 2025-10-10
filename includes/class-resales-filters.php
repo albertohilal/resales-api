@@ -236,64 +236,41 @@ class Resales_Filters {
     /**
      * Construye parámetros desde $_GET
      */
-    private function build_search_params_from_get(): array {
-    $p = [];
 
-        // Location
-        if ( isset($_GET['location']) && $_GET['location'] !== '' ) {
-            $p['P_Location'] = sanitize_text_field( $_GET['location'] );
-        }
+    
+public function build_public_query_args($args = []) {
+    $location = isset($args['location']) ? trim($args['location']) : '';
+    $zona     = isset($args['zona'])     ? trim($args['zona'])     : '';
 
-        // Paginación: si page > 1, asignar a P_PageNo
-        if ( isset($_GET['page']) && is_numeric($_GET['page']) && intval($_GET['page']) > 1 ) {
-            $p['P_PageNo'] = intval($_GET['page']);
-        }
+    $query = [];
 
-            // Area (subzona) - solo si hay valor válido
-            if ( isset($_GET['area']) && $_GET['area'] !== '' && $_GET['area'] !== 'Subarea' ) {
-                $p['P_Area'] = sanitize_text_field( $_GET['area'] );
-            }
-
-        // Bedrooms
-        if ( isset($_GET['bedrooms']) && $_GET['bedrooms'] !== '' ) {
-            $p['P_Beds'] = (int) $_GET['bedrooms'];
-        }
-
-        // TYPE -> P_PropertyTypes (lista blanca, agrupado)
-        if ( isset($_GET['type']) && $_GET['type'] !== '' ) {
-            $all_types = [];
-            foreach ( self::property_types_static() as $group => $subtypes ) {
-                foreach ( $subtypes as $t ) {
-                    $all_types[] = $t['value'];
-                }
-            }
-            $val = sanitize_text_field( $_GET['type'] );
-            if ( in_array( $val, $all_types, true ) ) {
-                $p['P_PropertyTypes'] = $val;
-            }
-        }
-
-        // newdevs (respetar GET; por defecto "only")
-        if ( isset($_GET['newdevs']) && $_GET['newdevs'] !== '' ) {
-            $opt = sanitize_text_field($_GET['newdevs']);
-            if ( in_array( $opt, ['only','include','exclude'], true ) ) {
-                $p['p_new_devs'] = $opt;
-            }
-        }
-
-        // Log corto para validar
-        error_log('[resales-api][SAFELOG] SHORTCODE ARGS | ' . wp_json_encode([
-            'location_get'        => isset($_GET['location']) && $_GET['location'] !== '' ? 'yes' : 'no',
-            'args_has_P_Location' => isset($p['P_Location']) ? 'yes' : 'no',
-            'P_Location_val'      => $p['P_Location'] ?? 'empty',
-            'beds_get'            => isset($_GET['bedrooms']) && $_GET['bedrooms'] !== '' ? 'yes' : 'no',
-            'type_get'            => isset($_GET['type']) && $_GET['type'] !== '' ? 'yes' : 'no',
-            'P_PropertyTypes'     => $p['P_PropertyTypes'] ?? 'empty',
-            'newdevs'             => $p['p_new_devs'] ?? '(default later)',
-        ]));
-
-        return $p;
+    // Si hay zona seleccionada, usarla como location en la URL pública
+    if (!empty($zona)) {
+        $query['location'] = $zona;
+    } elseif (!empty($location)) {
+        $query['location'] = $location;
     }
+    // Nunca agregar 'zona' como parámetro
+
+    // Otros filtros que debés mantener
+    if (isset($args['bedrooms'])) {
+        $query['bedrooms'] = $args['bedrooms'];
+    }
+    if (isset($args['type'])) {
+        $query['type'] = $args['type'];
+    }
+    if (isset($args['newdevs'])) {
+        $query['newdevs'] = $args['newdevs'];
+    }
+    if (isset($args['page'])) {
+        $query['page'] = $args['page'];
+    }
+    if (isset($args['qid'])) {
+        $query['qid'] = $args['qid'];
+    }
+
+    return $query;
+}
 
     /**
      * Agrega credenciales y parámetros base (sin pisar lo ya definido)
