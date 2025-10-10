@@ -271,3 +271,71 @@
 .resales-filters-form button {
   margin: 0;
 }
+
+/* ===== PAGINACIÓN ===== */
+.lusso-pagination{ 
+  margin:24px 0 16px; 
+  text-align:center; 
+}
+.lusso-page-list{ 
+  list-style:none; 
+  display:inline-flex; 
+  gap:8px; 
+  padding:0; 
+  margin:0; 
+}
+.lusso-page-item a,
+.lusso-page-item span{
+  display:inline-block; 
+  padding:8px 12px; 
+  border:1px solid #ddd; 
+  border-radius:8px; 
+  text-decoration:none; 
+  line-height:1;
+}
+.lusso-page-item.active span{
+  background:#111; 
+  color:#fff; 
+  border-color:#111;
+}
+.lusso-page-item a:hover{ border-color:#999; }
+.lusso-page-item.ellipsis{ padding:8px 0; color:#999; }
+
+/* Quita bullets si algún theme fuerza estilo a <ul> */
+.lusso-pagination ul{ list-style:none; padding:0; margin:0; }
+
+/* ===== LAYOUT TARJETAS ===== */
+/* Solo el área de tarjetas en blanco */
+.lusso-cards-bg, .lusso-grid{
+  background:#fff;
+}
+
+/* 2 col en desktop, 1 en móvil, con buen gap */
+.lusso-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 28px;           /* separaciones entre tarjetas */
+}
+
+@media (max-width: 900px){
+  .lusso-grid{
+    grid-template-columns: 1fr;  /* 1 columna en mobile */
+    gap: 20px;
+  }
+}
+
+/* Asegura que los sliders dentro de la tarjeta no desborden */
+.lusso-grid img,
+.lusso-grid .swiper,
+.lusso-grid .swiper-container{
+  max-width:100%;
+  height:auto;
+  overflow:hidden;
+  border-radius:8px;
+}
+
+/* Pequeño respiro entre grilla y paginación */
+.lusso-grid + .lusso-pagination{
+  margin-top: 20px;
+}
+
