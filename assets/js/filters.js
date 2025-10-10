@@ -101,36 +101,28 @@
 
     dom.$location.on('change', function (e) {
       e.preventDefault();
-      updateSubareaOptions($(this).val());
-      dom.$subarea.focus();
-    });
-
-    // Para activar autosubmit al cambiar Subarea, descomentá la siguiente línea:
-    // dom.$subarea.on('change', function (e) { e.preventDefault(); dom.$form.trigger('submit'); });
-
-    var locQS = qs('location') || dom.$location.val() || '';
-    if (locQS) {
-      dom.$location.val(locQS);
-    }
-
-    updateSubareaOptions(locQS);
-
-    var subQS = qs('zona') || qs('area') || qs('subarea') || '';
-    if (subQS && locQS) {
-      setTimeout(function () {
-        var matched = false;
-        dom.$subarea.find('option').each(function () {
-          if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
-            dom.$subarea.val($(this).val());
-            console.log('[DEBUG] Subarea seleccionada:', $(this).val());
-            matched = true;
-            return false;
+          var locQS = qs('location') || dom.$location.val() || '';
+          if (locQS) {
+            dom.$location.val(locQS);
+            updateSubareaOptions(locQS);
           }
-        });
-        if (!matched) {
-          console.warn('[DEBUG] Subarea NO encontrada:', subQS);
-        }
-      }, 100);
-    }
+          var subQS = qs('zona') || qs('area') || qs('subarea') || '';
+          if (subQS && locQS) {
+            setTimeout(function () {
+              var matched = false;
+              dom.$subarea.find('option').each(function () {
+                if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
+                  dom.$subarea.val($(this).val());
+                  console.log('[DEBUG] Subarea seleccionada:', $(this).val());
+                  matched = true;
+                  return false;
+                }
+              });
+              if (!matched) {
+                console.warn('[DEBUG] Subarea NO encontrada:', subQS);
+              }
+            }, 100);
+          }
+  });
   });
 })(jQuery);
