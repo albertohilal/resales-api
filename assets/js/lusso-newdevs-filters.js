@@ -155,6 +155,6 @@
         }
 
         // ---- si quisieras que al cambiar subarea se envíe el formulario ----
-        dom.$subarea.on('change', safeSubmit);
+      //  dom.$subarea.on('change', safeSubmit);
     });
 })(jQuery);
