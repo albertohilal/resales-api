@@ -1,14 +1,9 @@
-/*!
- * Lusso Filters – Location/Subarea link
- * Enlaza por name=, evita auto-submit prematuro y
- * repuebla Subarea según Location.
- * Requiere jQuery (WordPress lo trae).
- */
+
+/*! Lusso Filters Final – v1.1 */
+/* Enlaza Location con Subarea, mantiene selección desde URL y evita autosubmit innecesario. */
 (function ($) {
   'use strict';
 
-  // ====== CONFIG: Mapa Location -> Subareas ======
-  // Ajustá este mapa a tu configuración real. SIN duplicarlo.
   var SUBAREAS_MAP = {
     "Marbella": [
       "Aloha","Altos de los Monteros","Artola","Atalaya","Bahía de Marbella",
@@ -44,31 +39,9 @@
     "Málaga": ["Málaga Centro","Málaga Este","Puerto de la Torre"]
   };
 
-  // ====== Helpers ======
   function qs(name) {
     var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
-  }
-
-  function serializeNonEmpty($form) {
-    var params = [];
-    $form.find('select, input').each(function () {
-      var $el = $(this);
-      var n = $el.attr('name');
-      if (!n) return;
-      var v = ($el.val() || '').toString().trim();
-      if (v !== '' && v !== '0' && v !== 'Subarea' && v !== 'Location') {
-        params.push(encodeURIComponent(n) + '=' + encodeURIComponent(v));
-      }
-    });
-    return params.join('&');
-  }
-
-  function safeSubmit(e) {
-    e && e.preventDefault && e.preventDefault();
-    var q = serializeNonEmpty(dom.$form);
-    var base = window.location.pathname.replace(/\/+$/, '') + '/';
-    window.location.href = q ? (base + '?' + q) : base;
   }
 
   function normalizeArray(arr) {
@@ -80,7 +53,6 @@
     return out;
   }
 
-  // ====== DOM cache (por name=, robusto ante cambios de IDs) ======
   var dom = {
     $form: $('.lusso-filters'),
     $location: null,
@@ -88,7 +60,6 @@
   };
 
   $(function () {
-    // Si no encontró .lusso-filters, busca el form que contiene location
     if (!dom.$form.length) {
       dom.$form = $('form').has('select[name="location"]');
     }
@@ -96,7 +67,6 @@
     dom.$location = dom.$form.find('select[name="location"]');
     dom.$subarea  = dom.$form.find('select[name="area"], select[name="subarea"], select[name="zona"]');
 
-    // Placeholders
     if (dom.$location.find('option[value=""]').length === 0) {
       dom.$location.prepend('<option value="">Location</option>');
     }
@@ -104,7 +74,6 @@
       dom.$subarea.prepend('<option value="">Subarea</option>');
     }
 
-    // ====== Poblar Subarea según Location ======
     function updateSubareaOptions(locationVal) {
       var list = normalizeArray(SUBAREAS_MAP[locationVal] || []);
       dom.$subarea.empty().append('<option value="">Subarea</option>');
@@ -118,38 +87,38 @@
       }
     }
 
-    // Cambia Location → repobla Subarea (no enviar todavía)
     dom.$location.on('change', function (e) {
       e.preventDefault();
-      e.stopPropagation();
       updateSubareaOptions($(this).val());
       dom.$subarea.focus();
     });
 
-  // Cambia Subarea → solo repuebla, NO enviar automáticamente
-  // dom.$subarea.on('change', safeSubmit);
+    // Para activar autosubmit al cambiar Subarea, descomentá la siguiente línea:
+    // dom.$subarea.on('change', function (e) { e.preventDefault(); dom.$form.trigger('submit'); });
 
-    // Auto-submit del resto de selects (NO location/subarea)
-    dom.$form.on('change', 'select', function (e) {
-      var name = ($(this).attr('name') || '').toLowerCase();
-      if (name === 'location' || name === 'subarea' || name === 'zona' || name === 'area') return;
-      safeSubmit(e);
-    });
-
-    // ====== Inicialización desde querystring o estado actual ======
     var locQS = qs('location') || dom.$location.val() || '';
-    if (locQS) dom.$location.val(locQS);
+    if (locQS) {
+      dom.$location.val(locQS);
+    }
 
-    // Poblar subareas y seleccionar la opción del querystring si existe
     updateSubareaOptions(locQS);
-    var subQS = qs('zona') || '';
-    if (subQS) {
-      // Esperar a que las opciones estén pobladas antes de seleccionar
-      setTimeout(function() {
-        var exists = dom.$subarea.find('option[value="' + subQS + '"]').length > 0;
-        console.log('[DEBUG] Intentando seleccionar subarea:', subQS, '| Existe en opciones:', exists);
-        dom.$subarea.val(subQS);
-      }, 0);
+
+    var subQS = qs('zona') || qs('area') || qs('subarea') || '';
+    if (subQS && locQS) {
+      setTimeout(function () {
+        var matched = false;
+        dom.$subarea.find('option').each(function () {
+          if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
+            dom.$subarea.val($(this).val());
+            console.log('[DEBUG] Subarea seleccionada:', $(this).val());
+            matched = true;
+            return false;
+          }
+        });
+        if (!matched) {
+          console.warn('[DEBUG] Subarea NO encontrada:', subQS);
+        }
+      }, 100);
     }
   });
 })(jQuery);
