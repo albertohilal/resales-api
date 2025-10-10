@@ -60,6 +60,18 @@
   };
 
   $(function () {
+    // Corregir comportamiento al hacer "Search" para asegurar que se mantenga Subarea
+    dom.$form.on('submit', function () {
+      const subQS = qs('zona') || qs('area') || qs('subarea') || '';
+      if (subQS && dom.$subarea.find('option:selected').val() === '') {
+        dom.$subarea.find('option').each(function () {
+          if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
+            dom.$subarea.val($(this).val());
+            return false;
+          }
+        });
+      }
+    });
     if (!dom.$form.length) {
       dom.$form = $('form').has('select[name="location"]');
     }
