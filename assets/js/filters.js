@@ -99,30 +99,37 @@
       }
     }
 
+
+    // --- Ejecutar la actualización de subareas al cargar la página ---
+    var initialLoc = qs('location') || dom.$location.val() || '';
+    if (initialLoc) {
+      dom.$location.val(initialLoc);
+      updateSubareaOptions(initialLoc);
+
+      var subQS = qs('zona') || qs('area') || qs('subarea') || '';
+      if (subQS) {
+        setTimeout(function () {
+          var matched = false;
+          dom.$subarea.find('option').each(function () {
+            if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
+              dom.$subarea.val($(this).val());
+              console.log('[DEBUG] Subarea retenida en carga inicial:', $(this).val());
+              matched = true;
+              return false;
+            }
+          });
+          if (!matched) {
+            console.warn('[DEBUG] Subarea NO encontrada al cargar:', subQS);
+          }
+        }, 150);
+      }
+    }
+
+    // --- También mantener el comportamiento al cambiar Location ---
     dom.$location.on('change', function (e) {
       e.preventDefault();
-          var locQS = qs('location') || dom.$location.val() || '';
-          if (locQS) {
-            dom.$location.val(locQS);
-            updateSubareaOptions(locQS);
-          }
-          var subQS = qs('zona') || qs('area') || qs('subarea') || '';
-          if (subQS && locQS) {
-            setTimeout(function () {
-              var matched = false;
-              dom.$subarea.find('option').each(function () {
-                if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
-                  dom.$subarea.val($(this).val());
-                  console.log('[DEBUG] Subarea seleccionada:', $(this).val());
-                  matched = true;
-                  return false;
-                }
-              });
-              if (!matched) {
-                console.warn('[DEBUG] Subarea NO encontrada:', subQS);
-              }
-            }, 100);
-          }
-  });
+      var locQS = dom.$location.val();
+      updateSubareaOptions(locQS);
+    });
   });
 })(jQuery);
