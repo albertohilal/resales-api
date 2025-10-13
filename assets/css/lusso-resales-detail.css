@@ -41,25 +41,31 @@
   padding-bottom: 8px;
 }
 
-/* Galería de propiedad optimizada para imágenes 1600px */
+/* Galería de propiedad a pantalla completa */
 .property-gallery {
-  width: 100%;
-  max-width: 1400px; /* Aumentado para aprovechar la resolución 1600px */
-  margin: 0 auto 40px auto;
+  width: 100vw !important;
+  max-width: none !important;
+  margin: 0 0 40px 0 !important;
   position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .property-gallery .swiper {
   width: 100% !important;
-  height: 560px !important; /* Mejor proporción para 1600px */
-  border-radius: 16px; /* Bordes más modernos */
+  height: 70vh !important; /* 70% del viewport height */
+  min-height: 500px !important;
+  max-height: 800px !important;
+  border-radius: 0; /* Sin bordes para pantalla completa */
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.15); /* Sombra más prominente */
+  box-shadow: none; /* Sin sombra para efecto limpio */
 }
 
 .property-gallery .swiper-slide {
   width: 100% !important;
-  height: 560px !important;
+  height: 70vh !important;
+  min-height: 500px !important;
+  max-height: 800px !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,40 +84,26 @@
   transform: scale(1.02); /* Ligero zoom en hover */
 }
 
-/* Ajustes responsive para aprovechar imágenes 1600px */
-@media (max-width: 1440px) {
-  .property-gallery {
-    max-width: 1200px; /* Reducir en pantallas más pequeñas */
-  }
-  .property-gallery .swiper {
-    height: 480px !important;
-  }
-  .property-gallery .swiper-slide {
-    height: 480px !important;
-  }
-}
-
+/* Ajustes responsive para galería pantalla completa */
 @media (max-width: 1024px) {
-  .property-gallery {
-    max-width: 100%;
-    margin: 0 auto 30px auto;
-  }
   .property-gallery .swiper {
-    height: 400px !important;
-    border-radius: 12px;
+    height: 60vh !important;
+    min-height: 400px !important;
   }
   .property-gallery .swiper-slide {
-    height: 400px !important;
+    height: 60vh !important;
+    min-height: 400px !important;
   }
 }
 
 @media (max-width: 768px) {
   .property-gallery .swiper {
-    height: 280px !important;
-    border-radius: 8px;
+    height: 50vh !important;
+    min-height: 300px !important;
   }
   .property-gallery .swiper-slide {
-    height: 280px !important;
+    height: 50vh !important;
+    min-height: 300px !important;
   }
   .property-gallery .swiper-slide:hover img {
     transform: none; /* Desactivar hover en móvil */
