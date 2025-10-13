@@ -148,7 +148,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,.65);
+  background: rgba(255,255,255,.95);
   opacity: 0;
   transform: translateY(8px);
   transition: opacity .2s ease, transform .2s ease;
@@ -159,14 +159,21 @@
   align-items: center;
   justify-content: center;
   padding: .6rem .95rem;
-  background: var(--lr-accent);
-  color: var(--color-white);
+  background: var(--color-gold-dark, #B8860B);
+  color: var(--color-white, #FFFFFF);
   text-decoration: none;
   font-weight: 700;
-  border-radius: 0;
+  border-radius: 4px;
   pointer-events: auto;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
 }
-.lr-card__cta:hover{ filter: brightness(.95); }
+.lr-card__cta:hover{ 
+  background: var(--color-gold, #D4AF37);
+  color: var(--color-black, #0D0D0D);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+}
 
 /* Hover: aparece overlay y se oculta barra */
 @media (hover: hover){
