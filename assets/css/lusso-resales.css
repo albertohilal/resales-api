@@ -5,6 +5,13 @@
   --lr-wrap-max: 1200px;
   --lr-gap-x: 28px;             /* separación horizontal entre tarjetas */
   --lr-gap-y: 36px;             /* separación vertical entre filas */
+  
+  /* Paleta de Colores 2025 */
+  --color-gold-dark: #B8860B;   /* Dorado oscuro 2025 */
+  --color-gold: #D4AF37;        /* Dorado claro 2025 */
+  --color-black: #0D0D0D;       /* Negro 2025 */
+  --color-white: #FFFFFF;       /* Blanco 2025 */
+  --color-gray-soft: #EAEAEA;   /* Blanco apagado 2025 */
 
 
   /* CTA siempre visible, sin overlay ni mouseover */

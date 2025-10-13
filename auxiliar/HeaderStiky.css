@@ -11,11 +11,18 @@
   --header-h: calc(var(--logo-h) + 2*var(--air));
 
   --wrap-max: 1200px;
-  --c-white: #fff;
-  --c-black: #0d0d0d;
-  --c-gray-alt: #dcdcdc;
-  --c-gray-dark: #404040;
-  --c-gold: #d3af37;
+  
+  /* Paleta de Colores 2025 */
+  --c-gold: #D4AF37;          /* Dorado claro 2025 */
+  --c-gold-dark: #B8860B;     /* Dorado oscuro 2025 */
+  --c-black: #0D0D0D;         /* Negro 2025 */
+  --c-white: #FFFFFF;         /* Blanco puro 2025 */
+  --c-gray-soft: #EAEAEA;     /* Blanco apagado 2025 - para fondos, bordes, separadores */
+  --c-gray-intense: #404404;  /* Gris intenso 2025 */
+  
+  /* Variables de compatibilidad */
+  --c-gray-alt: #EAEAEA;      /* Alias para blanco apagado */
+  --c-gray-dark: #404404;     /* Alias para gris intenso */
 }
 
 /* --- Base tipográfica (por si faltara) --- */
@@ -107,7 +114,7 @@ body.lg-scrolled .lusso-header .elementor-menu-toggle{
 }
 .lusso-header .elementor-nav-menu--dropdown a{ color: var(--c-gray-dark); }
 .lusso-header .elementor-nav-menu--dropdown a:hover{
-  background:#f8f8f8; color: var(--c-black);
+  background: var(--c-gray-soft); color: var(--c-black);
 }
 
 /* CTA opcional (añade clase 'lr-btn' al item del menú) */
