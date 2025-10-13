@@ -1,0 +1,41 @@
+/* Lusso Resales Detail Layout CSS */
+/* File: assets/css/lusso-resales-detail.css */
+
+/* Layout de dos columnas para el contenido */
+.lusso-detail-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+@media (max-width: 768px) {
+  .lusso-detail-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lusso-detail-left {
+  background: #fff;
+}
+
+.lusso-detail-right {
+  background: #f8f8f8;
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.lusso-detail-left h3 {
+  margin-top: 40px;
+  font-size: 20px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+}
+
+/* Asegurar que la galería siga full-width */
+.property-gallery.swiper {
+  width: 100%;
+  overflow: hidden;
+}

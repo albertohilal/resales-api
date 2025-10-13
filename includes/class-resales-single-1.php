@@ -195,11 +195,6 @@ class Resales_Single {
 
 	/** Shortcode [resales_property ref="Rxxxxx"] o [resales_property id="12345"] */
 	public function render_shortcode( $atts = [] ) {
-		// Encolar CSS de detalle dinámicamente si no está ya encolado
-		if ( ! wp_style_is('lusso-resales-detail', 'enqueued') ) {
-			wp_enqueue_style('lusso-resales-detail', plugins_url('../assets/css/lusso-resales-detail.css', __FILE__), [], '1.0');
-		}
-		
 		$atts = shortcode_atts([
 			'ref' => '',
 			'id'  => '',
@@ -263,97 +258,94 @@ class Resales_Single {
 	?>
 	<link href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" rel="stylesheet">
 	<div class="property-detail-container" style="width:85vw;max-width:1500px;margin:2em auto;padding:1.2em;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.07);font-family:'Inter',sans-serif;">
-		
-		<!-- Galería mantenida exactamente como estaba -->
-		<div class="property-gallery" style="width:100%; margin-bottom:2em;">
-			<?php
-				require_once __DIR__ . '/gallery-helper.php';
-				render_gallery($imgs, 'detail');
-			?>
-		</div>
-		
-		<!-- Nuevos contenedores según especificación -->
-		<div class="lusso-detail-container">
-			<div class="lusso-detail-left">
-				<!-- Contenido principal: título, descripción, tabs -->
-				<h1 style="font-size:2.2em;font-weight:700;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
-				
-				<!-- Tabs de descripción y ubicación -->
-				<style>
-					.property-tabs { display:flex; border-bottom:2px solid #eee; margin-bottom:1.5em; }
-					.property-tab { padding:1em 2em; cursor:pointer; font-weight:600; color:#333; background:none; border:none; outline:none; transition:color 0.2s; }
-					.property-tab.active { color:#1976d2; border-bottom:2px solid #1976d2; }
-					.property-tab-content { background:#fff; border-radius:8px; box-shadow:0 1px 8px rgba(0,0,0,0.04); padding:2em; min-height:180px; }
-				</style>
-				<div class="property-tabs">
+	       <div class="property-detail-flex" style="display: grid; grid-template-columns: 70% 30%; gap:2em; align-items: flex-start;">
+		       <div class="property-gallery" style="width:100%; margin-bottom:0;">
+					<?php
+						require_once __DIR__ . '/gallery-helper.php';
+						render_gallery($imgs, 'detail');
+					?>
+				</div>
+				   <div class="property-info" style="width:100%; margin-top:0;">
+					<h1 style="font-size:2.2em;font-weight:700;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
+					   <div class="property-info-table" style="background:#f8f8f8;border-radius:6px;padding:1.5em 2em;margin-bottom:1.5em;">
+						   <style>
+							   .property-info-table table { width:100%; border-collapse:collapse; font-size:1.1em; }
+							   .property-info-table table, .property-info-table td, .property-info-table tr { border:none !important; }
+							   .property-info-table td { background:#f8f8f8; padding:8px 0; }
+							   .property-info-table td:first-child { font-weight:600; color:#222; }
+						   </style>
+						   <table>
+							   <tbody>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Ref. no.', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $ref; ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Price', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $price; ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Location', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $loc; ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Area', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Area'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Type', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Type'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Bedrooms', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Bedrooms'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Bathrooms', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Bathrooms'] ?? ''); ?></td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Plot size', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['PlotSize'] ?? ''); ?> m²</td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Built size', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['BuiltSize'] ?? ''); ?> m²</td></tr>
+								   <tr><td style="font-weight:600;padding:8px 0;"><?php _e('Terrace', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Terrace'] ?? ''); ?> m²</td></tr>
+							   </tbody>
+						   </table>
+						   <?php if (!empty($p['Features'])): ?>
+							<div style="margin-top:1.5em;color:#555;"><strong><?php _e('Features', 'resales-api'); ?>:</strong> <?php echo esc_html($p['Features']); ?></div>
+						   <?php endif; ?>
+					   </div>
+				   </div>
+			   </div>
+			   <!-- Nueva sección: detalle y contacto en dos columnas -->
+		   <!-- Segunda sección: dos columnas, tabs a la izquierda y contacto a la derecha -->
+		   <div class="property-detail-contact-section" style="display: grid; grid-template-columns: 65% 35%; gap:2em; margin-top:2em; align-items: start;">
+			   <div>
+				   <style>
+					   .property-tabs { display:flex; border-bottom:2px solid #eee; margin-bottom:1.5em; }
+					   .property-tab { padding:1em 2em; cursor:pointer; font-weight:600; color:#333; background:none; border:none; outline:none; transition:color 0.2s; }
+					   .property-tab.active { color:#1976d2; border-bottom:2px solid #1976d2; }
+					   .property-tab-content { background:#fff; border-radius:8px; box-shadow:0 1px 8px rgba(0,0,0,0.04); padding:2em; min-height:180px; }
+				   </style>
+				   <div class="property-tabs">
 					<button class="property-tab active" id="tab-desc" onclick="showTab('desc')"><?php _e('Description', 'resales-api'); ?></button>
 					<button class="property-tab" id="tab-loc" onclick="showTab('loc')"><?php _e('Location', 'resales-api'); ?></button>
-				</div>
-				<div class="property-tab-content" id="tab-content-desc">
-					<?php echo wpautop( wp_kses_post( $p['Description'] ?? '' ) ); ?>
-				</div>
-				<div class="property-tab-content" id="tab-content-loc" style="display:none;">
-					<iframe src="https://www.google.com/maps?q=<?php echo urlencode($p['Location'] ?? ''); ?>&output=embed" width="100%" height="220" style="border:0;border-radius:6px;" allowfullscreen="" loading="lazy"></iframe>
-					<div style="margin-top:1em;color:#555;font-size:1em;">
-						<?php echo esc_html($p['Location'] ?? ''); ?>
-					</div>
-				</div>
-			</div> <!-- cierra .lusso-detail-left -->
-			
-			<div class="lusso-detail-right">
-				<!-- Ficha lateral de resumen -->
-				<div class="property-info-table" style="background:#f8f8f8;border-radius:6px;padding:1.5em 2em;margin-bottom:1.5em;">
-					<style>
-						.property-info-table table { width:100%; border-collapse:collapse; font-size:1.1em; }
-						.property-info-table table, .property-info-table td, .property-info-table tr { border:none !important; }
-						.property-info-table td { background:#f8f8f8; padding:8px 0; }
-						.property-info-table td:first-child { font-weight:600; color:#222; }
-					</style>
-					<table>
-						<tbody>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Ref. no.', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $ref; ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Price', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $price; ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Location', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo $loc; ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Area', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Area'] ?? ''); ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Type', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Type'] ?? ''); ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Bedrooms', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Bedrooms'] ?? ''); ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Bathrooms', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Bathrooms'] ?? ''); ?></td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Plot size', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['PlotSize'] ?? ''); ?> m²</td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Built size', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['BuiltSize'] ?? ''); ?> m²</td></tr>
-							<tr><td style="font-weight:600;padding:8px 0;"><?php _e('Terrace', 'resales-api'); ?></td><td style="text-align:right;padding:8px 0;"><?php echo esc_html($p['Terrace'] ?? ''); ?> m²</td></tr>
-						</tbody>
-					</table>
-					<?php if (!empty($p['Features'])): ?>
-						<div style="margin-top:1.5em;color:#555;"><strong><?php _e('Features', 'resales-api'); ?>:</strong> <?php echo esc_html($p['Features']); ?></div>
-					<?php endif; ?>
-				</div>
-				
-				<!-- Sección de contacto -->
-				<div class="property-detail-contact" style="background:#f9f9f9;padding:2em;border-radius:8px;box-shadow:0 1px 8px rgba(0,0,0,0.04);">
-					<h2 style="font-size:1.5em;font-weight:600;margin-bottom:1em;"><?php _e('Contact', 'resales-api'); ?></h2>
-					<div class="property-contact-placeholder" style="border:1px dashed #aaa; padding:2em; text-align:center; background:#fff; border-radius:6px;">
-						<em style="color:#888;font-size:1.1em;"><?php _e('Contact form coming soon.', 'resales-api'); ?></em>
-					</div>
-				</div>
-			</div> <!-- cierra .lusso-detail-right -->
-		</div> <!-- cierra .lusso-detail-container -->
-		
-		<!-- JavaScript para los tabs -->
-		<script>
-			function showTab(tab) {
-				document.getElementById('tab-desc').classList.remove('active');
-				document.getElementById('tab-loc').classList.remove('active');
-				document.getElementById('tab-content-desc').style.display = 'none';
-				document.getElementById('tab-content-loc').style.display = 'none';
-				if(tab === 'desc') {
-					document.getElementById('tab-desc').classList.add('active');
-					document.getElementById('tab-content-desc').style.display = 'block';
-				} else {
-					document.getElementById('tab-loc').classList.add('active');
-					document.getElementById('tab-content-loc').style.display = 'block';
-				}
-			}
-		</script>
+				   </div>
+				   <div class="property-tab-content" id="tab-content-desc">
+					   <?php echo wpautop( wp_kses_post( $p['Description'] ?? '' ) ); ?>
+				   </div>
+				   <div class="property-tab-content" id="tab-content-loc" style="display:none;">
+					   <iframe src="https://www.google.com/maps?q=<?php echo urlencode($p['Location'] ?? ''); ?>&output=embed" width="100%" height="220" style="border:0;border-radius:6px;" allowfullscreen="" loading="lazy"></iframe>
+					   <div style="margin-top:1em;color:#555;font-size:1em;">
+						   <?php echo esc_html($p['Location'] ?? ''); ?>
+					   </div>
+				   </div>
+				   <script>
+					   function showTab(tab) {
+						   document.getElementById('tab-desc').classList.remove('active');
+						   document.getElementById('tab-loc').classList.remove('active');
+						   document.getElementById('tab-content-desc').style.display = 'none';
+						   document.getElementById('tab-content-loc').style.display = 'none';
+						   if(tab === 'desc') {
+							   document.getElementById('tab-desc').classList.add('active');
+							   document.getElementById('tab-content-desc').style.display = 'block';
+						   } else {
+							   document.getElementById('tab-loc').classList.add('active');
+							   document.getElementById('tab-content-loc').style.display = 'block';
+						   }
+					   }
+				   </script>
+			   </div>
+			   <div class="property-detail-contact" style="background:#f9f9f9;padding:2em;border-radius:8px;box-shadow:0 1px 8px rgba(0,0,0,0.04);">
+				   <h2 style="font-size:1.5em;font-weight:600;margin-bottom:1em;"><?php _e('Contact', 'resales-api'); ?></h2>
+				   <div class="property-contact-placeholder" style="border:1px dashed #aaa; padding:2em; text-align:center; background:#fff; border-radius:6px;">
+					   <em style="color:#888;font-size:1.1em;"><?php _e('Contact form coming soon.', 'resales-api'); ?></em>
+				   </div>
+			   </div>
+		   </div>
+			</div>
+			<!-- Espacio reservado para el formulario de contacto -->
+			   <div class="property-contact-placeholder" style="border:1px dashed #aaa; padding:2em; margin:2em 0; text-align:center; background:#f9f9f9; border-radius:6px;">
+				   <em style="color:#888;font-size:1.1em;"><?php _e('Contact form coming soon.', 'resales-api'); ?></em>
+			   </div>
+		</div>
 		<?php
 		return ob_get_clean();
 	}

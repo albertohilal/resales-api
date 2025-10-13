@@ -108,7 +108,29 @@ add_action('wp_enqueue_scripts', function() {
     wp_enqueue_style('lusso-resales-filters', plugins_url('assets/css/lusso-resales-filters.css', __FILE__), [], '1.0');
     wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11.0.0');
     wp_enqueue_style('lusso-swiper-gallery', plugins_url('assets/css/swiper-gallery.css', __FILE__), ['swiper-css'], '1.0');
-    wp_enqueue_style('lusso-resales-detail', plugins_url('assets/css/lusso-resales-detail.css', __FILE__), [], '1.0');
+    
+    // CSS de detalle solo en páginas que lo necesiten
+    global $post;
+    $enqueue_detail_css = false;
+    
+    // Verificar si es template single-property.php
+    if (is_page_template('single-property.php')) {
+        $enqueue_detail_css = true;
+    }
+    
+    // Verificar si la página contiene el shortcode resales_single
+    if ($post && has_shortcode($post->post_content, 'resales_single')) {
+        $enqueue_detail_css = true;
+    }
+    
+    // Verificar si es una URL tipo /property/ID/slug/
+    if (preg_match('#/property/\d+/#', $_SERVER['REQUEST_URI'])) {
+        $enqueue_detail_css = true;
+    }
+    
+    if ($enqueue_detail_css) {
+        wp_enqueue_style('lusso-resales-detail', plugins_url('assets/css/lusso-resales-detail.css', __FILE__), [], '1.0');
+    }
 
     // Scripts globales
     wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
