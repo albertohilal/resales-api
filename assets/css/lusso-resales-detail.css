@@ -1,5 +1,6 @@
 /* Lusso Resales Detail Layout CSS */
 /* File: assets/css/lusso-resales-detail.css */
+/* Optimizado para imágenes PropertyDetails (1600px) vs SearchProperties (1200px) */
 
 /* Layout de dos columnas para el contenido */
 .lusso-detail-container {
@@ -34,8 +35,119 @@
   padding-bottom: 8px;
 }
 
-/* Asegurar que la galería siga full-width */
-.property-gallery.swiper {
+/* Galería de propiedad optimizada para imágenes 1600px */
+.property-gallery {
   width: 100%;
+  max-width: 1400px; /* Aumentado para aprovechar la resolución 1600px */
+  margin: 0 auto 40px auto;
+  position: relative;
+}
+
+.property-gallery .swiper {
+  width: 100% !important;
+  height: 560px !important; /* Mejor proporción para 1600px */
+  border-radius: 16px; /* Bordes más modernos */
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15); /* Sombra más prominente */
+}
+
+.property-gallery .swiper-slide {
+  width: 100% !important;
+  height: 560px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5; /* Fondo mientras carga la imagen */
+}
+
+.property-gallery .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+  transition: transform 0.3s ease; /* Efecto suave al hover */
+}
+
+.property-gallery .swiper-slide:hover img {
+  transform: scale(1.02); /* Ligero zoom en hover */
+}
+
+/* Ajustes responsive para aprovechar imágenes 1600px */
+@media (max-width: 1440px) {
+  .property-gallery {
+    max-width: 1200px; /* Reducir en pantallas más pequeñas */
+  }
+  .property-gallery .swiper {
+    height: 480px !important;
+  }
+  .property-gallery .swiper-slide {
+    height: 480px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .property-gallery {
+    max-width: 100%;
+    margin: 0 auto 30px auto;
+  }
+  .property-gallery .swiper {
+    height: 400px !important;
+    border-radius: 12px;
+  }
+  .property-gallery .swiper-slide {
+    height: 400px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .property-gallery .swiper {
+    height: 280px !important;
+    border-radius: 8px;
+  }
+  .property-gallery .swiper-slide {
+    height: 280px !important;
+  }
+  .property-gallery .swiper-slide:hover img {
+    transform: none; /* Desactivar hover en móvil */
+  }
+}
+
+/* Ajustes específicos para navegación en contexto de detalle */
+.property-gallery .swiper-button-next,
+.property-gallery .swiper-button-prev {
+  color: #fff !important;
+  background: rgba(0,0,0,0.6) !important;
+  border-radius: 50%;
+  width: 50px !important;
+  height: 50px !important;
+  margin-top: -25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+}
+
+.property-gallery .swiper-button-next:hover,
+.property-gallery .swiper-button-prev:hover {
+  background: rgba(0,0,0,0.8) !important;
+  transform: scale(1.1);
+}
+
+/* Ajustar botones para que no salgan del contenedor */
+.property-gallery .swiper-button-next {
+  right: 10px !important;
+}
+
+.property-gallery .swiper-button-prev {
+  left: 10px !important;
+}
+
+/* Mejorar paginación para el contexto de detalle */
+.property-gallery .swiper-pagination {
+  bottom: 15px !important;
+  position: absolute !important;
+  background: rgba(255,255,255,0.9) !important;
+  padding: 8px 16px !important;
+  border-radius: 20px !important;
+  width: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%);
 }
