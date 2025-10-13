@@ -314,18 +314,30 @@
 .lusso-page-item span{
   display:inline-block; 
   padding:8px 12px; 
-  border:1px solid #ddd; 
+  border:1px solid var(--c-gray-soft, #EAEAEA); 
   border-radius:8px; 
   text-decoration:none; 
   line-height:1;
+  color: var(--c-black, #0D0D0D);
+  background: var(--c-white, #FFFFFF);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 .lusso-page-item.active span{
-  background:#111; 
-  color:#fff; 
-  border-color:#111;
+  background: var(--c-gold-dark, #B8860B); 
+  color: var(--c-white, #FFFFFF); 
+  border-color: var(--c-gold-dark, #B8860B);
 }
-.lusso-page-item a:hover{ border-color:#999; }
-.lusso-page-item.ellipsis{ padding:8px 0; color:#999; }
+.lusso-page-item a:hover{ 
+  border-color: var(--c-gold, #D4AF37); 
+  background: var(--c-gray-soft, #EAEAEA);
+  color: var(--c-black, #0D0D0D);
+}
+.lusso-page-item.ellipsis{ 
+  padding:8px 0; 
+  color: var(--c-gray-intense, #404404); 
+}
 
 /* Quita bullets si algún theme fuerza estilo a <ul> */
 .lusso-pagination ul{ list-style:none; padding:0; margin:0; }
