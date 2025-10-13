@@ -280,10 +280,11 @@ class Resales_Single {
 				
 				<!-- Tabs de descripción y ubicación -->
 				<style>
-					.property-tabs { display:flex; border-bottom:2px solid #eee; margin-bottom:1.5em; }
-					.property-tab { padding:1em 2em; cursor:pointer; font-weight:600; color:#333; background:none; border:none; outline:none; transition:color 0.2s; }
-					.property-tab.active { color:#1976d2; border-bottom:2px solid #1976d2; }
-					.property-tab-content { background:#fff; border-radius:8px; box-shadow:0 1px 8px rgba(0,0,0,0.04); padding:2em; min-height:180px; }
+					.property-tabs { display:flex; border-bottom:2px solid var(--c-gray-soft, #EAEAEA); margin-bottom:1.5em; font-family: 'Inter', sans-serif; }
+					.property-tab { padding:1em 2em; cursor:pointer; font-weight:600; color:var(--c-gray-intense, #404404); background:none; border:none; outline:none; transition:all 0.3s ease; font-family: 'Inter', sans-serif; }
+					.property-tab.active { color:var(--c-gold-dark, #B8860B); border-bottom:2px solid var(--c-gold-dark, #B8860B); }
+					.property-tab:hover:not(.active) { color:var(--c-gold, #D4AF37); }
+					.property-tab-content { background:var(--c-white, #FFFFFF); border-radius:8px; box-shadow:0 1px 8px rgba(0,0,0,0.04); padding:2em; min-height:180px; font-family: 'Inter', sans-serif; }
 				</style>
 				<div class="property-tabs">
 					<button class="property-tab active" id="tab-desc" onclick="showTab('desc')"><?php _e('Description', 'resales-api'); ?></button>
