@@ -1,5 +1,5 @@
-/* ====== LUSSO — Grid 2 cols / 80% width / Cards 1.62:1 con overlay BLANCO ====== */
-/* Actualizado: 13/10/2025 - Paleta 2025 con fondo blanco */
+/* ====== LUSSO — Grid 2 cols / 80% width / Cards 1.62:1 FONDO BLANCO TOTAL ====== */
+/* Actualizado: 13/10/2025 19:44 - Paleta 2025 fondo blanco completo */
 
 /* Variables globales */
 :root{
@@ -65,7 +65,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-black);  /* evita halo blanco si la imagen tarda */
+  background: var(--color-white, #FFFFFF);  /* fondo blanco para las tarjetas */
   box-shadow: var(--lr-shadow);
   border-radius: 0;
 }
