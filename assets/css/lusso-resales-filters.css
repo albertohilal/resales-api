@@ -250,6 +250,27 @@
 .lusso-filters .filter-price { min-width: 110px; }
 .lusso-filters .filter-submit button { height: 40px; }
 
+/* Botón de búsqueda - Paleta 2025 */
+.lusso-filters button[type="submit"],
+.resales-filters-form button[type="submit"] {
+  background: var(--c-gold-dark, #B8860B) !important;
+  color: var(--c-white, #FFFFFF) !important;
+  border: none !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.lusso-filters button[type="submit"]:hover,
+.resales-filters-form button[type="submit"]:hover {
+  background: var(--c-gold, #D4AF37) !important;
+  color: var(--c-black, #0D0D0D) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3) !important;
+}
+
 /* Responsive: 2 columnas en tablets, 1 en móviles */
 @media (max-width: 992px){
   .lusso-filters { gap: 10px 12px; }

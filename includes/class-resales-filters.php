@@ -220,7 +220,7 @@ class Resales_Filters {
 
                 <!-- Search -->
                 <div>
-                    <button type="submit" style="padding:8px 14px;font-weight:600;cursor:pointer;">
+                    <button type="submit" class="lusso-search-button">
                         <?php esc_html_e('Search', 'resales-api'); ?>
                     </button>
                 </div>
