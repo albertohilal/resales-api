@@ -68,7 +68,7 @@
 }
 
 .swiper-pagination-bullet {
-  background: #222 !important;
+  background: var(--c-gray-intense, #404404) !important;
   opacity: 0.5;
   width: 10px;
   height: 10px;

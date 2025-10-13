@@ -15,8 +15,8 @@
 	display: inline-block;
 	margin-top: 12px;
 	padding: 8px 20px;
-	background: #1976d2;
-	color: #fff;
+	background: #B8860B;
+	color: #FFFFFF;
 	font-weight: 600;
 	border-radius: 4px;
 	text-decoration: none;
@@ -24,11 +24,12 @@
 	transition: background 0.2s, box-shadow 0.2s;
 	border: none;
 	cursor: pointer;
+	font-family: 'Inter', sans-serif;
 }
 .lr-card__cta:hover, .lr-card__cta:focus {
-	background: #1565c0;
-	box-shadow: 0 4px 16px rgba(25,118,210,0.15);
-	color: #fff;
+	background: #D4AF37;
+	box-shadow: 0 4px 16px rgba(184, 134, 11, 0.3);
+	color: #0D0D0D;
 	outline: none;
 }
 .resales-card__image img { width:100%; height:100%; object-fit:cover; display:block; }

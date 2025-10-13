@@ -121,20 +121,22 @@
 /* Ajustes específicos para navegación en contexto de detalle */
 .property-gallery .swiper-button-next,
 .property-gallery .swiper-button-prev {
-  color: #fff !important;
-  background: rgba(0,0,0,0.6) !important;
+  color: var(--c-black, #0D0D0D) !important;
+  background: rgba(255,255,255,0.9) !important;
   border-radius: 50%;
   width: 50px !important;
   height: 50px !important;
   margin-top: -25px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(13, 13, 13, 0.15);
   transition: all 0.3s ease;
 }
 
 .property-gallery .swiper-button-next:hover,
 .property-gallery .swiper-button-prev:hover {
-  background: rgba(0,0,0,0.8) !important;
+  background: var(--c-gold-dark, #B8860B) !important;
+  color: var(--c-white, #FFFFFF) !important;
   transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(184, 134, 11, 0.3);
 }
 
 /* Ajustar botones para que no salgan del contenedor */
