@@ -2,6 +2,12 @@
 /* File: assets/css/lusso-resales-detail.css */
 /* Optimizado para imágenes PropertyDetails (1600px) vs SearchProperties (1200px) */
 
+/* Fuente base Inter para todo el componente de detalle */
+.lusso-detail-container,
+.lusso-detail-container * {
+  font-family: 'Inter', sans-serif;
+}
+
 /* Layout de dos columnas para el contenido */
 .lusso-detail-container {
   display: grid;

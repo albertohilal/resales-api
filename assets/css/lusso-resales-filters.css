@@ -1,3 +1,8 @@
+/* Fuente base Inter para todo el componente de filtros */
+* {
+  font-family: 'Inter', sans-serif;
+}
+
 /* Fondo blanco para el contenedor de tarjetas */
 .lusso-cards-bg {
   background: #fff;

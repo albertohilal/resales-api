@@ -35,7 +35,7 @@ $property = [
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     </style>
 </head>

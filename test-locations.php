@@ -115,7 +115,7 @@ header('Content-Type: text/html; charset=utf-8');
 $data = json_decode($responseBody, true, 512, JSON_UNESCAPED_UNICODE);
 
 echo '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Ubicaciones disponibles</title>';
-echo '<style>body{font-family:sans-serif;} ul{margin-left:1em;} strong{color:#1a237e;}</style></head><body>';
+echo '<style>body{font-family:\'Inter\', sans-serif;} ul{margin-left:1em;} strong{color:#1a237e;}</style></head><body>';
 
 if (!is_array($data) || empty($data['LocationData']['ProvinceArea'])) {
   echo '<h2>Error al obtener ubicaciones</h2>';

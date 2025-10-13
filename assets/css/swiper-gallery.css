@@ -1,6 +1,12 @@
 /* Swiper.js CDN */
 @import url('https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');
 
+/* Fuente base Inter para componente de galería */
+.property-gallery,
+.property-gallery * {
+  font-family: 'Inter', sans-serif;
+}
+
 .property-gallery .swiper {
   width: 600px;
   height: 400px;

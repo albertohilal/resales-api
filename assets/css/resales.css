@@ -1,4 +1,12 @@
 
+/* Fuente base Inter para componentes resales */
+.resales-grid,
+.resales-grid *,
+.resales-card,
+.resales-card * {
+  font-family: 'Inter', sans-serif;
+}
+
 .resales-grid { display:flex; flex-direction:column; gap:20px; }
 .resales-card { display:flex; flex-direction:row; border:1px solid #ddd; border-radius:8px; overflow:hidden; }
 .resales-card__image { flex:0 0 280px; max-width:280px; }

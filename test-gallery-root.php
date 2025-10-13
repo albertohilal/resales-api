@@ -13,7 +13,7 @@ $images = [
     <title>Test Galería Swiper</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <link rel="stylesheet" href="/wp-content/plugins/resales-api/assets/css/swiper-gallery.css" />
-    <style>body { font-family: Arial, sans-serif; background: #f8f8f8; padding: 40px; }</style>
+    <style>body { font-family: 'Inter', sans-serif; background: #f8f8f8; padding: 40px; }</style>
 </head>
 <body>
     <h1>Test Galería Swiper</h1>
