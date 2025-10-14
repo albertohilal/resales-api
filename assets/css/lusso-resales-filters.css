@@ -11,11 +11,18 @@
 .lusso-grid {
   background: #fff;
 }
-/* Fondo solo para el formulario de filtros */
+/* Fondo blanco para el contenedor principal */
 .lusso-filters-wrap {
-  background: var(--c-gold-dark, #B8860B); /*Dorado Oscuro 2025*/
-  padding: 10px 0;
+  background: var(--c-white, #FFFFFF); /*Fondo blanco para todo el wrap*/
+  padding: 0;
   margin-bottom: 10px;
+}
+
+/* Fondo dorado solo para el formulario de filtros */
+.lusso-filters-form-bg {
+  background: var(--c-gold, #D4AF37); /*Dorado Claro 2025 - solo formulario*/
+  padding: 15px 20px;
+  margin-bottom: 20px;
 }
 .lusso-filters .filter-group{
   flex: 0 0 auto;
@@ -314,7 +321,7 @@
 .lusso-page-item span{
   display:inline-block; 
   padding:8px 12px; 
-  border:1px solid var(--c-gold-dark, #B8860B); 
+  border:1px solid var(--c-gold, #D4AF37); 
   border-radius:8px; 
   text-decoration:none; 
   line-height:1;
@@ -325,14 +332,14 @@
   transition: all 0.3s ease;
 }
 .lusso-page-item.active span{
-  background: var(--c-gold-dark, #B8860B); 
-  color: var(--c-white, #FFFFFF); 
-  border-color: var(--c-gold-dark, #B8860B);
+  background: var(--c-gold, #D4AF37); 
+  color: var(--c-black, #0D0D0D); 
+  border-color: var(--c-gold, #D4AF37);
 }
 .lusso-page-item a:hover{ 
   border-color: var(--c-gold, #D4AF37); 
-  background: var(--c-gold-dark, #B8860B);
-  color: var(--c-white, #FFFFFF);
+  background: var(--c-gold, #D4AF37);
+  color: var(--c-black, #0D0D0D);
 }
 .lusso-page-item.ellipsis{ 
   padding:8px 0; 

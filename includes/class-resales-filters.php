@@ -32,7 +32,8 @@ class Resales_Filters {
 
         ?>
         <div class="lusso-filters-wrap">
-        <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:16px 0 24px">
+            <div class="lusso-filters-form-bg">
+                <form class="lusso-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>" style="margin:0">
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
                 <!-- Location (estático, sin etiqueta) -->
                 <div>
@@ -226,6 +227,7 @@ class Resales_Filters {
                 </div>
             </div>
         </form>
+            </div> <!-- cierre lusso-filters-form-bg -->
         <?php
 
         // --- Integración con [lusso_properties] ---
