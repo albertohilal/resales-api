@@ -18,13 +18,35 @@
 .entry-content .property-gallery,
 .post-content .property-gallery,
 .single-post .property-gallery,
-.page .property-gallery {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+.page .property-gallery,
+.content .property-gallery,
+.main .property-gallery,
+.site-main .property-gallery,
+.container .property-gallery,
+.wrapper .property-gallery {
+  margin: 0 !important;
+  padding: 0 !important;
   max-width: none !important;
   width: 100vw !important;
+}
+
+/* Forzar que la galería llegue al borde superior eliminando márgenes de contenedores padre */
+body.single .entry-content,
+body.page .entry-content,
+body.single .post-content,  
+body.page .post-content,
+body.single .content,
+body.page .content {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Eliminar offset del header adhesivo en páginas de detalle */
+body.single .lusso-header.elementor-sticky--active {
+  top: 0 !important;
+}
+body.single .elementor-sticky__spacer {
+  display: none !important;
 }
 
 /* Layout de dos columnas para el contenido */
@@ -70,7 +92,7 @@ body.page .lusso-detail-container {
 .property-gallery {
   width: 100vw !important;
   max-width: none !important;
-  margin: 0 0 40px 0 !important;
+  margin: 0 !important;
   padding: 0 !important;
   position: relative !important;
   left: 50% !important;
