@@ -129,7 +129,12 @@ add_action('wp_enqueue_scripts', function() {
     }
     
     if ($enqueue_detail_css) {
-        wp_enqueue_style('lusso-resales-detail', plugins_url('assets/css/lusso-resales-detail.css', __FILE__), [], '2.1');
+                wp_enqueue_style( 
+            'lusso-resales-detail-style', 
+            plugin_dir_url( __FILE__ ) . 'assets/css/lusso-resales-detail.css',
+            array(),
+            '2.5'
+        );
     }
 
     // Scripts globales

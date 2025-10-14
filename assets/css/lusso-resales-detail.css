@@ -54,22 +54,38 @@
 .property-gallery .swiper {
   width: 100% !important;
   height: 70vh !important; /* 70% del viewport height */
-  min-height: 500px !important;
-  max-height: 800px !important;
+  min-height: 600px !important; /* Aumentado para Chrome */
+  max-height: 900px !important; /* Aumentado para pantallas grandes */
   border-radius: 0; /* Sin bordes para pantalla completa */
   overflow: hidden;
   box-shadow: none; /* Sin sombra para efecto limpio */
 }
 
+/* Ajustes específicos para Chrome */
+@supports (-webkit-appearance: none) {
+  .property-gallery .swiper {
+    height: calc(70vh + 50px) !important; /* Compensación para Chrome */
+    min-height: 650px !important;
+  }
+}
+
 .property-gallery .swiper-slide {
   width: 100% !important;
   height: 70vh !important;
-  min-height: 500px !important;
-  max-height: 800px !important;
+  min-height: 600px !important;
+  max-height: 900px !important;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f5f5f5; /* Fondo mientras carga la imagen */
+}
+
+/* Ajustes específicos para Chrome en slides */
+@supports (-webkit-appearance: none) {
+  .property-gallery .swiper-slide {
+    height: calc(70vh + 50px) !important;
+    min-height: 650px !important;
+  }
 }
 
 .property-gallery .swiper-slide img {
