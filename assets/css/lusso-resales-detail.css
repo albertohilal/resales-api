@@ -186,7 +186,12 @@ body .property-gallery {
 .content .property-gallery,
 .main .property-gallery,
 article .property-gallery,
-.entry .property-gallery {
+.entry .property-gallery,
+#primary .property-gallery,
+#main .property-gallery,
+#content .property-gallery,
+.elementor-container .property-gallery,
+.elementor-section .property-gallery {
   width: 100vw !important;
   margin-left: -50vw !important;
   margin-right: -50vw !important;
@@ -194,6 +199,31 @@ article .property-gallery,
   right: 50% !important;
   position: relative !important;
   max-width: none !important;
+}
+
+/* Neutralizar contenedores padre que puedan limitar */
+.property-gallery * {
+  box-sizing: border-box !important;
+}
+
+/* Override más agresivo para tema y plugins */
+html body .property-gallery,
+html body div .property-gallery,
+html body section .property-gallery,
+html body main .property-gallery {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  position: relative !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Breakout usando viewport units calculado en JavaScript */
+.property-gallery.js-breakout {
+  transform: none !important;
+  left: 0 !important;
 }
   color: var(--c-white, #FFFFFF) !important;
   transform: scale(1.1);
