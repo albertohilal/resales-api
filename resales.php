@@ -133,7 +133,7 @@ add_action('wp_enqueue_scripts', function() {
             'lusso-resales-detail-style', 
             plugin_dir_url( __FILE__ ) . 'assets/css/lusso-resales-detail.css',
             array(),
-            '4.0-solucionado'
+            '4.2-remove-img-limits'
         );
         
         // JavaScript para forzar galería edge-to-edge - cargar AL FINAL

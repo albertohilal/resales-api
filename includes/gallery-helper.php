@@ -20,8 +20,7 @@ function render_gallery($images, $context = 'card') {
                         <img src="<?php echo esc_url($img); ?>" 
                              alt="Imagen propiedad <?php echo $index + 1; ?>"
                              loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-                             decoding="async"
-                             style="max-width: 1600px;"> <!-- Optimizado para imágenes 1600px -->
+                             decoding="async">
                     </div>
                 <?php endforeach; ?>
             </div>

@@ -271,7 +271,7 @@ class Resales_Single {
 		?>
 	</div>
 	
-	<div class="property-detail-container" style="width:85vw;max-width:1500px;margin:0 auto 2em auto;padding:1.2em;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.07);font-family:'Inter',sans-serif;">
+	<div class="property-detail-container" style="width:85vw;max-width:1900px;margin:0 auto 2em auto;padding:1.2em;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.07);font-family:'Inter',sans-serif;">
 		
 		<!-- Nuevos contenedores según especificación -->
 		<div class="lusso-detail-container">

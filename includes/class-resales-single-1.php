@@ -257,7 +257,7 @@ class Resales_Single {
 
 	?>
 	<link href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" rel="stylesheet">
-	<div class="property-detail-container" style="width:85vw;max-width:1500px;margin:2em auto;padding:1.2em;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.07);font-family:'Inter',sans-serif;">
+	<div class="property-detail-container" style="width:85vw;max-width:1900px;margin:2em auto;padding:1.2em;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.07);font-family:'Inter',sans-serif;">
 	       <div class="property-detail-flex" style="display: grid; grid-template-columns: 70% 30%; gap:2em; align-items: flex-start;">
 		       <div class="property-gallery" style="width:100%; margin-bottom:0;">
 					<?php

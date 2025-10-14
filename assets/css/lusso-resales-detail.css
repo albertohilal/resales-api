@@ -37,6 +37,12 @@
   padding: 0 20px;
 }
 
+/* Ancho ampliado solo para páginas de detalle de propiedad */
+body.single .lusso-detail-container,
+body.page .lusso-detail-container {
+  max-width: 1900px;
+}
+
 @media (max-width: 768px) {
   .lusso-detail-container {
     grid-template-columns: 1fr;
