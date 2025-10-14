@@ -205,26 +205,18 @@ html body .property-gallery,
   display: none !important;
 }
 
-/* DEBUG: Fondo rojo ultra-específico que no se puede sobreescribir */
-html body,
-html body.wp-singular-page-template-default,
-html body.page,
-html body.single,
-body,
-body.wp-singular-page-template-default,
-body.page,
-body.single {
-  background: red !important;
-  background-color: red !important;
-  background-image: none !important;
-}
-
-/* Forzar rojo con especificidad máxima usando atributos */
-body[class*="wp-"],
-body[class*="page-"],
-body[class*="elementor"] {
-  background: red !important;
-  background-color: red !important;
+/* Solución: La galería YA llega de borde a borde, el problema es el contenedor de contenido */
+/* Forzar que el contenedor de contenido también llegue de borde a borde */
+.lusso-detail-container {
+  width: 100vw !important;
+  max-width: none !important;
+  position: relative !important;
+  left: 50% !important;
+  right: 50% !important;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+  padding: 0 20px !important; /* Mantener padding interno para legibilidad */
+  box-sizing: border-box !important;
 }
 
 /* Neutralizar backgrounds de elementos padre comunes (excepto body) */

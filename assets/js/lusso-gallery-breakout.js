@@ -38,21 +38,24 @@
             level++;
         }
 
-        // DEBUG: Forzar fondo rojo de manera ultra-agresiva
-        document.body.style.setProperty('background-color', 'red', 'important');
-        document.body.style.setProperty('background', 'red', 'important');
-        document.documentElement.style.setProperty('background-color', 'red', 'important');
+        // Solución identificada: aplicar breakout también al contenedor de contenido
+        const contentContainer = document.querySelector('.lusso-detail-container');
+        if (contentContainer) {
+            contentContainer.style.cssText = `
+                width: 100vw !important;
+                max-width: none !important;
+                position: relative !important;
+                left: 50% !important;
+                right: 50% !important;
+                margin-left: -50vw !important;
+                margin-right: -50vw !important;
+                padding: 0 20px !important;
+                box-sizing: border-box !important;
+            `;
+            console.log('Lusso Gallery: Breakout aplicado también al contenedor de contenido');
+        }
         
-        // Reaplicar rojo cada segundo para evitar sobreescritura
-        const redInterval = setInterval(() => {
-            document.body.style.setProperty('background-color', 'red', 'important');
-            document.body.style.setProperty('background', 'red', 'important');
-        }, 1000);
-        
-        // Detener después de 30 segundos
-        setTimeout(() => clearInterval(redInterval), 30000);
-        
-        console.log('Lusso Gallery: DEBUG - Fondo rojo ULTRA aplicado al body');
+        console.log('Lusso Gallery: Problema identificado y solucionado - era el contenedor de contenido, no la galería');
 
         // Eliminar backgrounds grises de otros elementos (no body)
         elementsToCheck.forEach(element => {

@@ -133,7 +133,7 @@ add_action('wp_enqueue_scripts', function() {
             'lusso-resales-detail-style', 
             plugin_dir_url( __FILE__ ) . 'assets/css/lusso-resales-detail.css',
             array(),
-            '3.2-debug-ultra'
+            '4.0-solucionado'
         );
         
         // JavaScript para forzar galería edge-to-edge - cargar AL FINAL
@@ -141,35 +141,23 @@ add_action('wp_enqueue_scripts', function() {
             'lusso-gallery-breakout',
             plugin_dir_url( __FILE__ ) . 'assets/js/lusso-gallery-breakout.js',
             array('jquery'),
-            '1.3-debug',
+            '2.0-solucionado',
             true
         );
         
-        // Forzar rojo desde el HEAD con máxima prioridad
-        add_action('wp_head', function() {
-            echo '<style id="lusso-debug-red">
-                html, html body, body { 
-                    background: red !important; 
-                    background-color: red !important; 
-                    background-image: none !important; 
-                }
-            </style>';
-        }, 9999);
+        // Problema identificado: no era la galería sino el contenedor de contenido
+        // Aplicar breakout edge-to-edge también al contenedor de contenido
         
         // Asegurar que se cargue después de otros scripts comunes
         add_action('wp_footer', function() {
             echo '<script>
-                // Backup final - DEBUG con fondo rojo ULTRA agresivo
+                // Solución final - aplicar breakout al contenedor de contenido también
                 setTimeout(function() {
-                    // DEBUG: Fondo rojo ultra-persistente
-                    document.body.style.setProperty("background-color", "red", "important");
-                    document.body.style.setProperty("background", "red", "important");
-                    document.documentElement.style.setProperty("background-color", "red", "important");
-                    
-                    // Aplicar inline style directamente al HTML
-                    document.body.setAttribute("style", "background: red !important; background-color: red !important;");
-                    
-                    console.log("Lusso Gallery: DEBUG ULTRA - Fondo rojo FORZADO");
+                    const contentContainer = document.querySelector(".lusso-detail-container");
+                    if (contentContainer) {
+                        contentContainer.style.cssText = "width: 100vw !important; max-width: none !important; position: relative !important; left: 50% !important; right: 50% !important; margin-left: -50vw !important; margin-right: -50vw !important; padding: 0 20px !important; box-sizing: border-box !important;";
+                        console.log("Lusso Gallery: SOLUCIÓN - Breakout aplicado al contenedor de contenido");
+                    }
                     
                     // Eliminar fondos problemáticos de otros elementos
                     const elementsToClean = [
