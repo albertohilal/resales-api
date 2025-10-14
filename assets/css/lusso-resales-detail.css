@@ -66,12 +66,10 @@
   max-width: none !important;
   margin: 0 0 40px 0 !important;
   padding: 0 !important;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw !important;
-  margin-right: -50vw !important;
-  transform: none;
+  position: relative !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  box-sizing: border-box !important;
 }
 
 .property-gallery .swiper {
@@ -169,61 +167,145 @@
   background: var(--c-gold-dark, #B8860B) !important;
 }
 
-/* Forzar ancho completo ignorando cualquier contenedor padre */
-body .property-gallery {
+/* Técnica breakout edge-to-edge con alta especificidad para superar otros frameworks */
+body .property-gallery,
+html body .property-gallery,
+.elementor .property-gallery,
+.elementor-section .property-gallery,
+.elementor-container .property-gallery {
+  /* Resetear posicionamiento */
   position: relative !important;
+  
+  /* Breakout técnica clásica */
   width: 100vw !important;
   left: 50% !important;
   right: 50% !important;
   margin-left: -50vw !important;
   margin-right: -50vw !important;
-  max-width: 100vw !important;
-  overflow: visible !important;
+  
+  /* Eliminar limitaciones */
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+  
+  /* Evitar transform conflicts */
+  transform: none !important;
+  
+  /* Z-index para asegurar visibilidad */
+  z-index: 1 !important;
+  
+  /* CRÍTICO: Eliminar background del contenedor padre que causa los márgenes grises */
+  background: transparent !important;
 }
 
-/* Override específico para contenedores WordPress comunes */
-.container .property-gallery,
-.content .property-gallery,
-.main .property-gallery,
-article .property-gallery,
-.entry .property-gallery,
-#primary .property-gallery,
-#main .property-gallery,
-#content .property-gallery,
-.elementor-container .property-gallery,
-.elementor-section .property-gallery {
-  width: 100vw !important;
-  margin-left: -50vw !important;
-  margin-right: -50vw !important;
-  left: 50% !important;
-  right: 50% !important;
-  position: relative !important;
+/* Eliminar backgrounds grises de contenedores padre que causan los márgenes */
+.property-gallery::before,
+.property-gallery::after {
+  display: none !important;
+}
+
+/* DEBUG: Fondo rojo ultra-específico que no se puede sobreescribir */
+html body,
+html body.wp-singular-page-template-default,
+html body.page,
+html body.single,
+body,
+body.wp-singular-page-template-default,
+body.page,
+body.single {
+  background: red !important;
+  background-color: red !important;
+  background-image: none !important;
+}
+
+/* Forzar rojo con especificidad máxima usando atributos */
+body[class*="wp-"],
+body[class*="page-"],
+body[class*="elementor"] {
+  background: red !important;
+  background-color: red !important;
+}
+
+/* Neutralizar backgrounds de elementos padre comunes (excepto body) */
+.elementor-section,
+.elementor-container,
+.elementor-row,
+.site-content,
+.entry-content,
+.post-content,
+.page-content,
+#primary,
+#main,
+#content,
+.content-area {
+  background: transparent !important;
+}
+
+/* Override específico para el elemento que tiene el fondo gris */
+.property-gallery,
+.property-gallery *,
+body .property-gallery,
+html .property-gallery {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Forzar transparencia en elementos específicos que pueden tener #f5f5f5 */
+body,
+html,
+.site,
+.site-content,
+.content-area,
+#primary,
+#main,
+#content,
+.hfeed,
+.entry,
+.entry-content,
+.post,
+.page,
+article {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Override para temas comunes que usan #f5f5f5 como fondo */
+.elementor-location-header,
+.elementor-location-footer,
+.elementor-section-wrap,
+.elementor-inner,
+.elementor-column,
+.elementor-widget-wrap {
+  background-color: transparent !important;
+}
+
+/* Asegurar que no hay pseudo-elementos creando el fondo gris */
+body::before,
+body::after,
+.site::before,
+.site::after,
+.site-content::before,
+.site-content::after {
+  display: none !important;
+}
+
+/* Asegurar que contenedores padre no interfieran - alta especificidad */
+body * .property-gallery,
+html body * .property-gallery {
   max-width: none !important;
 }
 
-/* Neutralizar contenedores padre que puedan limitar */
-.property-gallery * {
-  box-sizing: border-box !important;
-}
-
-/* Override más agresivo para tema y plugins */
-html body .property-gallery,
-html body div .property-gallery,
-html body section .property-gallery,
-html body main .property-gallery {
+/* Override específico para Elementor y otros page builders */
+.elementor-element .property-gallery,
+.vc_row .property-gallery,
+.wpb_row .property-gallery {
   width: 100vw !important;
-  max-width: 100vw !important;
-  position: relative !important;
   left: 50% !important;
-  transform: translateX(-50%) !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* Breakout usando viewport units calculado en JavaScript */
-.property-gallery.js-breakout {
-  transform: none !important;
-  left: 0 !important;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+  max-width: none !important;
+  position: relative !important;
 }
   color: var(--c-white, #FFFFFF) !important;
   transform: scale(1.1);

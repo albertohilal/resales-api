@@ -133,17 +133,79 @@ add_action('wp_enqueue_scripts', function() {
             'lusso-resales-detail-style', 
             plugin_dir_url( __FILE__ ) . 'assets/css/lusso-resales-detail.css',
             array(),
-            '2.7'
+            '3.2-debug-ultra'
         );
         
-        // JavaScript para forzar galería edge-to-edge
+        // JavaScript para forzar galería edge-to-edge - cargar AL FINAL
         wp_enqueue_script(
             'lusso-gallery-breakout',
             plugin_dir_url( __FILE__ ) . 'assets/js/lusso-gallery-breakout.js',
-            array(),
-            '1.0',
+            array('jquery'),
+            '1.3-debug',
             true
         );
+        
+        // Forzar rojo desde el HEAD con máxima prioridad
+        add_action('wp_head', function() {
+            echo '<style id="lusso-debug-red">
+                html, html body, body { 
+                    background: red !important; 
+                    background-color: red !important; 
+                    background-image: none !important; 
+                }
+            </style>';
+        }, 9999);
+        
+        // Asegurar que se cargue después de otros scripts comunes
+        add_action('wp_footer', function() {
+            echo '<script>
+                // Backup final - DEBUG con fondo rojo ULTRA agresivo
+                setTimeout(function() {
+                    // DEBUG: Fondo rojo ultra-persistente
+                    document.body.style.setProperty("background-color", "red", "important");
+                    document.body.style.setProperty("background", "red", "important");
+                    document.documentElement.style.setProperty("background-color", "red", "important");
+                    
+                    // Aplicar inline style directamente al HTML
+                    document.body.setAttribute("style", "background: red !important; background-color: red !important;");
+                    
+                    console.log("Lusso Gallery: DEBUG ULTRA - Fondo rojo FORZADO");
+                    
+                    // Eliminar fondos problemáticos de otros elementos
+                    const elementsToClean = [
+                        ...document.querySelectorAll(".site"),
+                        ...document.querySelectorAll(".site-content"),
+                        ...document.querySelectorAll(".content-area"),
+                        ...document.querySelectorAll("#primary"),
+                        ...document.querySelectorAll("#main"),
+                        ...document.querySelectorAll(".elementor-section"),
+                        ...document.querySelectorAll(".elementor-container")
+                    ];
+                    
+                    elementsToClean.forEach(el => {
+                        if (el) {
+                            const bgColor = getComputedStyle(el).backgroundColor;
+                            if (bgColor === "rgb(245, 245, 245)" || bgColor === "rgb(255, 255, 255)" || bgColor === "white") {
+                                el.style.backgroundColor = "transparent";
+                                console.log("DEBUG: Eliminado fondo de", el.tagName, el.className);
+                            }
+                        }
+                    });
+                    
+                    const gallery = document.querySelector(".property-gallery");
+                    if (gallery) {
+                        console.log("Lusso Gallery: Aplicación final - eliminando fondos grises");
+                        gallery.style.cssText = "width: 100vw !important; position: relative !important; left: 50% !important; margin-left: -50vw !important; margin-right: -50vw !important; max-width: none !important; transform: none !important; box-sizing: border-box !important; padding: 0 !important; background: transparent !important;";
+                        
+                        const swiper = gallery.querySelector(".swiper");
+                        if (swiper) {
+                            swiper.style.cssText = "width: 100vw !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: transparent !important;";
+                        }
+                    }
+                }, 3000);
+            </script>';
+        }, 9999);
+        
     }
 
     // Scripts globales
