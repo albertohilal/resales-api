@@ -277,7 +277,7 @@ class Resales_Single {
 		<div class="lusso-detail-container">
 			<div class="lusso-detail-left">
 				<!-- Contenido principal: título, descripción, tabs -->
-				<h1 style="font-size:2.2em;font-weight:700;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
+				<h1 style="font-size:2.2em;font-weight:500;color:#404404;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
 				
 				<!-- Tabs de descripción y ubicación -->
 				<style>

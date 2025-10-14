@@ -266,7 +266,7 @@ class Resales_Single {
 					?>
 				</div>
 				   <div class="property-info" style="width:100%; margin-top:0;">
-					<h1 style="font-size:2.2em;font-weight:700;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
+					<h1 style="font-size:2.2em;font-weight:500;color:#404404;margin-bottom:0.3em;line-height:1.1;"><?php echo esc_html($title); ?></h1>
 					   <div class="property-info-table" style="background:#f8f8f8;border-radius:6px;padding:1.5em 2em;margin-bottom:1.5em;">
 						   <style>
 							   .property-info-table table { width:100%; border-collapse:collapse; font-size:1.1em; }
