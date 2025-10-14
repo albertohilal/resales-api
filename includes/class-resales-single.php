@@ -334,8 +334,8 @@ class Resales_Single {
 				<!-- Sección de contacto -->
 				<div class="property-detail-contact" style="background:#f9f9f9;padding:2em;border-radius:8px;box-shadow:0 1px 8px rgba(0,0,0,0.04);">
 					<h2 style="font-size:1.5em;font-weight:600;margin-bottom:1em;"><?php _e('Contact', 'resales-api'); ?></h2>
-					<div class="property-contact-placeholder" style="border:1px dashed #aaa; padding:2em; text-align:center; background:#fff; border-radius:6px;">
-						<em style="color:#888;font-size:1.1em;"><?php _e('Contact form coming soon.', 'resales-api'); ?></em>
+					<div class="property-contact-form">
+						<?php echo do_shortcode('[elementor-template id="1110"]'); ?>
 					</div>
 				</div>
 			</div> <!-- cierra .lusso-detail-right -->
