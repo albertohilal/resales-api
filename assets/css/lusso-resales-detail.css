@@ -8,6 +8,25 @@
   font-family: 'Inter', sans-serif;
 }
 
+/* Override para contenedores padre que puedan limitar el ancho de la galería */
+.property-gallery,
+.property-gallery * {
+  box-sizing: border-box !important;
+}
+
+/* Neutralizar paddings/márgenes de contenedores WordPress/tema */
+.entry-content .property-gallery,
+.post-content .property-gallery,
+.single-post .property-gallery,
+.page .property-gallery {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  max-width: none !important;
+  width: 100vw !important;
+}
+
 /* Layout de dos columnas para el contenido */
 .lusso-detail-container {
   display: grid;
@@ -41,24 +60,30 @@
   padding-bottom: 8px;
 }
 
-/* Galería de propiedad a pantalla completa */
+/* Galería de propiedad a pantalla completa - edge to edge */
 .property-gallery {
   width: 100vw !important;
   max-width: none !important;
   margin: 0 0 40px 0 !important;
+  padding: 0 !important;
   position: relative;
   left: 50%;
-  transform: translateX(-50%);
+  right: 50%;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+  transform: none;
 }
 
 .property-gallery .swiper {
-  width: 100% !important;
+  width: 100vw !important;
   height: 70vh !important; /* 70% del viewport height */
   min-height: 600px !important; /* Aumentado para Chrome */
   max-height: 900px !important; /* Aumentado para pantallas grandes */
-  border-radius: 0; /* Sin bordes para pantalla completa */
+  border-radius: 0 !important; /* Sin bordes para pantalla completa */
   overflow: hidden;
-  box-shadow: none; /* Sin sombra para efecto limpio */
+  box-shadow: none !important; /* Sin sombra para efecto limpio */
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* Ajustes específicos para Chrome */
@@ -142,6 +167,34 @@
 .property-gallery .swiper-button-next:hover,
 .property-gallery .swiper-button-prev:hover {
   background: var(--c-gold-dark, #B8860B) !important;
+}
+
+/* Forzar ancho completo ignorando cualquier contenedor padre */
+body .property-gallery {
+  position: relative !important;
+  width: 100vw !important;
+  left: 50% !important;
+  right: 50% !important;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+  max-width: 100vw !important;
+  overflow: visible !important;
+}
+
+/* Override específico para contenedores WordPress comunes */
+.container .property-gallery,
+.content .property-gallery,
+.main .property-gallery,
+article .property-gallery,
+.entry .property-gallery {
+  width: 100vw !important;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+  left: 50% !important;
+  right: 50% !important;
+  position: relative !important;
+  max-width: none !important;
+}
   color: var(--c-white, #FFFFFF) !important;
   transform: scale(1.1);
   box-shadow: 0 6px 16px rgba(184, 134, 11, 0.3);

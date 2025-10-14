@@ -133,7 +133,7 @@ add_action('wp_enqueue_scripts', function() {
             'lusso-resales-detail-style', 
             plugin_dir_url( __FILE__ ) . 'assets/css/lusso-resales-detail.css',
             array(),
-            '2.5'
+            '2.6'
         );
     }
 
