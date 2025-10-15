@@ -603,6 +603,37 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         .lusso-card__meta{margin:0 0 6px;color:#666;font-size:13px}
         .lusso-card__price{margin:0;font-weight:700}
         .lusso-card__debug{padding:8px 12px}
+          /* Estilo base para la “barra de texto” */
+          .lr-card__bar {
+            position: relative;
+            overflow: visible;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 1px 4px rgba(184, 134, 11, 0.3); /* sombra leve inicial (opcional) */
+            background-color: var(--lr-bar-bg, #fff);
+            border-radius: 4px;
+          }
+
+          /* Hover: sombra más marcada + leve elevación */
+          .lr-card__bar:hover {
+            box-shadow: 0 6px 20px rgba(184, 134, 11, 0.6); /* sombra más marcada al hover */
+            transform: translateY(-2px);
+          }
+
+          /* Variante con pseudoelemento (sombra ambiental adicional) */
+          .lr-card__bar::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: inherit;
+            box-shadow: 0 0 0 rgba(184, 134, 11, 0);
+            transition: box-shadow 0.3s ease;
+            pointer-events: none;
+          }
+
+          .lr-card__bar:hover::before {
+            box-shadow: 0 4px 15px rgba(184, 134, 11, 0.4);
+          }
       </style>
       <?php
 
