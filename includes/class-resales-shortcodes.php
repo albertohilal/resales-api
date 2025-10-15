@@ -608,13 +608,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
           position: relative;
           overflow: visible;
           transition: box-shadow 0.3s cubic-bezier(.4,0,.2,1), transform 0.3s cubic-bezier(.4,0,.2,1);
-          box-shadow: 0 2px 12px 4px rgba(60,60,60,0.13); /* sombra amplia y difusa */
+          box-shadow: 0 6px 32px 0px rgba(80,80,80,0.10); /* sombra más difusa y clara */
           background-color: var(--lr-bar-bg, #fff);
           border-radius: 4px;
         }
 
         .lr-card__bar:hover {
-          box-shadow: 0 8px 32px 12px rgba(60,60,60,0.18), 0 2px 8px 2px rgba(184,134,11,0.12); /* más extendida y visible */
+          box-shadow: 0 12px 48px 0px rgba(80,80,80,0.16), 0 2px 8px 0px rgba(184,134,11,0.10); /* sombra más extendida y elegante */
           transform: translateY(-2px);
         }
 
@@ -624,13 +624,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
           top: 0; left: 0;
           width: 100%; height: 100%;
           border-radius: inherit;
-          box-shadow: 0 0 0 rgba(60,60,60,0);
+          box-shadow: 0 0 0 rgba(80,80,80,0);
           transition: box-shadow 0.3s cubic-bezier(.4,0,.2,1);
           pointer-events: none;
         }
 
         .lr-card__bar:hover::before {
-          box-shadow: 0 6px 32px 8px rgba(60,60,60,0.14);
+          box-shadow: 0 10px 48px 0px rgba(80,80,80,0.13);
         }
 
         /* Limitar la descripción a dos líneas con ellipsis y reservar espacio */
