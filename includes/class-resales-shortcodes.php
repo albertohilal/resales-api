@@ -587,12 +587,12 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       // CSS mínimo para el placeholder / grid
       ?>
       <style>
-        .lusso-grid { display: grid; gap: 24px; }
-        @media (min-width: 768px) {
-          .lusso-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .lusso-grid { display: grid; gap: 24px; grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 1200px) {
+          .lusso-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (max-width: 767px) {
-          .lusso-grid { grid-template-columns: 1fr; }
+        @media (max-width: 900px) {
+          .lusso-grid { grid-template-columns: 1fr; gap: 20px; }
         }
         .lusso-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.06)}
         .lusso-card__media{aspect-ratio:4/3;background:#f2f2f2;position:relative}
