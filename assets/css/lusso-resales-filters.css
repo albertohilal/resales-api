@@ -356,15 +356,23 @@
 }
 
 /* 2 col en desktop, 1 en móvil, con buen gap */
-.lusso-grid{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px 28px;           /* separaciones entre tarjetas */
+
+/* 3 columnas en desktop, 2 en tablet, 1 en móvil */
+.lusso-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px 28px;
 }
 
-@media (max-width: 900px){
-  .lusso-grid{
-    grid-template-columns: 1fr;  /* 1 columna en mobile */
+@media (max-width: 1200px) {
+  .lusso-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .lusso-grid {
+    grid-template-columns: 1fr;
     gap: 20px;
   }
 }
