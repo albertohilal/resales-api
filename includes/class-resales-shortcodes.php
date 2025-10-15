@@ -397,7 +397,7 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
           <div style="color:#666;font-size:0.875rem;line-height:1.2;">
             <?php echo $location; ?>
           </div>
-          <div style="font-size:1rem;font-weight:700;color:var(--color-gold-dark);line-height:1.3;margin:0;">
+          <div class="lr-card__bar-desc">
             <?php echo $desc; ?>
           </div>
           <div style="display:flex;gap:14px;margin:8px 0;justify-content:center;">
@@ -631,6 +631,21 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
 
         .lr-card__bar:hover::before {
           box-shadow: 0 6px 32px 8px rgba(60,60,60,0.14);
+        }
+
+        /* Limitar la descripción a dos líneas con ellipsis y reservar espacio */
+        .lr-card__bar-desc {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-height: 2.6em; /* reserva espacio para dos líneas */
+          line-height: 1.3;
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--color-gold-dark);
+          margin: 0;
         }
       </style>
       <?php
