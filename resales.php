@@ -81,6 +81,51 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     }
 }
 
+/**
+ * Ensure debug.log exists in a writable location and configure PHP error_log to point to it.
+ * This runs at plugin bootstrap to help debugging when WP_DEBUG isn't set or when activation
+ * hooks are not run (useful in development environments where plugin files are included directly).
+ */
+function resales_ensure_debug_log($force = false) {
+    // If a specific env var disables auto creation, respect it
+    if (defined('DISABLE_RESALES_DEBUG_CREATE') && DISABLE_RESALES_DEBUG_CREATE && !$force) return false;
+
+    $candidates = [];
+    if (defined('WP_CONTENT_DIR')) $candidates[] = rtrim(WP_CONTENT_DIR, '/\\');
+    $candidates[] = dirname(__FILE__) . '/../../wp-content';
+    $candidates[] = dirname(__FILE__) . '/..';
+
+    $debug_file = null;
+    foreach ($candidates as $cand) {
+        $cand_dir = rtrim($cand, '/\\');
+        if (is_dir($cand_dir) && is_writable($cand_dir)) {
+            $debug_file = $cand_dir . '/debug.log';
+            break;
+        }
+    }
+
+    if ($debug_file === null) {
+        $debug_file = dirname(__FILE__) . '/debug.log';
+    }
+
+    if (!file_exists($debug_file)) {
+        @file_put_contents($debug_file, "[resales-api] debug.log created at " . date('c') . "\n", LOCK_EX);
+        @chmod($debug_file, 0666);
+    }
+
+    if (is_writable(dirname($debug_file)) || @is_writable($debug_file)) {
+        @ini_set('error_log', $debug_file);
+        error_log('[resales-api] debug log created/ensured at: ' . $debug_file);
+        return true;
+    }
+
+    error_log('[resales-api] could not create debug.log in any candidate path');
+    return false;
+}
+
+// Intentar asegurar debug.log ahora en bootstrap (no forzamos en producción si se desactiva)
+resales_ensure_debug_log();
+
 /* ===========================
  *  AJAX: búsqueda de propiedades
  * =========================== */
