@@ -558,6 +558,14 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       foreach ($props as $p) {
         $ref  = $p['Reference'] ?? '';
 
+        // --- LOG TEMPORAL para debug de una referencia concreta
+        if ($ref === 'R4831858') {
+          if (function_exists('resales_safe_log')) {
+            resales_safe_log('TRACE REF R4831858 - RAW PROP', ['prop' => $p]);
+          }
+          error_log('[resales-api][TRACE] REF R4831858 encountered in shortcode loop');
+        }
+
         // 🔍 Saltar propiedades sin imágenes (usando fallback)
         $imgs = $this->property_images_with_fallback($opts, $ref, $p);
         if (empty($imgs)) {
