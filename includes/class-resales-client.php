@@ -30,6 +30,25 @@ class Resales_Client {
         return self::$instance;
     }
 
+    // --- Helpers para abstracción y testeabilidad (wrappers alrededor de funciones WP) ---
+    private function transient_get($key) {
+        if (function_exists('get_transient')) return get_transient($key);
+        return false;
+    }
+
+    private function transient_set($key, $value, $ttl = 0) {
+        if (function_exists('set_transient')) return set_transient($key, $value, $ttl);
+        return false;
+    }
+
+    private function sanitize_ref($ref) {
+        if (function_exists('sanitize_key')) return sanitize_key($ref);
+        // fallback simple: lowercase + replace non-alnum with _
+        $r = strtolower(trim((string)$ref));
+        $r = preg_replace('/[^a-z0-9-_]/', '_', $r);
+        return $r;
+    }
+
     /**
      * Busca propiedades usando V6, con lógica de filtro, localización y caché.
      * @param array $input Normalized payload from REST endpoint
@@ -327,8 +346,8 @@ class Resales_Client {
                 if ($need_details && !empty($property['Reference'])) {
                     $ref = $property['Reference'];
                     // Intentar cache transient antes de llamar a PropertyDetails
-                    $tkey = 'resales_details_' . sanitize_key($ref);
-                    $found = get_transient($tkey);
+                    $tkey = 'resales_details_' . $this->sanitize_ref($ref);
+                    $found = $this->transient_get($tkey);
                     if (empty($found)) {
                         // Preparar URL de PropertyDetails con credenciales actuales
                         $details_query = [
@@ -352,7 +371,7 @@ class Resales_Client {
                             // Guardar en transient si encontramos datos útiles
                             if (!empty($found)) {
                                 $ttl = defined('HOUR_IN_SECONDS') ? 6 * HOUR_IN_SECONDS : 21600; // 6 horas
-                                set_transient($tkey, $found, $ttl);
+                                $this->transient_set($tkey, $found, $ttl);
                             }
                         }
                     }
