@@ -307,6 +307,62 @@ class Resales_Client {
         if (json_last_error() !== JSON_ERROR_NONE) {
             return ['success'=>false, 'error'=>'JSON error', 'body'=>$body];
         }
+
+        // --- Verificador de imágenes: si una propiedad viene sin Pictures, fallback a PropertyDetails ---
+        if (!empty($json['Property'])) {
+            $props = $json['Property'];
+            $single = false;
+            // Normalizar a array de properties
+            if (isset($props['Reference'])) {
+                $props = [ $props ];
+                $single = true;
+            }
+            foreach ($props as $idx => $property) {
+                $need_details = false;
+                if (empty($property['Pictures'])) {
+                    $need_details = true;
+                } elseif (isset($property['Pictures']['Picture']) && empty($property['Pictures']['Picture'])) {
+                    $need_details = true;
+                }
+                if ($need_details && !empty($property['Reference'])) {
+                    $ref = $property['Reference'];
+                    // Preparar URL de PropertyDetails con credenciales actuales
+                    $details_query = [
+                        'p_agency_filterid' => defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 1,
+                        'p1' => $this->api_user,
+                        'p2' => $this->api_key,
+                        'P_RefId' => $ref,
+                        'p_output' => 'JSON',
+                    ];
+                    $details_url = 'https://webapi.resales-online.com/V6/PropertyDetails?' . http_build_query($details_query);
+                    $details_res = wp_remote_get($details_url, [ 'timeout' => (int) get_option('resales_api_timeout', 20), 'headers'=>['Accept'=>'application/json'] ]);
+                    if (!is_wp_error($details_res)) {
+                        $details_body = wp_remote_retrieve_body($details_res);
+                        $details_json = json_decode($details_body, true);
+                        // PropertyDetails puede devolver Property como array indexado o como objeto único
+                        if (!empty($details_json['Property'][0])) {
+                            $found = $details_json['Property'][0];
+                        } else {
+                            $found = isset($details_json['Property']) ? $details_json['Property'] : null;
+                        }
+                        if (!empty($found) && !empty($found['Pictures'])) {
+                            // Reemplazamos/añadimos Pictures en la propiedad original
+                            $props[$idx]['Pictures'] = $found['Pictures'];
+                            // También si existe Images.Image en detalles, mapear para compatibilidad
+                            if (empty($props[$idx]['Pictures']) && !empty($found['Images']['Image'])) {
+                                $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
+                            }
+                            // Log seguro sobre fallback ocurrido (sin exponer credenciales)
+                            if (function_exists('resales_safe_log')) {
+                                resales_safe_log('IMAGE FALLBACK', [ 'ref' => $ref ]);
+                            }
+                        }
+                    }
+                }
+            }
+            // Restaurar la estructura original
+            $json['Property'] = $single ? $props[0] : $props;
+        }
         // Loguear parámetros aceptados por la transacción si existen
         if (isset($json['transaction']['parameters'])) {
             resales_safe_log('V6 TXN PARAMS', [
