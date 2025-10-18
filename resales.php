@@ -43,21 +43,41 @@ if (!function_exists('resales_log')) {
 
 // Si WP_DEBUG está activado, asegurar que exista wp-content/debug.log y dirigir error_log ahí
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    // Intentar resolver wp-content path
-    $wp_content = dirname(__FILE__) . '/..'; // fallback: plugin dir's parent
-    if (defined('WP_CONTENT_DIR')) $wp_content = rtrim(WP_CONTENT_DIR, '/\\');
-    $debug_file = $wp_content . '/debug.log';
-    // Crear archivo si no existe
+    // Posibles ubicaciones de wp-content
+    $candidates = [];
+    if (defined('WP_CONTENT_DIR')) $candidates[] = rtrim(WP_CONTENT_DIR, '/\\');
+    // Common layout: plugin dir's parent/wp-content
+    $candidates[] = dirname(__FILE__) . '/../../wp-content';
+    // Fallback: repo root (posible si se ejecuta desde plugin workspace)
+    $candidates[] = dirname(__FILE__) . '/..';
+
+    $debug_file = null;
+    foreach ($candidates as $cand) {
+        $cand_file = rtrim($cand, '/\\') . '/debug.log';
+        // Si el directorio existe y es escribible, usarlo
+        if (is_dir(dirname($cand_file)) && is_writable(dirname($cand_file))) {
+            $debug_file = $cand_file;
+            break;
+        }
+    }
+
+    // Si no encontramos wp-content escribible, usar plugin dir como fallback
+    if ($debug_file === null) {
+        $debug_file = dirname(__FILE__) . '/debug.log';
+    }
+
     if (!file_exists($debug_file)) {
-        @file_put_contents($debug_file, "[resales-api] debug.log created\n", LOCK_EX);
+        @file_put_contents($debug_file, "[resales-api] debug.log created at " . date('c') . "\n", LOCK_EX);
         @chmod($debug_file, 0666);
     }
+
     // Intentar setear error_log para apuntar al debug.log
-    if (is_writable(dirname($debug_file))) {
+    if (is_writable(dirname($debug_file)) || @is_writable($debug_file)) {
         @ini_set('error_log', $debug_file);
         error_log('[resales-api] WP_DEBUG active: directing error_log to ' . $debug_file);
     } else {
-        error_log('[resales-api] WP_DEBUG active but wp-content not writable: cannot create debug.log');
+        // No podemos escribir en ninguna ubicación; logueamos a la salida de PHP
+        error_log('[resales-api] WP_DEBUG active but cannot create debug.log in any candidate path.');
     }
 }
 
