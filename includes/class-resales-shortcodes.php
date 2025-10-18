@@ -531,15 +531,66 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       if (isset($props['Reference'])) {
         $props = [ $props ];
       }
-      // Ya no filtrar defensivamente por dormitorios, la API lo hace
 
-      // LOG: propiedades renderizadas y cantidad
-      error_log('[Resales API][LOG] Total propiedades renderizadas: ' . count($props));
-      foreach ($props as $p) {
-        error_log('[Resales API][LOG] Propiedad: Ref=' . ($p['Reference'] ?? '') . ' | Dormitorios=' . ($p['Bedrooms'] ?? '')); 
+      // Queremos completar la grilla con hasta `page_size` tarjetas válidas (con imágenes).
+      $needed = (int)$atts['page_size'];
+      $collected = [];
+
+      // Normalizar QueryInfo
+      $qi   = $resp['QueryInfo'] ?? [];
+      $qid2 = isset($qi['QueryId']) ? $qi['QueryId'] : '';
+      $ppp  = isset($qi['PropertiesPerPage']) ? (int)$qi['PropertiesPerPage'] : (int)$search_params['P_PageSize'];
+      $cur  = isset($qi['CurrentPage']) ? (int)$qi['CurrentPage'] : (int)$page;
+      $pages= $ppp > 0 ? (int)ceil((isset($qi['PropertyCount']) ? (int)$qi['PropertyCount'] : 0) / $ppp) : 1;
+
+      // LOG: propiedades recibidas y cantidad
+      error_log('[Resales API][LOG] Total propiedades recibidas (page=' . $cur . '): ' . count($props));
+
+      // Helper para procesar un array de propiedades y agregar las válidas
+      $process_props = function($arr) use (&$collected, $needed, $opts, $debug) {
+        foreach ($arr as $p) {
+          $ref = $p['Reference'] ?? '';
+          $imgs = $this->property_images_with_fallback($opts, $ref, $p);
+          if (empty($imgs)) {
+            if (function_exists('resales_safe_log')) resales_safe_log('SKIPPED PROPERTY - NO IMAGES', ['ref' => $ref]);
+            if ($debug) resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' SKIPPED - no images');
+            continue;
+          }
+          if ($debug) resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes finales para render', $imgs);
+          $collected[] = ['p' => $p, 'imgs' => $imgs];
+          if (count($collected) >= $needed) return true; // suficiente
+        }
+        return false;
+      };
+
+      // Procesar la página inicial
+      $stop = $process_props($props);
+
+      // Si no alcanzamos el número requerido, intentar cargar páginas siguientes (si hay QueryId)
+      if (!$stop && $qid2 !== '' && $cur < $pages) {
+        // Evitar bucles excesivos - máximo 20 páginas adicionales como tope razonable
+        $max_extra = 20;
+        $tries = 0;
+        $next_page = $cur + 1;
+        while (count($collected) < $needed && $next_page <= $pages && $tries < $max_extra) {
+          $tries++;
+          $search_params['P_PageNo'] = $next_page;
+          $search_params['P_QueryId'] = $qid2;
+          if ($debug) error_log('[Resales API][LOG] Fetching extra page ' . $next_page . ' for QueryId ' . $qid2);
+          $more = $this->http_get(self::SEARCH_ENDPOINT, $search_params, (int)$opts['timeout']);
+          if (is_wp_error($more) || empty($more['Property'])) {
+            if ($debug) resales_log('DEBUG', '[Resales API] No more properties for page ' . $next_page . ' (' . ($more instanceof WP_Error ? $more->get_error_message() : 'empty') . ')');
+            break;
+          }
+          $more_props = $more['Property'];
+          if (isset($more_props['Reference'])) $more_props = [$more_props];
+          $stop = $process_props($more_props);
+          if ($stop) break;
+          $next_page++;
+        }
       }
 
-      // Render
+      // Ahora renderizamos las propiedades recolectadas (hasta page_size)
       ob_start();
 
       if ($debug) {
@@ -548,47 +599,20 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         echo "\n\nArgs del shortcode\n";
         echo esc_html(print_r($atts, true));
         echo "\n\nQueryInfo\n";
-        echo esc_html(print_r($resp['QueryInfo'] ?? [], true));
-        echo "\nTotal propiedades recibidas: " . count($props) . "\n";
+        echo esc_html(print_r($qi, true));
+        echo "\nTotal propiedades recibidas (page initial): " . count($props) . "\n";
+        echo "\nTotal propiedades válidas recolectadas: " . count($collected) . "\n";
         echo "</pre></details>";
       }
 
-  echo '<div class="lusso-cards-bg"><section class="lusso-grid">';
+      echo '<div class="lusso-cards-bg"><section class="lusso-grid">';
 
-      foreach ($props as $p) {
-        $ref  = $p['Reference'] ?? '';
-
-        // --- LOG TEMPORAL para debug de una referencia concreta
-        if ($ref === 'R4831858') {
-          if (function_exists('resales_safe_log')) {
-            resales_safe_log('TRACE REF R4831858 - RAW PROP', ['prop' => $p]);
-          }
-          error_log('[resales-api][TRACE] REF R4831858 encountered in shortcode loop');
-        }
-
-        // 🔍 Saltar propiedades sin imágenes (usando fallback)
-        $imgs = $this->property_images_with_fallback($opts, $ref, $p);
-        if (empty($imgs)) {
-          if (function_exists('resales_safe_log')) {
-            resales_safe_log('SKIPPED PROPERTY - NO IMAGES', ['ref' => $ref]);
-          }
-          if ($debug) {
-            resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' SKIPPED - no images');
-          }
-          continue;
-        }
-
-        if ($debug) {
-          resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes finales para render', $imgs);
-        }
-
-        // 🖼️ Render normal de la tarjeta (render_card usa Swiper cuando corresponde)
-        $html = $this->render_card($p, $imgs, $debug);
+      foreach ($collected as $item) {
+        $html = $this->render_card($item['p'], $item['imgs'], $debug);
         echo $html;
       }
 
-
-  echo '</section></div>';
+      echo '</section></div>';
 
   // ---- Paginación ----
   $qi   = $resp['QueryInfo'] ?? [];
