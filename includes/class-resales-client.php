@@ -337,71 +337,90 @@ class Resales_Client {
                 $single = true;
             }
             foreach ($props as $idx => $property) {
-                $need_details = false;
-                if (empty($property['Pictures'])) {
-                    $need_details = true;
-                } elseif (isset($property['Pictures']['Picture']) && empty($property['Pictures']['Picture'])) {
-                    $need_details = true;
-                }
-                if ($need_details && !empty($property['Reference'])) {
-                    $ref = $property['Reference'];
-                    // Intentar cache transient antes de llamar a PropertyDetails
-                    $tkey = 'resales_details_' . $this->sanitize_ref($ref);
-                    $found = $this->transient_get($tkey);
-                    if (empty($found)) {
-                        // Preparar URL de PropertyDetails con credenciales actuales
-                        $details_query = [
-                            'p_agency_filterid' => defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 1,
-                            'p1' => $this->api_user,
-                            'p2' => $this->api_key,
-                            'P_RefId' => $ref,
-                            'p_output' => 'JSON',
-                        ];
-                        $details_url = 'https://webapi.resales-online.com/V6/PropertyDetails?' . http_build_query($details_query);
-                        $details_res = wp_remote_get($details_url, [ 'timeout' => (int) get_option('resales_api_timeout', 20), 'headers'=>['Accept'=>'application/json'] ]);
-                        if (!is_wp_error($details_res)) {
-                            $details_body = wp_remote_retrieve_body($details_res);
-                            $details_json = json_decode($details_body, true);
-                            // PropertyDetails puede devolver Property como array indexado o como objeto único
-                            if (!empty($details_json['Property'][0])) {
-                                $found = $details_json['Property'][0];
-                            } else {
-                                $found = isset($details_json['Property']) ? $details_json['Property'] : null;
-                            }
-                            // Guardar en transient si encontramos datos útiles
-                            if (!empty($found)) {
-                                $ttl = defined('HOUR_IN_SECONDS') ? 6 * HOUR_IN_SECONDS : 21600; // 6 horas
-                                $this->transient_set($tkey, $found, $ttl);
-                            }
-                        }
+        $need_details = false;
+
+        // 1️⃣ Detectar propiedades sin imágenes o con nodos vacíos
+        if (empty($property['Pictures'])) {
+            $need_details = true;
+        } elseif (isset($property['Pictures']['Picture']) && empty($property['Pictures']['Picture'])) {
+            $need_details = true;
+        } elseif (empty($property['MainImage'])) {
+            $need_details = true;
+        }
+
+        // 2️⃣ Fallback solo si hay referencia válida
+        if ($need_details && !empty($property['Reference'])) {
+            $ref = $property['Reference'];
+            $tkey = 'resales_details_' . sanitize_key($ref);
+            $found = get_transient($tkey);
+
+            if (empty($found)) {
+                $details_query = [
+                    'p_agency_filterid' => defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 1,
+                    'p1' => $this->api_user,
+                    'p2' => $this->api_key,
+                    'P_RefId' => $ref,
+                    'p_output' => 'JSON',
+                ];
+
+                $details_url = 'https://webapi.resales-online.com/V6/PropertyDetails?' . http_build_query($details_query);
+                $details_res = wp_remote_get($details_url, [
+                    'timeout' => (int) get_option('resales_api_timeout', 20),
+                    'headers' => ['Accept' => 'application/json'],
+                ]);
+
+                if (!is_wp_error($details_res)) {
+                    $details_body = wp_remote_retrieve_body($details_res);
+                    $details_json = json_decode($details_body, true);
+
+                    // PropertyDetails puede devolver Property como array o como objeto único
+                    if (!empty($details_json['Property'][0])) {
+                        $found = $details_json['Property'][0];
+                    } elseif (!empty($details_json['Property'])) {
+                        $found = $details_json['Property'];
                     }
+
                     if (!empty($found)) {
-                        // 2. Buscar nodos válidos
-                        if (!empty($found['Pictures']['Picture'])) {
-                            $props[$idx]['Pictures'] = $found['Pictures'];
-                        } elseif (!empty($found['Pictures'])) {
-                            $props[$idx]['Pictures'] = $found['Pictures'];
-                        } elseif (!empty($found['Images']['Image'])) {
-                            $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
-                        } elseif (!empty($found['MainImage'])) {
-                            // NUEVO: cuando solo existe una imagen principal
-                            $props[$idx]['Pictures'] = [
-                                'Picture' => [
-                                    [
-                                        'Id' => 1,
-                                        'PictureURL' => $found['MainImage'],
-                                        'PictureCaption' => ''
-                                    ]
-                                ]
-                            ];
-                        }
-                        // Log seguro sobre fallback ocurrido (sin exponer credenciales) si asignamos algo
-                        if (!empty($props[$idx]['Pictures']) && function_exists('resales_safe_log')) {
-                            resales_safe_log('IMAGE FALLBACK', [ 'ref' => $ref ]);
-                        }
+                        $ttl = defined('HOUR_IN_SECONDS') ? 6 * HOUR_IN_SECONDS : 21600;
+                        set_transient($tkey, $found, $ttl);
                     }
                 }
             }
+
+            // 3️⃣ Asignar imágenes desde fallback (todas las estructuras posibles)
+            if (!empty($found)) {
+                if (!empty($found['Pictures']['Picture'])) {
+                    $props[$idx]['Pictures'] = $found['Pictures'];
+                } elseif (!empty($found['Pictures'])) {
+                    $props[$idx]['Pictures'] = $found['Pictures'];
+                } elseif (!empty($found['Images']['Image'])) {
+                    $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
+                } elseif (!empty($found['MainImage'])) {
+                    $props[$idx]['Pictures'] = [
+                        'Picture' => [[
+                            'Id' => 1,
+                            'PictureURL' => $found['MainImage'],
+                            'PictureCaption' => '',
+                        ]]
+                    ];
+                }
+
+                if (!empty($props[$idx]['Pictures']) && function_exists('resales_safe_log')) {
+                    resales_safe_log('IMAGE FALLBACK', ['ref' => $ref]);
+                }
+            }
+        }
+
+        // 4️⃣ Si después de todo no hay imágenes, eliminar la propiedad del listado
+        if (empty($props[$idx]['Pictures']) || empty($props[$idx]['Pictures']['Picture'])) {
+            $ref = isset($property['Reference']) ? $property['Reference'] : 'unknown';
+            unset($props[$idx]);
+            if (function_exists('resales_safe_log')) {
+                resales_safe_log('SKIPPED PROPERTY - NO IMAGES', ['ref' => $ref]);
+            }
+            continue;
+        }
+    }
             // Restaurar la estructura original
             $json['Property'] = $single ? $props[0] : $props;
         }
