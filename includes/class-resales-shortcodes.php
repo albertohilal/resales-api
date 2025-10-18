@@ -557,11 +557,24 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
 
       foreach ($props as $p) {
         $ref  = $p['Reference'] ?? '';
+
+        // 🔍 Saltar propiedades sin imágenes (usando fallback)
         $imgs = $this->property_images_with_fallback($opts, $ref, $p);
+        if (empty($imgs)) {
+          if (function_exists('resales_safe_log')) {
+            resales_safe_log('SKIPPED PROPERTY - NO IMAGES', ['ref' => $ref]);
+          }
+          if ($debug) {
+            resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' SKIPPED - no images');
+          }
+          continue;
+        }
+
         if ($debug) {
           resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes finales para render', $imgs);
         }
-        // strict_min: si es "1", no activamos slider con <2 imágenes (lo resuelve render_card)
+
+        // 🖼️ Render normal de la tarjeta (render_card usa Swiper cuando corresponde)
         $html = $this->render_card($p, $imgs, $debug);
         echo $html;
       }
