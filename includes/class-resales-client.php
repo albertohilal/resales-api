@@ -356,15 +356,28 @@ class Resales_Client {
                             }
                         }
                     }
-                    if (!empty($found) && !empty($found['Pictures'])) {
-                        // Reemplazamos/añadimos Pictures en la propiedad original
-                        $props[$idx]['Pictures'] = $found['Pictures'];
-                        // También si existe Images.Image en detalles, mapear para compatibilidad
-                        if (empty($props[$idx]['Pictures']) && !empty($found['Images']['Image'])) {
+                    if (!empty($found)) {
+                        // 2. Buscar nodos válidos
+                        if (!empty($found['Pictures']['Picture'])) {
+                            $props[$idx]['Pictures'] = $found['Pictures'];
+                        } elseif (!empty($found['Pictures'])) {
+                            $props[$idx]['Pictures'] = $found['Pictures'];
+                        } elseif (!empty($found['Images']['Image'])) {
                             $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
+                        } elseif (!empty($found['MainImage'])) {
+                            // NUEVO: cuando solo existe una imagen principal
+                            $props[$idx]['Pictures'] = [
+                                'Picture' => [
+                                    [
+                                        'Id' => 1,
+                                        'PictureURL' => $found['MainImage'],
+                                        'PictureCaption' => ''
+                                    ]
+                                ]
+                            ];
                         }
-                        // Log seguro sobre fallback ocurrido (sin exponer credenciales)
-                        if (function_exists('resales_safe_log')) {
+                        // Log seguro sobre fallback ocurrido (sin exponer credenciales) si asignamos algo
+                        if (!empty($props[$idx]['Pictures']) && function_exists('resales_safe_log')) {
                             resales_safe_log('IMAGE FALLBACK', [ 'ref' => $ref ]);
                         }
                     }
