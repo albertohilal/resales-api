@@ -41,6 +41,26 @@ if (!function_exists('resales_log')) {
     }
 }
 
+// Si WP_DEBUG está activado, asegurar que exista wp-content/debug.log y dirigir error_log ahí
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    // Intentar resolver wp-content path
+    $wp_content = dirname(__FILE__) . '/..'; // fallback: plugin dir's parent
+    if (defined('WP_CONTENT_DIR')) $wp_content = rtrim(WP_CONTENT_DIR, '/\\');
+    $debug_file = $wp_content . '/debug.log';
+    // Crear archivo si no existe
+    if (!file_exists($debug_file)) {
+        @file_put_contents($debug_file, "[resales-api] debug.log created\n", LOCK_EX);
+        @chmod($debug_file, 0666);
+    }
+    // Intentar setear error_log para apuntar al debug.log
+    if (is_writable(dirname($debug_file))) {
+        @ini_set('error_log', $debug_file);
+        error_log('[resales-api] WP_DEBUG active: directing error_log to ' . $debug_file);
+    } else {
+        error_log('[resales-api] WP_DEBUG active but wp-content not writable: cannot create debug.log');
+    }
+}
+
 /* ===========================
  *  AJAX: búsqueda de propiedades
  * =========================== */
