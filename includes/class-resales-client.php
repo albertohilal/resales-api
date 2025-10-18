@@ -326,36 +326,46 @@ class Resales_Client {
                 }
                 if ($need_details && !empty($property['Reference'])) {
                     $ref = $property['Reference'];
-                    // Preparar URL de PropertyDetails con credenciales actuales
-                    $details_query = [
-                        'p_agency_filterid' => defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 1,
-                        'p1' => $this->api_user,
-                        'p2' => $this->api_key,
-                        'P_RefId' => $ref,
-                        'p_output' => 'JSON',
-                    ];
-                    $details_url = 'https://webapi.resales-online.com/V6/PropertyDetails?' . http_build_query($details_query);
-                    $details_res = wp_remote_get($details_url, [ 'timeout' => (int) get_option('resales_api_timeout', 20), 'headers'=>['Accept'=>'application/json'] ]);
-                    if (!is_wp_error($details_res)) {
-                        $details_body = wp_remote_retrieve_body($details_res);
-                        $details_json = json_decode($details_body, true);
-                        // PropertyDetails puede devolver Property como array indexado o como objeto único
-                        if (!empty($details_json['Property'][0])) {
-                            $found = $details_json['Property'][0];
-                        } else {
-                            $found = isset($details_json['Property']) ? $details_json['Property'] : null;
+                    // Intentar cache transient antes de llamar a PropertyDetails
+                    $tkey = 'resales_details_' . sanitize_key($ref);
+                    $found = get_transient($tkey);
+                    if (empty($found)) {
+                        // Preparar URL de PropertyDetails con credenciales actuales
+                        $details_query = [
+                            'p_agency_filterid' => defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 1,
+                            'p1' => $this->api_user,
+                            'p2' => $this->api_key,
+                            'P_RefId' => $ref,
+                            'p_output' => 'JSON',
+                        ];
+                        $details_url = 'https://webapi.resales-online.com/V6/PropertyDetails?' . http_build_query($details_query);
+                        $details_res = wp_remote_get($details_url, [ 'timeout' => (int) get_option('resales_api_timeout', 20), 'headers'=>['Accept'=>'application/json'] ]);
+                        if (!is_wp_error($details_res)) {
+                            $details_body = wp_remote_retrieve_body($details_res);
+                            $details_json = json_decode($details_body, true);
+                            // PropertyDetails puede devolver Property como array indexado o como objeto único
+                            if (!empty($details_json['Property'][0])) {
+                                $found = $details_json['Property'][0];
+                            } else {
+                                $found = isset($details_json['Property']) ? $details_json['Property'] : null;
+                            }
+                            // Guardar en transient si encontramos datos útiles
+                            if (!empty($found)) {
+                                $ttl = defined('HOUR_IN_SECONDS') ? 6 * HOUR_IN_SECONDS : 21600; // 6 horas
+                                set_transient($tkey, $found, $ttl);
+                            }
                         }
-                        if (!empty($found) && !empty($found['Pictures'])) {
-                            // Reemplazamos/añadimos Pictures en la propiedad original
-                            $props[$idx]['Pictures'] = $found['Pictures'];
-                            // También si existe Images.Image en detalles, mapear para compatibilidad
-                            if (empty($props[$idx]['Pictures']) && !empty($found['Images']['Image'])) {
-                                $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
-                            }
-                            // Log seguro sobre fallback ocurrido (sin exponer credenciales)
-                            if (function_exists('resales_safe_log')) {
-                                resales_safe_log('IMAGE FALLBACK', [ 'ref' => $ref ]);
-                            }
+                    }
+                    if (!empty($found) && !empty($found['Pictures'])) {
+                        // Reemplazamos/añadimos Pictures en la propiedad original
+                        $props[$idx]['Pictures'] = $found['Pictures'];
+                        // También si existe Images.Image en detalles, mapear para compatibilidad
+                        if (empty($props[$idx]['Pictures']) && !empty($found['Images']['Image'])) {
+                            $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
+                        }
+                        // Log seguro sobre fallback ocurrido (sin exponer credenciales)
+                        if (function_exists('resales_safe_log')) {
+                            resales_safe_log('IMAGE FALLBACK', [ 'ref' => $ref ]);
                         }
                     }
                 }
