@@ -558,22 +558,9 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       foreach ($props as $p) {
         $ref  = $p['Reference'] ?? '';
         $imgs = $this->property_images_with_fallback($opts, $ref, $p);
-
-        // 🔍 Saltar propiedades sin imágenes (se registra la exclusión)
-        if (empty($imgs)) {
-          if (function_exists('resales_safe_log')) {
-            resales_safe_log('SKIPPED PROPERTY - NO IMAGES', ['ref' => $ref]);
-          }
-          if ($debug) {
-            resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' SKIPPED - no images');
-          }
-          continue;
-        }
-
         if ($debug) {
           resales_log('DEBUG', '[Resales API] Ref ' . $ref . ' imágenes finales para render', $imgs);
         }
-
         // strict_min: si es "1", no activamos slider con <2 imágenes (lo resuelve render_card)
         $html = $this->render_card($p, $imgs, $debug);
         echo $html;
