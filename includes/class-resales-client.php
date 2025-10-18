@@ -319,18 +319,21 @@ class Resales_Client {
             }
             foreach ($props as $idx => $property) {
                 $need_details = false;
+                // 1) caso obvio: no viene Pictures
                 if (empty($property['Pictures'])) {
                     $need_details = true;
-                } elseif (isset($property['Pictures']['Picture']) && empty($property['Pictures']['Picture'])) {
+                }
+                // 2) caso: Pictures existe pero es un array vacío o su nodo Picture está vacío
+                elseif (isset($property['Pictures']['Picture']) && empty($property['Pictures']['Picture'])) {
                     $need_details = true;
                 }
+
+                // Si necesitamos completar y tenemos referencia, pedimos PropertyDetails (con caching)
                 if ($need_details && !empty($property['Reference'])) {
                     $ref = $property['Reference'];
-                    // Intentar cache transient antes de llamar a PropertyDetails
                     $tkey = 'resales_details_' . sanitize_key($ref);
                     $found = get_transient($tkey);
                     if (empty($found)) {
-                        // Preparar URL de PropertyDetails con credenciales actuales
                         $details_query = [
                             'p_agency_filterid' => defined('RESALES_API_DEFAULT_FILTER_ID') ? RESALES_API_DEFAULT_FILTER_ID : 1,
                             'p1' => $this->api_user,
@@ -349,36 +352,40 @@ class Resales_Client {
                             } else {
                                 $found = isset($details_json['Property']) ? $details_json['Property'] : null;
                             }
-                            // Guardar en transient si encontramos datos útiles
                             if (!empty($found)) {
                                 $ttl = defined('HOUR_IN_SECONDS') ? 6 * HOUR_IN_SECONDS : 21600; // 6 horas
                                 set_transient($tkey, $found, $ttl);
                             }
                         }
                     }
+
                     if (!empty($found)) {
-                        // 2. Buscar nodos válidos
+                        // 1) Si PropertyDetails trae Pictures con Picture[]
                         if (!empty($found['Pictures']['Picture'])) {
                             $props[$idx]['Pictures'] = $found['Pictures'];
-                        } elseif (!empty($found['Pictures'])) {
+                        }
+                        // 2) Si trae Pictures pero no tiene Picture[] (caso raro)
+                        elseif (!empty($found['Pictures'])) {
                             $props[$idx]['Pictures'] = $found['Pictures'];
-                        } elseif (!empty($found['Images']['Image'])) {
+                        }
+                        // 3) Forma alternativa: Images -> Image
+                        elseif (!empty($found['Images']['Image'])) {
                             $props[$idx]['Pictures'] = [ 'Picture' => $found['Images']['Image'] ];
-                        } elseif (!empty($found['MainImage'])) {
-                            // NUEVO: cuando solo existe una imagen principal
+                        }
+                        // 4) Último recurso: MainImage (solo una URL), construimos Pictures minimal
+                        elseif (!empty($found['MainImage'])) {
                             $props[$idx]['Pictures'] = [
-                                'Picture' => [
-                                    [
-                                        'Id' => 1,
-                                        'PictureURL' => $found['MainImage'],
-                                        'PictureCaption' => ''
-                                    ]
-                                ]
+                                'Picture' => [[
+                                    'Id' => 1,
+                                    'PictureURL' => $found['MainImage'],
+                                    'PictureCaption' => ''
+                                ]]
                             ];
                         }
-                        // Log seguro sobre fallback ocurrido (sin exponer credenciales) si asignamos algo
+
+                        // Si asignamos alguna imagen, logueamos el fallback
                         if (!empty($props[$idx]['Pictures']) && function_exists('resales_safe_log')) {
-                            resales_safe_log('IMAGE FALLBACK', [ 'ref' => $ref ]);
+                            resales_safe_log('IMAGE FALLBACK', ['ref' => $ref]);
                         }
                     }
                 }
