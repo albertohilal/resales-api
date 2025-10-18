@@ -31,3 +31,5 @@ build/
 # Others
 *.bak
 *.tmp
+# Ignore large image assets in auxiliar
+auxiliar/*.png
