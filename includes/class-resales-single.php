@@ -195,9 +195,9 @@ class Resales_Single {
 
 	/** Shortcode [resales_property ref="Rxxxxx"] o [resales_property id="12345"] */
 	public function render_shortcode( $atts = [] ) {
-		// Encolar CSS de detalle dinámicamente si no está ya encolado
-		if ( ! wp_style_is('lusso-resales-detail', 'enqueued') ) {
-			wp_enqueue_style('lusso-resales-detail', plugins_url('../assets/css/lusso-resales-detail.css', __FILE__), [], '1.0');
+		// Encolar solo el CSS exclusivo de detalle
+		if ( ! wp_style_is('resales-single', 'enqueued') ) {
+			wp_enqueue_style('resales-single', plugins_url('../assets/css/resales-single.css', __FILE__), [], '1.0');
 		}
 		
 		$atts = shortcode_atts([
@@ -264,7 +264,7 @@ class Resales_Single {
 	<link href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" rel="stylesheet">
 	
 	<!-- Galería a pantalla completa ANTES del contenedor principal -->
-	<div class="property-gallery">
+	<div class="property-gallery detail">
 		<?php
 			require_once __DIR__ . '/gallery-helper.php';
 			render_gallery($imgs, 'detail');

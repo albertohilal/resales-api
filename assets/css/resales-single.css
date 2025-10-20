@@ -1,0 +1,165 @@
+/* resales-single.css - Estilos exclusivos para el detalle de propiedad (class-resales-single.php)
+   Conserva fuentes y colores de Lussogroup */
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+  color: #404404;
+}
+
+.property-gallery.detail {
+  width: 100vw;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.property-gallery.detail .swiper {
+  width: 100vw;
+  height: 70vh;
+  min-height: 600px;
+  max-height: 900px;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+.property-gallery.detail .swiper-slide {
+  width: 100%;
+  height: 70vh;
+  min-height: 600px;
+  max-height: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+}
+
+.property-gallery.detail .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+  transition: transform 0.3s ease;
+}
+
+.property-gallery.detail .swiper-slide:hover img {
+  transform: scale(1.02);
+}
+
+.lusso-detail-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+  max-width: 1900px;
+  margin: 60px auto;
+  padding: 0 20px;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .lusso-detail-container {
+    grid-template-columns: 1fr;
+    padding: 0 10px;
+  }
+  .property-gallery.detail .swiper {
+    height: 50vh;
+    min-height: 300px;
+  }
+  .property-gallery.detail .swiper-slide {
+    height: 50vh;
+    min-height: 300px;
+  }
+}
+
+.lusso-detail-left {
+  background: #fff;
+}
+
+.lusso-detail-right {
+  background: #EAEAEA;
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.property-info-table {
+  background: #f8f8f8;
+  border-radius: 6px;
+  padding: 1.5em 2em;
+  margin-bottom: 1.5em;
+}
+
+.property-info-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.1em;
+}
+.property-info-table td {
+  background: #f8f8f8;
+  padding: 8px 0;
+}
+.property-info-table td:first-child {
+  font-weight: 600;
+  color: #222;
+}
+
+.property-detail-contact {
+  background: #f9f9f9;
+  padding: 2em;
+  border-radius: 8px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+
+.property-tabs {
+  display: flex;
+  border-bottom: 2px solid #EAEAEA;
+  margin-bottom: 1.5em;
+  font-family: 'Inter', sans-serif;
+}
+.property-tab {
+  padding: 1em 2em;
+  cursor: pointer;
+  font-weight: 600;
+  color: #404404;
+  background: none;
+  border: none;
+  outline: none;
+  transition: all 0.3s ease;
+}
+.property-tab.active {
+  color: #B8860B;
+  border-bottom: 2px solid #B8860B;
+}
+.property-tab:hover:not(.active) {
+  color: #D4AF37;
+}
+.property-tab-content {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+  padding: 2em;
+  min-height: 180px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Colores Lussogroup */
+:root {
+  --c-gold: #D4AF37;
+  --c-gold-dark: #B8860B;
+  --c-black: #0D0D0D;
+  --c-white: #FFFFFF;
+  --c-gray-soft: #EAEAEA;
+  --c-gray-intense: #404404;
+}
