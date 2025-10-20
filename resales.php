@@ -188,98 +188,11 @@ function lusso_search_properties_ajax() {
  * =========================== */
 add_action('wp_enqueue_scripts', function() {
 
-    // Estilos globales
-    wp_enqueue_style('lusso-resales', plugins_url('assets/css/lusso-resales.css', __FILE__), [], '2.1');
-    wp_enqueue_style('lusso-resales-filters', plugins_url('assets/css/lusso-resales-filters.css', __FILE__), [], '2.4');
+    // Estilos globales válidos
     wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11.0.0');
     wp_enqueue_style('lusso-swiper-gallery', plugins_url('assets/css/swiper-gallery.css', __FILE__), ['swiper-css'], '2.1');
-    
-    // CSS de detalle solo en páginas que lo necesiten
-    global $post;
-    $enqueue_detail_css = false;
-    
-    // Verificar si es template single-property.php
-    if (is_page_template('single-property.php')) {
-        $enqueue_detail_css = true;
-    }
-    
-    // Verificar si la página contiene el shortcode resales_single
-    if ($post && has_shortcode($post->post_content, 'resales_single')) {
-        $enqueue_detail_css = true;
-    }
-    
-    // Verificar si es una URL tipo /property/ID/slug/
-    if (preg_match('#/property/\d+/#', $_SERVER['REQUEST_URI'])) {
-        $enqueue_detail_css = true;
-    }
-    
-    if ($enqueue_detail_css) {
-        wp_enqueue_style( 
-            'lusso-resales-detail-style', 
-            plugin_dir_url( __FILE__ ) . 'assets/css/lusso-resales-detail.css',
-            array(),
-            '4.4-fix-sticky-header'
-        );
-        
-        // JavaScript para forzar galería edge-to-edge - cargar AL FINAL
-        wp_enqueue_script(
-            'lusso-gallery-breakout',
-            plugin_dir_url( __FILE__ ) . 'assets/js/lusso-gallery-breakout.js',
-            array('jquery'),
-            '2.0-solucionado',
-            true
-        );
-        
-        // Problema identificado: no era la galería sino el contenedor de contenido
-        // Aplicar breakout edge-to-edge también al contenedor de contenido
-        
-        // Asegurar que se cargue después de otros scripts comunes
-        add_action('wp_footer', function() {
-            echo '<script>
-                // Solución final - aplicar breakout al contenedor de contenido también
-                setTimeout(function() {
-                    const contentContainer = document.querySelector(".lusso-detail-container");
-                    if (contentContainer) {
-                        contentContainer.style.cssText = "width: 100vw !important; max-width: none !important; position: relative !important; left: 50% !important; right: 50% !important; margin-left: -50vw !important; margin-right: -50vw !important; padding: 0 20px !important; box-sizing: border-box !important;";
-                        console.log("Lusso Gallery: SOLUCIÓN - Breakout aplicado al contenedor de contenido");
-                    }
-                    
-                    // Eliminar fondos problemáticos de otros elementos
-                    const elementsToClean = [
-                        ...document.querySelectorAll(".site"),
-                        ...document.querySelectorAll(".site-content"),
-                        ...document.querySelectorAll(".content-area"),
-                        ...document.querySelectorAll("#primary"),
-                        ...document.querySelectorAll("#main"),
-                        ...document.querySelectorAll(".elementor-section"),
-                        ...document.querySelectorAll(".elementor-container")
-                    ];
-                    
-                    elementsToClean.forEach(el => {
-                        if (el) {
-                            const bgColor = getComputedStyle(el).backgroundColor;
-                            if (bgColor === "rgb(245, 245, 245)" || bgColor === "rgb(255, 255, 255)" || bgColor === "white") {
-                                el.style.backgroundColor = "transparent";
-                                console.log("DEBUG: Eliminado fondo de", el.tagName, el.className);
-                            }
-                        }
-                    });
-                    
-                    const gallery = document.querySelector(".property-gallery");
-                    if (gallery) {
-                        console.log("Lusso Gallery: Aplicación final - eliminando fondos grises");
-                        gallery.style.cssText = "width: 100vw !important; position: relative !important; left: 50% !important; margin-left: -50vw !important; margin-right: -50vw !important; max-width: none !important; transform: none !important; box-sizing: border-box !important; padding: 0 !important; background: transparent !important;";
-                        
-                        const swiper = gallery.querySelector(".swiper");
-                        if (swiper) {
-                            swiper.style.cssText = "width: 100vw !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: transparent !important;";
-                        }
-                    }
-                }, 3000);
-            </script>';
-        }, 9999);
-        
-    }
+    wp_enqueue_style('resales-single', plugins_url('assets/css/resales-single.css', __FILE__), [], '1.0');
+    wp_enqueue_style('resales-shortcodes', plugins_url('assets/css/resales-shortcodes.css', __FILE__), [], '1.0');
 
     // Scripts globales
     wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
