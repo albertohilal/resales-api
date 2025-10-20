@@ -174,6 +174,8 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
   wp_enqueue_style('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11.0.0');
   // CSS personalizado de la galería
   wp_enqueue_style('lusso-swiper-gallery', plugins_url('../assets/css/swiper-gallery.css', __FILE__), ['swiper'], '2.1');
+  // CSS exclusivo para el grid/listado
+  wp_enqueue_style('resales-shortcodes', plugins_url('../assets/css/resales-shortcodes.css', __FILE__), [], '1.0');
   // Swiper JS desde CDN
   wp_enqueue_script('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
   // JS de inicialización
