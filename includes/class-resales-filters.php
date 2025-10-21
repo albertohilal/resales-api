@@ -43,7 +43,7 @@ class Resales_Filters {
                                 <option value="Sotogrande" <?php selected($current_location, 'Sotogrande'); ?>>Sotogrande</option>
                                 <option value="Manilva" <?php selected($current_location, 'Manilva'); ?>>Manilva</option>
                                 <option value="Casares" <?php selected($current_location, 'Casares'); ?>>Casares</option>
-                                <option value="Estepona" <?php selected($current_location, 'Estepona'); ?>>Estepona &amp; New Golden Mile</option>
+                                <option value="Estepona & New Golden Mile" <?php selected($current_location, 'Estepona & New Golden Mile'); ?>>Estepona &amp; New Golden Mile</option>
                                 <option value="Benahavís" <?php selected($current_location, 'Benahavís'); ?>>Benahavís</option>
                                 <option value="Marbella" <?php selected($current_location, 'Marbella'); ?>>Marbella</option>
                                 <option value="Marbella Este" <?php selected($current_location, 'Marbella Este'); ?>>Marbella Este</option>
