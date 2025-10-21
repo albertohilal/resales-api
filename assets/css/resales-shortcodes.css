@@ -3,7 +3,7 @@
 
 :root {
   --color-gold: #D4AF37;          /* Dorado claro */
-  --color-gold-dark: #B8860B;     /* Dorado oscuro (igual que el footer) */
+  --color-gold-dark: #B8860B;     /* Dorado oscuro */
   --color-gray-intense: #404040;
   --color-white: #ffffff;
 }
@@ -33,7 +33,7 @@
   background: var(--color-white);
   border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); /* sombra sutil tipo Engel & Völkers */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   font-family: 'Inter', sans-serif;
@@ -47,7 +47,7 @@
 
 /* --- GALERÍA DE IMÁGENES --- */
 .lr-card__media {
-  aspect-ratio: 8/5; /* formato panorámico */
+  aspect-ratio: 8/5;
   background: #f9f9f9;
   position: relative;
 }
@@ -163,7 +163,7 @@
 
 /* --- BLOQUE DEL FORMULARIO DE FILTROS --- */
 .lusso-filters-wrap {
-  background-color: var(--color-gold-dark); /* igual que el footer */
+  background-color: var(--color-gold); /* ahora usa el dorado claro */
   padding: 18px 24px;
   margin-bottom: 48px;
   border-radius: 0;
@@ -177,18 +177,19 @@
   border-radius: 2px;
 }
 
+/* --- BOTÓN SEARCH --- */
 .lusso-filters-wrap .lusso-search-button {
-  background: var(--color-white);
-  color: var(--color-gold-dark);
+  background: var(--color-gold-dark);
+  color: var(--color-white);
   font-weight: 600;
-  border: 2px solid var(--color-white);
+  border: 2px solid var(--color-gold-dark);
   transition: all 0.2s ease;
 }
 
 .lusso-filters-wrap .lusso-search-button:hover {
-  background: var(--color-gray-intense);
-  color: var(--color-white);
-  border-color: var(--color-gray-intense);
+  background: var(--color-white);
+  color: var(--color-gold-dark);
+  border-color: var(--color-gold-dark);
 }
 
 /* --- Ajuste responsive --- */
