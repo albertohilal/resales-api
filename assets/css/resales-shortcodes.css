@@ -145,3 +145,34 @@
   color: inherit;
   text-decoration: none;
 }
+
+/* --- BLOQUE DEL FORMULARIO DE FILTROS --- */
+.lusso-filters-wrap {
+  background-color: #B8860B; /* dorado oscuro */
+  padding: 16px 24px;
+  margin-bottom: 40px; /* separa del grid de tarjetas */
+  border-radius: 0; /* mantener diseño plano */
+}
+
+.lusso-filters-wrap select,
+.lusso-filters-wrap button {
+  background: #fff;
+  color: #404040;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+}
+
+.lusso-filters-wrap .lusso-search-button {
+  background: #fff;
+  color: #B8860B;
+  font-weight: 600;
+  border: 2px solid #fff;
+  transition: all 0.2s ease;
+}
+
+.lusso-filters-wrap .lusso-search-button:hover {
+  background: #404040;
+  color: #fff;
+  border-color: #404040;
+}
+
