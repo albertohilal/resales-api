@@ -1,94 +1,32 @@
-
-/*! Lusso Filters Final – v1.1 */
-/* Enlaza Location con Subarea, mantiene selección desde URL y evita autosubmit innecesario. */
+/*! Lusso Filters – JSON version v2.2 */
+/* Carga dinámicamente las subáreas desde includes/data/locations-custom.json */
 (function ($) {
   'use strict';
 
-  var SUBAREAS_MAP = {
-    "Marbella": [
-      "Aloha","Altos de los Monteros","Artola","Atalaya","Bahía de Marbella",
-      "Cabopino","El Rosario","Elviria","Guadalmina Alta","Guadalmina Baja",
-      "La Campana","Las Chapas","Los Monteros","Nagüeles","Nueva Andalucía",
-      "Río Real","Sierra Blanca"
-    ],
-    "Benalmadena": [
-      "Arroyo de la Miel","Benalmadena","Benalmadena Costa","Benalmadena Pueblo",
-      "Carvajal","Higueron","Torremuelle","Torrequebrada"
-    ],
-    "Benahavís": [
-      "Benahavís","El Madroñal","La Heredia","La Quinta","Los Almendros",
-      "Los Arqueros","Monte Halcones","Zagaleta"
-    ],
-    "Mijas": [
-      "Calahonda","Campo Mijas","La Cala de Mijas","La Cala Hills",
-      "Mijas Costa","Mijas Golf","Riviera del Sol","Sierrezuela"
-    ],
-    "Fuengirola": [
-      "Centro","Los Boliches","Los Pacos","Carvajal"
-    ],
-    "Estepona": [
-      "Bel Air","Cancelada","Diana Park","El Padrón","El Paraíso",
-      "Estepona","New Golden Mile","Selwo","Costalita","Atalaya"
-    ],
-    "Manilva": ["La Duquesa","Manilva","San Luis de Sabinillas","Chullera"],
-    "Sotogrande": [
-      "Sotogrande","Sotogrande Alto","Sotogrande Costa","Sotogrande Marina",
-      "Sotogrande Puerto","Sotogrande Playa"
-    ],
-    "Torremolinos": ["Bajondillo","La Carihuela","Playamar","El Pinillo","Montemar"],
-    "Málaga": ["Málaga Centro","Málaga Este","Puerto de la Torre"]
-  };
-
+  // === Funciones utilitarias ===
   function qs(name) {
-    var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.search);
+    const m = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
   }
 
   function normalizeArray(arr) {
-    var seen = Object.create(null), out = [];
-    (arr || []).forEach(function (x) {
+    const seen = Object.create(null), out = [];
+    (arr || []).forEach(x => {
       if (!x) return;
       if (!seen[x]) { seen[x] = 1; out.push(x); }
     });
     return out;
   }
 
-  var dom = {
+  // === DOM cache ===
+  const dom = {
     $form: $('.lusso-filters'),
     $location: null,
     $subarea: null
   };
 
+  // === Inicialización ===
   $(function () {
-    // Corregir comportamiento al hacer "Search" para asegurar que se mantenga Subarea
-    dom.$form.on('submit', function (e) {
-      e.preventDefault();
-      // Obtener valores seleccionados
-      var locationVal = dom.$location.val();
-      var subareaVal = dom.$subarea.val();
-
-      // Priorizar subárea como location si está seleccionada
-      var finalLocation = subareaVal ? subareaVal : locationVal;
-
-      // Construir nueva URL sin zona
-      var params = [];
-      if (finalLocation) {
-        params.push('location=' + encodeURIComponent(finalLocation));
-      }
-      // Agregar otros filtros si es necesario (ejemplo: bedrooms, price, etc.)
-      dom.$form.find('select, input').each(function () {
-        var name = $(this).attr('name');
-        var value = $(this).val();
-        if (name && value && name !== 'location' && name !== 'zona' && name !== 'subarea' && name !== 'area') {
-          params.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
-        }
-      });
-
-      // Redirigir a la nueva URL
-      var baseUrl = window.location.pathname;
-      var newUrl = baseUrl + (params.length ? '?' + params.join('&') : '');
-      window.location.href = newUrl;
-    });
     if (!dom.$form.length) {
       dom.$form = $('form').has('select[name="location"]');
     }
@@ -96,57 +34,116 @@
     dom.$location = dom.$form.find('select[name="location"]');
     dom.$subarea  = dom.$form.find('select[name="area"], select[name="subarea"], select[name="zona"]');
 
-    if (dom.$location.find('option[value=""]').length === 0) {
+    // placeholders
+    if (dom.$location.find('option[value=""]').length === 0)
       dom.$location.prepend('<option value="">Location</option>');
-    }
-    if (dom.$subarea.find('option[value=""]').length === 0) {
+    if (dom.$subarea.find('option[value=""]').length === 0)
       dom.$subarea.prepend('<option value="">Subarea</option>');
-    }
 
-    function updateSubareaOptions(locationVal) {
-      var list = normalizeArray(SUBAREAS_MAP[locationVal] || []);
-      dom.$subarea.empty().append('<option value="">Subarea</option>');
-      if (list.length) {
-        list.forEach(function (label) {
-          dom.$subarea.append('<option value="' + label + '">' + label + '</option>');
+    // === Cargar datos desde el JSON dinámico ===
+    const jsonUrl = (typeof lussoFiltersData !== 'undefined' && lussoFiltersData.jsonUrl)
+      ? lussoFiltersData.jsonUrl
+      : '/wp-content/plugins/resales-api/includes/data/locations-custom.json';
+
+    fetch(jsonUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('[Lusso Filters] JSON cargado correctamente:', jsonUrl);
+
+        // --- Construir subáreas según el área seleccionada ---
+        function updateSubareaOptions(areaName) {
+          const areaData = data[areaName];
+          dom.$subarea.empty().append('<option value="">Subarea</option>');
+
+          if (areaData && areaData.subareas && areaData.subareas.length) {
+            const list = normalizeArray(areaData.subareas);
+            list.forEach(label => {
+              dom.$subarea.append('<option value="' + label + '">' + label + '</option>');
+            });
+            dom.$subarea.prop('disabled', false);
+
+            // Si existe subárea por defecto, seleccionarla automáticamente
+            if (areaData.defaultSubarea) {
+              dom.$subarea.val(areaData.defaultSubarea);
+              console.log('[Lusso Filters] Subárea por defecto seleccionada:', areaData.defaultSubarea);
+            }
+          } else {
+            dom.$subarea.prop('disabled', true);
+          }
+        }
+
+        // --- Restaurar valores desde la URL ---
+        const initialLoc = qs('location') || dom.$location.val() || '';
+        if (initialLoc) {
+          dom.$location.val(initialLoc);
+          updateSubareaOptions(initialLoc);
+
+          const subQS = qs('zona') || qs('area') || qs('subarea') || '';
+          if (subQS) {
+            setTimeout(() => {
+              let matched = false;
+              dom.$subarea.find('option').each(function () {
+                if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
+                  dom.$subarea.val($(this).val());
+                  console.log('[DEBUG] Subárea retenida en carga inicial:', $(this).val());
+                  matched = true;
+                  return false;
+                }
+              });
+              if (!matched) console.warn('[DEBUG] Subárea no encontrada al cargar:', subQS);
+            }, 150);
+          }
+        }
+
+        // --- Al cambiar Location, actualizar subáreas ---
+        dom.$location.on('change', function (e) {
+          e.preventDefault();
+          const locQS = dom.$location.val();
+          updateSubareaOptions(locQS);
         });
-        dom.$subarea.prop('disabled', false);
-      } else {
-        dom.$subarea.prop('disabled', true);
-      }
-    }
 
+        // --- Envío del formulario (solo subárea a la API) ---
+        dom.$form.on('submit', function (e) {
+          e.preventDefault();
 
-    // --- Ejecutar la actualización de subareas al cargar la página ---
-    var initialLoc = qs('location') || dom.$location.val() || '';
-    if (initialLoc) {
-      dom.$location.val(initialLoc);
-      updateSubareaOptions(initialLoc);
+          const subareaVal = dom.$subarea.val();
 
-      var subQS = qs('zona') || qs('area') || qs('subarea') || '';
-      if (subQS) {
-        setTimeout(function () {
-          var matched = false;
-          dom.$subarea.find('option').each(function () {
-            if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
-              dom.$subarea.val($(this).val());
-              console.log('[DEBUG] Subarea retenida en carga inicial:', $(this).val());
-              matched = true;
-              return false;
+          // 🔸 Solo enviar si hay subárea seleccionada
+          if (!subareaVal) {
+            alert('Please select a Subarea before searching.');
+            return;
+          }
+
+          // 🔸 Siempre usar la subárea como location
+          const params = ['location=' + encodeURIComponent(subareaVal)];
+
+          // agregar otros filtros (bedrooms, type, etc.)
+          dom.$form.find('select, input').each(function () {
+            const name = $(this).attr('name');
+            const value = $(this).val();
+            if (
+              name &&
+              value &&
+              name !== 'location' &&
+              name !== 'zona' &&
+              name !== 'subarea' &&
+              name !== 'area'
+            ) {
+              params.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
             }
           });
-          if (!matched) {
-            console.warn('[DEBUG] Subarea NO encontrada al cargar:', subQS);
-          }
-        }, 150);
-      }
-    }
 
-    // --- También mantener el comportamiento al cambiar Location ---
-    dom.$location.on('change', function (e) {
-      e.preventDefault();
-      var locQS = dom.$location.val();
-      updateSubareaOptions(locQS);
-    });
+          const baseUrl = window.location.pathname;
+          const newUrl = baseUrl + (params.length ? '?' + params.join('&') : '');
+          console.log('[Lusso Filters] Redirigiendo a:', newUrl);
+          window.location.href = newUrl;
+        });
+      })
+      .catch(err => {
+        console.error('[Lusso Filters] Error al cargar JSON:', err);
+      });
   });
 })(jQuery);

@@ -1,0 +1,194 @@
+{
+  "Sotogrande": {
+    "defaultSubarea": "Sotogrande",
+    "subareas": [
+      "Sotogrande",
+      "Sotogrande Alto",
+      "Sotogrande Costa",
+      "Sotogrande Marina",
+      "Sotogrande Puerto",
+      "Sotogrande Playa",
+      "San Roque",
+      "Torreguadiaro",
+      "Guadiaro",
+      "Pueblo Nuevo de Guadiaro",
+      "San Enrique",
+      "San Martín de Tesorillo",
+      "San Diego",
+      "Los Barrios",
+      "La Alcaidesa",
+      "San Roque Club"
+    ]
+  },
+  "Manilva": {
+    "defaultSubarea": "Manilva",
+    "subareas": [
+      "Manilva",
+      "Punta Chullera",
+      "San Luis de Sabinillas",
+      "La Duquesa",
+      "San Diego"
+    ]
+  },
+  "Casares": {
+    "defaultSubarea": "Casares",
+    "subareas": [
+      "Casares",
+      "Casares Pueblo",
+      "Casares Playa",
+      "Doña Julia"
+    ]
+  },
+  "Estepona & New Golden Mile": {
+    "defaultSubarea": "Estepona",
+    "subareas": [
+      "Estepona",
+      "Selwo",
+      "El Padron",
+      "Cancelada",
+      "New Golden Mile",
+      "Benamara",
+      "El Presidente",
+      "Bel Air",
+      "Costalita",
+      "Los Flamingos",
+      "El Paraiso",
+      "Benavista",
+      "Diana Park",
+      "Atalaya",
+      "Hacienda del Sol",
+      "Valle Romano"
+    ]
+  },
+  "Benahavís": {
+    "defaultSubarea": "Benahavís",
+    "subareas": [
+      "Benahavís",
+      "La Zagaleta",
+      "El Madroñal",
+      "Monte Halcones",
+      "Los Arqueros",
+      "Los Almendros",
+      "La Heredia",
+      "La Quinta"
+    ]
+  },
+  "Marbella": {
+    "defaultSubarea": "Marbella",
+    "subareas": [
+      "Marbella",
+      "Nueva Andalucía",
+      "Aloha",
+      "Las Brisas",
+      "La Campana",
+      "Puerto Banús",
+      "San Pedro de Alcántara",
+      "Cortijo Blanco",
+      "Guadalmina Baja",
+      "Guadalmina Alta"
+    ]
+  },
+  "Marbella Este": {
+    "defaultSubarea": "Los Monteros",
+    "subareas": [
+      "Torre Real",
+      "Río Real",
+      "Bahía de Marbella",
+      "Los Monteros",
+      "Altos de los Monteros",
+      "Santa Clara",
+      "Las Chapas",
+      "Hacienda Las Chapas",
+      "El Rosario",
+      "Costabella",
+      "La Mairena",
+      "Reserva de Marbella",
+      "Elviria",
+      "Marbesa",
+      "Carib Playa",
+      "Artola",
+      "Cabopino",
+      "Puerto de Cabopino"
+    ]
+  },
+  "Golden Mile / Milla de Oro": {
+    "defaultSubarea": "Sierra Blanca",
+    "subareas": [
+      "Nagüeles",
+      "Sierra Blanca",
+      "The Golden Mile"
+    ]
+  },
+  "Mijas": {
+    "defaultSubarea": "Mijas",
+    "subareas": [
+      "Mijas",
+      "Mijas Costa",
+      "Calahonda",
+      "Riviera del Sol",
+      "Miraflores",
+      "Torrenueva",
+      "El Chaparral",
+      "El Faro",
+      "La Cala de Mijas",
+      "La Cala Hills",
+      "La Cala Golf",
+      "Calanova Golf",
+      "Calypso",
+      "Sierrezuela",
+      "El Coto",
+      "Campo Mijas",
+      "Cerros del Aguila",
+      "Las Lagunas",
+      "Valtocado"
+    ]
+  },
+  "Fuengirola": {
+    "defaultSubarea": "Fuengirola",
+    "subareas": [
+      "Fuengirola",
+      "Los Boliches",
+      "Los Pacos",
+      "Torreblanca",
+      "Carvajal"
+    ]
+  },
+  "Benalmadena": {
+    "defaultSubarea": "Benalmadena",
+    "subareas": [
+      "Benalmadena",
+      "Benalmadena Pueblo",
+      "Arroyo de la Miel",
+      "Benalmadena Costa",
+      "Torremuelle",
+      "Torrequebrada",
+      "La Capellania",
+      "Torremar"
+    ]
+  },
+  "Torremolinos": {
+    "defaultSubarea": "Torremolinos",
+    "subareas": [
+      "Torremolinos",
+      "Torremolinos Centro",
+      "Bajondillo",
+      "La Carihuela",
+      "Montemar",
+      "Playamar",
+      "Los Alamos",
+      "El Pinillo",
+      "La Colina",
+      "El Calvario"
+    ]
+  },
+  "Málaga Costa": {
+    "defaultSubarea": "Málaga",
+    "subareas": [
+      "Málaga",
+      "Málaga Centro",
+      "Málaga Este",
+      "Higueron",
+      "Puerto de la Torre"
+    ]
+  }
+}
