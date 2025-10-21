@@ -1,9 +1,9 @@
-/* resales-shortcodes.css — Estilo limpio Lusso Group */
+/* resales-shortcodes.css — Estilo coherente Lusso Group */
 @import url('https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap');
 
 :root {
-  --color-gold: #D4AF37;
-  --color-gold-dark: #B8860B;
+  --color-gold: #D4AF37;          /* Dorado claro */
+  --color-gold-dark: #B8860B;     /* Dorado oscuro (igual que el footer) */
   --color-gray-intense: #404040;
   --color-white: #ffffff;
 }
@@ -21,6 +21,7 @@
   max-width: 1600px;
   margin: 0 auto;
 }
+
 @media (max-width: 900px) {
   .lusso-grid {
     gap: 20px;
@@ -30,20 +31,27 @@
 /* --- TARJETAS DE PROPIEDADES --- */
 .lr-card {
   background: var(--color-white);
-  border-radius: 0; /* sin esquinas redondeadas */
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: none; /* sin sombra exterior */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); /* sombra sutil tipo Engel & Völkers */
   display: flex;
   flex-direction: column;
   font-family: 'Inter', sans-serif;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.lr-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 /* --- GALERÍA DE IMÁGENES --- */
 .lr-card__media {
-  aspect-ratio: 4/3;
+  aspect-ratio: 8/5; /* formato panorámico */
   background: #f9f9f9;
   position: relative;
 }
+
 .lr-card__media-img,
 .swiper-slide img {
   width: 100%;
@@ -51,6 +59,7 @@
   object-fit: cover;
   display: block;
 }
+
 .lr-card__media-noimg {
   display: flex;
   align-items: center;
@@ -69,6 +78,7 @@
   box-shadow: none;
   transition: none;
 }
+
 .lr-card__bar:hover {
   transform: none;
   box-shadow: none;
@@ -115,12 +125,14 @@
   display: flex;
   justify-content: center;
 }
+
 .lusso-page-list {
   display: flex;
   gap: 0.5em;
   list-style: none;
   padding: 0;
 }
+
 .lusso-page-item {
   background: var(--color-white);
   border: 1px solid #ddd;
@@ -131,16 +143,19 @@
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .lusso-page-item.active {
-  background: var(--color-gold);
+  background: var(--color-gold-dark);
   color: var(--color-white);
 }
+
 .lusso-page-item.ellipsis {
   background: none;
   box-shadow: none;
   color: #aaa;
   cursor: default;
 }
+
 .lusso-page-item a {
   color: inherit;
   text-decoration: none;
@@ -148,31 +163,37 @@
 
 /* --- BLOQUE DEL FORMULARIO DE FILTROS --- */
 .lusso-filters-wrap {
-  background-color: #B8860B; /* dorado oscuro */
-  padding: 16px 24px;
-  margin-bottom: 40px; /* separa del grid de tarjetas */
-  border-radius: 0; /* mantener diseño plano */
+  background-color: var(--color-gold-dark); /* igual que el footer */
+  padding: 18px 24px;
+  margin-bottom: 48px;
+  border-radius: 0;
 }
 
 .lusso-filters-wrap select,
 .lusso-filters-wrap button {
-  background: #fff;
-  color: #404040;
+  background: var(--color-white);
+  color: var(--color-gray-intense);
   border: 1px solid #ddd;
   border-radius: 2px;
 }
 
 .lusso-filters-wrap .lusso-search-button {
-  background: #fff;
-  color: #B8860B;
+  background: var(--color-white);
+  color: var(--color-gold-dark);
   font-weight: 600;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-white);
   transition: all 0.2s ease;
 }
 
 .lusso-filters-wrap .lusso-search-button:hover {
-  background: #404040;
-  color: #fff;
-  border-color: #404040;
+  background: var(--color-gray-intense);
+  color: var(--color-white);
+  border-color: var(--color-gray-intense);
 }
 
+/* --- Ajuste responsive --- */
+@media (max-width: 768px) {
+  .lusso-filters-wrap {
+    padding: 12px 16px;
+  }
+}
