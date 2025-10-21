@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Resales API
  * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
- * Version: 3.3.0
+ * Version: 3.3.1
  * Author: Dev Team
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -43,53 +43,38 @@ if (!function_exists('resales_log')) {
 
 // Si WP_DEBUG está activado, asegurar que exista wp-content/debug.log y dirigir error_log ahí
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    // Posibles ubicaciones de wp-content
     $candidates = [];
     if (defined('WP_CONTENT_DIR')) $candidates[] = rtrim(WP_CONTENT_DIR, '/\\');
-    // Common layout: plugin dir's parent/wp-content
     $candidates[] = dirname(__FILE__) . '/../../wp-content';
-    // Fallback: repo root (posible si se ejecuta desde plugin workspace)
     $candidates[] = dirname(__FILE__) . '/..';
 
     $debug_file = null;
     foreach ($candidates as $cand) {
         $cand_file = rtrim($cand, '/\\') . '/debug.log';
-        // Si el directorio existe y es escribible, usarlo
         if (is_dir(dirname($cand_file)) && is_writable(dirname($cand_file))) {
             $debug_file = $cand_file;
             break;
         }
     }
 
-    // Si no encontramos wp-content escribible, usar plugin dir como fallback
-    if ($debug_file === null) {
-        $debug_file = dirname(__FILE__) . '/debug.log';
-    }
-
+    if ($debug_file === null) $debug_file = dirname(__FILE__) . '/debug.log';
     if (!file_exists($debug_file)) {
         @file_put_contents($debug_file, "[resales-api] debug.log created at " . date('c') . "\n", LOCK_EX);
         @chmod($debug_file, 0666);
     }
-
-    // Intentar setear error_log para apuntar al debug.log
     if (is_writable(dirname($debug_file)) || @is_writable($debug_file)) {
         @ini_set('error_log', $debug_file);
         error_log('[resales-api] WP_DEBUG active: directing error_log to ' . $debug_file);
     } else {
-        // No podemos escribir en ninguna ubicación; logueamos a la salida de PHP
         error_log('[resales-api] WP_DEBUG active but cannot create debug.log in any candidate path.');
     }
 }
 
-/**
- * Ensure debug.log exists in a writable location and configure PHP error_log to point to it.
- * This runs at plugin bootstrap to help debugging when WP_DEBUG isn't set or when activation
- * hooks are not run (useful in development environments where plugin files are included directly).
- */
+/* ===========================
+ *  Forzar creación de debug.log
+ * =========================== */
 function resales_ensure_debug_log($force = false) {
-    // If a specific env var disables auto creation, respect it
     if (defined('DISABLE_RESALES_DEBUG_CREATE') && DISABLE_RESALES_DEBUG_CREATE && !$force) return false;
-
     $candidates = [];
     if (defined('WP_CONTENT_DIR')) $candidates[] = rtrim(WP_CONTENT_DIR, '/\\');
     $candidates[] = dirname(__FILE__) . '/../../wp-content';
@@ -103,27 +88,19 @@ function resales_ensure_debug_log($force = false) {
             break;
         }
     }
-
-    if ($debug_file === null) {
-        $debug_file = dirname(__FILE__) . '/debug.log';
-    }
-
+    if ($debug_file === null) $debug_file = dirname(__FILE__) . '/debug.log';
     if (!file_exists($debug_file)) {
         @file_put_contents($debug_file, "[resales-api] debug.log created at " . date('c') . "\n", LOCK_EX);
         @chmod($debug_file, 0666);
     }
-
     if (is_writable(dirname($debug_file)) || @is_writable($debug_file)) {
         @ini_set('error_log', $debug_file);
         error_log('[resales-api] debug log created/ensured at: ' . $debug_file);
         return true;
     }
-
     error_log('[resales-api] could not create debug.log in any candidate path');
     return false;
 }
-
-// Intentar asegurar debug.log ahora en bootstrap (no forzamos en producción si se desactiva)
 resales_ensure_debug_log();
 
 /* ===========================
@@ -165,7 +142,6 @@ function lusso_search_properties_ajax() {
         $params['P_Location'] = sanitize_text_field($_REQUEST['location']);
     }
 
-    $min_beds = null;
     if (!empty($_REQUEST['bedrooms']) && is_numeric($_REQUEST['bedrooms'])) {
         $min_beds = intval($_REQUEST['bedrooms']);
         $params['P_Beds'] = $min_beds . 'x';
@@ -188,30 +164,70 @@ function lusso_search_properties_ajax() {
  * =========================== */
 add_action('wp_enqueue_scripts', function() {
 
-    // Estilos globales válidos
-    wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11.0.0');
-    wp_enqueue_style('lusso-swiper-gallery', plugins_url('assets/css/swiper-gallery.css', __FILE__), ['swiper-css'], '2.1');
-    wp_enqueue_style('resales-single', plugins_url('assets/css/resales-single.css', __FILE__), [], '1.0');
-    wp_enqueue_style('resales-shortcodes', plugins_url('assets/css/resales-shortcodes.css', __FILE__), [], '1.0');
+    // === CSS ===
+    wp_enqueue_style(
+        'swiper-css',
+        'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+        [],
+        '11.0.0'
+    );
 
-    // Scripts globales
-    wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11.0.0', true);
-    wp_enqueue_script('lusso-swiper-init', plugins_url('assets/js/swiper-init.js', __FILE__), ['swiper-js'], '1.0', true);
+    wp_enqueue_style(
+        'lusso-swiper-gallery',
+        plugins_url('assets/css/swiper-gallery.css', __FILE__),
+        ['swiper-css'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/css/swiper-gallery.css')
+    );
 
-    // Eliminar legacy filters si existe
+    wp_enqueue_style(
+        'resales-shortcodes',
+        plugins_url('assets/css/resales-shortcodes.css', __FILE__),
+        [],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/css/resales-shortcodes.css')
+    );
+
+    wp_enqueue_style(
+        'resales-single',
+        plugins_url('assets/css/resales-single.css', __FILE__),
+        [],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/css/resales-single.css')
+    );
+
+    // === JS ===
+    wp_enqueue_script(
+        'swiper-js',
+        'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+        [],
+        '11.0.0',
+        true
+    );
+
+    wp_enqueue_script(
+        'lusso-swiper-init',
+        plugins_url('assets/js/swiper-init.js', __FILE__),
+        ['swiper-js'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/js/swiper-init.js'),
+        true
+    );
+
+    // Eliminar filtros antiguos
     wp_dequeue_script('lusso-newdevs-filters');
     wp_deregister_script('lusso-newdevs-filters');
 
-    // Cargar solo el script definitivo en /properties/
-    if (is_page('properties')) {
-        wp_enqueue_script(
-            'lusso-filters',
-            plugins_url('assets/js/filters.js', __FILE__),
-            ['jquery'],
-            '1.2',
-            true
-        );
-    }
+    // Cargar filters.js siempre
+    wp_enqueue_script(
+        'lusso-filters',
+        plugins_url('assets/js/filters.js', __FILE__),
+        ['jquery'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/js/filters.js'),
+        true
+    );
+
+    // Pasar URL del JSON dinámico
+    wp_localize_script('lusso-filters', 'lussoFiltersData', [
+        'jsonUrl' => plugins_url('includes/data/locations-custom.json', __FILE__),
+    ]);
+
 }, 20);
 
 /* ===========================
@@ -255,7 +271,7 @@ add_action('plugins_loaded', function () {
     if (class_exists('Lusso_Resales_Shortcodes')) new Lusso_Resales_Shortcodes();
     if (class_exists('Resales_Shortcodes')) new Resales_Shortcodes();
     if (class_exists('Resales_Single'))     Resales_Single::instance();
-    if (class_exists('Resales_Filters_Shortcode')) new Resales_Filters_Shortcode();
+    if (class_exists('Resales_Filters'))    new Resales_Filters();
     if (is_admin() && class_exists('Resales_Admin')) Resales_Admin::instance();
 
     require_once plugin_dir_path(__FILE__).'includes/lusso-ping-endpoint.php';
