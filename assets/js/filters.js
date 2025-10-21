@@ -1,9 +1,9 @@
-/*! Lusso Filters – JSON version v2.2 */
+/*! Lusso Filters – JSON version v2.3 */
 /* Carga dinámicamente las subáreas desde includes/data/locations-custom.json */
 (function ($) {
   'use strict';
 
-  // === Funciones utilitarias ===
+  // === Utilidades ===
   function qs(name) {
     const m = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
@@ -18,6 +18,14 @@
     return out;
   }
 
+  // normaliza texto: minúsculas + sin acentos + trim
+  function norm(s) {
+    return String(s || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
   // === DOM cache ===
   const dom = {
     $form: $('.lusso-filters'),
@@ -25,7 +33,6 @@
     $subarea: null
   };
 
-  // === Inicialización ===
   $(function () {
     if (!dom.$form.length) {
       dom.$form = $('form').has('select[name="location"]');
@@ -40,7 +47,7 @@
     if (dom.$subarea.find('option[value=""]').length === 0)
       dom.$subarea.prepend('<option value="">Subarea</option>');
 
-    // === Cargar datos desde el JSON dinámico ===
+    // URL del JSON (con fallback)
     const jsonUrl = (typeof lussoFiltersData !== 'undefined' && lussoFiltersData.jsonUrl)
       ? lussoFiltersData.jsonUrl
       : '/wp-content/plugins/resales-api/includes/data/locations-custom.json';
@@ -50,32 +57,43 @@
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       })
-      .then(data => {
+      .then(rawData => {
         console.log('[Lusso Filters] JSON cargado correctamente:', jsonUrl);
 
-        // --- Construir subáreas según el área seleccionada ---
+        // Índice tolerante a acentos/mayúsculas
+        const DATA_IDX = {};
+        Object.keys(rawData || {}).forEach(key => {
+          DATA_IDX[norm(key)] = rawData[key];
+        });
+
+        function getAreaData(areaName) {
+          return DATA_IDX[norm(areaName)];
+        }
+
+        // Rellena opciones de subárea para una location dada
         function updateSubareaOptions(areaName) {
-          const areaData = data[areaName];
+          const areaData = getAreaData(areaName);
           dom.$subarea.empty().append('<option value="">Subarea</option>');
 
-          if (areaData && areaData.subareas && areaData.subareas.length) {
+          if (areaData && Array.isArray(areaData.subareas) && areaData.subareas.length) {
             const list = normalizeArray(areaData.subareas);
             list.forEach(label => {
               dom.$subarea.append('<option value="' + label + '">' + label + '</option>');
             });
             dom.$subarea.prop('disabled', false);
 
-            // Si existe subárea por defecto, seleccionarla automáticamente
             if (areaData.defaultSubarea) {
               dom.$subarea.val(areaData.defaultSubarea);
               console.log('[Lusso Filters] Subárea por defecto seleccionada:', areaData.defaultSubarea);
             }
           } else {
-            dom.$subarea.prop('disabled', true);
+            // No bloqueamos el control para evitar estados "muertos"
+            dom.$subarea.prop('disabled', false);
+            console.warn('[Lusso Filters] No se encontraron subáreas para:', areaName);
           }
         }
 
-        // --- Restaurar valores desde la URL ---
+        // --- Estado inicial desde URL ---
         const initialLoc = qs('location') || dom.$location.val() || '';
         if (initialLoc) {
           dom.$location.val(initialLoc);
@@ -86,7 +104,7 @@
             setTimeout(() => {
               let matched = false;
               dom.$subarea.find('option').each(function () {
-                if ($(this).val().trim().toLowerCase() === subQS.trim().toLowerCase()) {
+                if (norm($(this).val()) === norm(subQS)) {
                   dom.$subarea.val($(this).val());
                   console.log('[DEBUG] Subárea retenida en carga inicial:', $(this).val());
                   matched = true;
@@ -98,29 +116,40 @@
           }
         }
 
-        // --- Al cambiar Location, actualizar subáreas ---
+        // --- Cambiar Location => refrescar subáreas ---
         dom.$location.on('change', function (e) {
           e.preventDefault();
-          const locQS = dom.$location.val();
-          updateSubareaOptions(locQS);
+          const loc = dom.$location.val();
+          updateSubareaOptions(loc);
         });
 
-        // --- Envío del formulario (solo subárea a la API) ---
+        // --- Envío del formulario (enviar SOLO subárea a la URL pública/shortcode) ---
         dom.$form.on('submit', function (e) {
           e.preventDefault();
 
-          const subareaVal = dom.$subarea.val();
+          let subareaVal = dom.$subarea.val();
+          const locationVal = dom.$location.val();
 
-          // 🔸 Solo enviar si hay subárea seleccionada
+          // Si no eligió subárea pero la location tiene defaultSubarea, usarla
+          if (!subareaVal && locationVal) {
+            const areaData = getAreaData(locationVal);
+            if (areaData && areaData.defaultSubarea) {
+              subareaVal = areaData.defaultSubarea;
+              dom.$subarea.val(subareaVal); // reflejarlo en UI
+              console.log('[Lusso Filters] Usando defaultSubarea en submit:', subareaVal);
+            }
+          }
+
+          // Si seguimos sin subárea, no enviamos nada a la API (no tiene sentido)
           if (!subareaVal) {
             alert('Please select a Subarea before searching.');
             return;
           }
 
-          // 🔸 Siempre usar la subárea como location
+          // Siempre usar la subárea como "location" en la URL pública
           const params = ['location=' + encodeURIComponent(subareaVal)];
 
-          // agregar otros filtros (bedrooms, type, etc.)
+          // Mantener otros filtros (nunca enviamos location/zona/area)
           dom.$form.find('select, input').each(function () {
             const name = $(this).attr('name');
             const value = $(this).val();
@@ -144,6 +173,8 @@
       })
       .catch(err => {
         console.error('[Lusso Filters] Error al cargar JSON:', err);
+        // En caso de error de carga, nunca bloquear el selector de subárea
+        dom.$subarea.prop('disabled', false);
       });
   });
 })(jQuery);
