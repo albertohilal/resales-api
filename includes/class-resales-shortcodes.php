@@ -361,7 +361,13 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       $baths = isset($p['Bathrooms']) ? intval($p['Bathrooms']) : '';
       $plot = isset($p['PlotSize']) ? intval($p['PlotSize']) : '';
       $built = isset($p['BuiltSize']) ? intval($p['BuiltSize']) : '';
-      $terrace = isset($p['TerraceSize']) ? intval($p['TerraceSize']) : '';
+      // Mostrar Terrace como rango si existe, si no, usar TerraceSize
+      $terrace = '';
+      if (!empty($p['Terrace'])) {
+        $terrace = esc_html($p['Terrace']);
+      } elseif (isset($p['TerraceSize'])) {
+        $terrace = intval($p['TerraceSize']);
+      }
       $currency = isset($p['Currency']) ? $p['Currency'] : 'EUR';
       // Rango de precios
       $price_from = isset($p['PriceFrom']) && $p['PriceFrom'] !== '' ? number_format((float)$p['PriceFrom'], 0, ',', '.') : '';
@@ -403,11 +409,11 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
             <?php echo $desc; ?>
           </div>
           <div style="display:flex;gap:14px;margin:8px 0;justify-content:center;">
-            <?php if($beds): ?><span title="Dormitorios"><i class="fa fa-bed" style="color:var(--color-gold-dark);"></i> <?php echo $beds; ?></span><?php endif; ?>
-            <?php if($baths): ?><span title="Baños"><i class="fa fa-bath" style="color:var(--color-gold-dark);"></i> <?php echo $baths; ?></span><?php endif; ?>
-            <?php if($plot): ?><span title="Parcela"><i class="fa fa-tree" style="color:var(--color-green-dark);"></i> <?php echo $plot; ?> m²</span><?php endif; ?>
-            <?php if($built): ?><span title="Construidos"><i class="fa fa-building" style="color:var(--color-gray-dark);"></i> <?php echo $built; ?> m²</span><?php endif; ?>
-            <?php if($terrace): ?><span title="Terraza"><i class="fa fa-square" style="color:var(--color-gold-dark);"></i> <?php echo $terrace; ?> m²</span><?php endif; ?>
+            <span title="Dormitorios"><i class="fa fa-bed" style="color:var(--color-gold-dark);"></i> <?php echo $beds !== '' ? $beds : '-'; ?></span>
+            <span title="Baños"><i class="fa fa-bath" style="color:var(--color-gold-dark);"></i> <?php echo $baths !== '' ? $baths : '-'; ?></span>
+            <span title="Parcela"><i class="fa fa-tree" style="color:var(--color-gold-dark);"></i> <?php echo $plot !== '' ? $plot . ' m²' : '-'; ?></span>
+            <span title="Construidos"><i class="fa fa-building" style="color:var(--color-gold-dark);"></i> <?php echo $built !== '' ? $built . ' m²' : '-'; ?></span>
+            <span title="Terraza"><i class="fa fa-square" style="color:var(--color-gold-dark);"></i> <?php echo $terrace !== '' ? $terrace . ' m²' : '-'; ?></span>
           </div>
           <div style="font-size:1rem;color:#222;line-height:1.2;">
             <?php
