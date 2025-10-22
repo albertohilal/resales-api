@@ -369,10 +369,90 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
         $terrace = intval($p['TerraceSize']);
       }
       $currency = isset($p['Currency']) ? $p['Currency'] : 'EUR';
-      // Rango de precios
-      $price_from = isset($p['PriceFrom']) && $p['PriceFrom'] !== '' ? number_format((float)$p['PriceFrom'], 0, ',', '.') : '';
-      $price_to = isset($p['PriceTo']) && $p['PriceTo'] !== '' ? number_format((float)$p['PriceTo'], 0, ',', '.') : '';
-      $price_single = isset($p['Price']) && $p['Price'] !== '' ? number_format((float)$p['Price'], 0, ',', '.') : '';
+      // --- Robust price parsing and fallback logic ---
+      // 1. Inicializar variables de precio
+      $price_from   = '';
+      $price_to     = '';
+      $price_single = '';
+
+      // 2. Leer tipo de propiedad New Development
+      $is_newdev = isset($p['PropertyType']['NameType']) && $p['PropertyType']['NameType'] === 'New Development';
+
+      // 3. Procesar el campo Price
+      if (isset($p['Price']) && is_string($p['Price'])) {
+        $raw = trim($p['Price']);
+        // Si contiene guion (rangos) - pueden ser “‐”, “-”, “–”, o “—”
+        if (preg_match('/\s*[\-\–‐—]\s*/u', $raw)) {
+          // Partir en dos
+          $parts = preg_split('/\s*[\-\–‐—]\s*/u', $raw, 2);
+          $min   = isset($parts[0]) ? trim($parts[0]) : '';
+          $max   = isset($parts[1]) ? trim($parts[1]) : '';
+          if ($min !== '') {
+            $price_from = number_format((float)$min, 0, ',', '.');
+          }
+          if ($max !== '') {
+            $price_to = number_format((float)$max, 0, ',', '.');
+          }
+        } else {
+          // Precio único
+          $price_single = number_format((float)$raw, 0, ',', '.');
+        }
+      }
+
+      // 4. Si no se han rellenado y existen campos separados (quizás desde PropertyDetails)
+      if (isset($p['PriceFrom']) && $p['PriceFrom'] !== '') {
+        $price_from = number_format((float)$p['PriceFrom'], 0, ',', '.');
+      }
+      if (isset($p['PriceTo']) && $p['PriceTo'] !== '') {
+        $price_to = number_format((float)$p['PriceTo'], 0, ',', '.');
+      }
+
+      // 5. Fallback a PropertyDetails sólo si es New Development y sin rango aún
+      if ($is_newdev && $price_from === '' && $price_to === '') {
+        $ref           = isset($p['Reference']) ? sanitize_text_field($p['Reference']) : '';
+        $transient_key = 'resales_price_' . sanitize_key($ref);
+        $cached        = get_transient($transient_key);
+        if ($cached && is_array($cached)) {
+          $price_from   = $cached['PriceFrom'] ?? '';
+          $price_to     = $cached['PriceTo']   ?? '';
+          $price_single = $cached['Price']     ?? '';
+        } else {
+          $opts   = $this->get_opt_all();
+          $params = [
+            'p1'       => $opts['p1'],
+            'p2'       => $opts['p2'],
+            'p_output' => 'JSON',
+            'P_ApiId'  => $opts['P_ApiId'],
+            'P_Lang'   => $opts['P_Lang'],
+            'P_RefId'  => $ref,
+          ];
+          $details = $this->http_get(self::DETAILS_ENDPOINT, $params, (int)$opts['timeout']);
+          if (!is_wp_error($details) && !empty($details['Property'][0])) {
+            $pd = $details['Property'][0];
+            if (isset($pd['PriceFrom']) && $pd['PriceFrom'] !== '') {
+              $price_from = number_format((float)$pd['PriceFrom'], 0, ',', '.');
+            }
+            if (isset($pd['PriceTo']) && $pd['PriceTo'] !== '') {
+              $price_to = number_format((float)$pd['PriceTo'], 0, ',', '.');
+            }
+            if ($price_from === '' && $price_to === '' && isset($pd['Price']) && $pd['Price'] !== '') {
+              $price_single = number_format((float)$pd['Price'], 0, ',', '.');
+            }
+            // Guardar en cache
+            set_transient(
+              $transient_key,
+              ['PriceFrom' => $price_from, 'PriceTo' => $price_to, 'Price' => $price_single],
+              6 * HOUR_IN_SECONDS
+            );
+          }
+        }
+      }
+
+      // 6. Depuración temporal
+      if ($debug) {
+        error_log('DEBUG price raw: ' . (isset($p['Price']) ? (string)$p['Price'] : ''));
+        error_log('DEBUG price_from: ' . $price_from . ' price_to: ' . $price_to . ' price_single: ' . $price_single);
+      }
 
       ob_start();
       // Generar un ID único para la galería Swiper de esta tarjeta
@@ -415,19 +495,20 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
             <span title="Built size"><i class="fa fa-building" style="color:var(--color-gold-dark);"></i> <?php echo $built !== '' ? $built . ' m²' : '-'; ?></span>
             <span title="Terrace"><i class="fa fa-square" style="color:var(--color-gold-dark);"></i> <?php echo $terrace !== '' ? $terrace . ' m²' : '-'; ?></span>
           </div>
-          <div style="font-size:1rem;color:#222;line-height:1.2;">
-            <?php
-            if ( $price_from && $price_to ) {
-                echo 'From ' . $currency . ' ' . $price_from . ' to ' . $currency . ' ' . $price_to;
-            } elseif ( $price_from ) {
-                echo 'From ' . $currency . ' ' . $price_from;
-            } elseif ( $price_single ) {
-                echo $currency . ' ' . $price_single;
-            } else {
-                echo 'Price on request';
-            }
-            ?>
-          </div>
+      <div style="font-size:1rem;color:#222;line-height:1.2;">
+      <?php
+      if ($price_from !== '' && $price_to !== '') {
+        echo 'From ' . esc_html($currency) . ' ' . esc_html($price_from)
+           . ' to ' . esc_html($currency) . ' ' . esc_html($price_to);
+      } elseif ($price_from !== '') {
+        echo 'From ' . esc_html($currency) . ' ' . esc_html($price_from);
+      } elseif ($price_single !== '') {
+        echo esc_html($currency) . ' ' . esc_html($price_single);
+      } else {
+        echo 'Price on request';
+      }
+      ?>
+      </div>
         </a>
         <?php if ($debug): ?>
           <details class="lr-card__debug"><summary>Debug imágenes (<?php echo (int)$has; ?>)</summary><pre><?php echo esc_html(print_r($imgs, true)); ?></pre></details>
