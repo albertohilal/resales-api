@@ -409,11 +409,11 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
             <?php echo $desc; ?>
           </div>
           <div style="display:flex;gap:14px;margin:8px 0;justify-content:center;">
-            <span title="Dormitorios"><i class="fa fa-bed" style="color:var(--color-gold-dark);"></i> <?php echo $beds !== '' ? $beds : '-'; ?></span>
-            <span title="Baños"><i class="fa fa-bath" style="color:var(--color-gold-dark);"></i> <?php echo $baths !== '' ? $baths : '-'; ?></span>
-            <span title="Parcela"><i class="fa fa-tree" style="color:var(--color-gold-dark);"></i> <?php echo $plot !== '' ? $plot . ' m²' : '-'; ?></span>
-            <span title="Construidos"><i class="fa fa-building" style="color:var(--color-gold-dark);"></i> <?php echo $built !== '' ? $built . ' m²' : '-'; ?></span>
-            <span title="Terraza"><i class="fa fa-square" style="color:var(--color-gold-dark);"></i> <?php echo $terrace !== '' ? $terrace . ' m²' : '-'; ?></span>
+            <span title="Bedrooms"><i class="fa fa-bed" style="color:var(--color-gold-dark);"></i> <?php echo $beds !== '' ? $beds : '-'; ?></span>
+            <span title="Bathrooms"><i class="fa fa-bath" style="color:var(--color-gold-dark);"></i> <?php echo $baths !== '' ? $baths : '-'; ?></span>
+            <span title="Plot size"><i class="fa fa-tree" style="color:var(--color-gold-dark);"></i> <?php echo $plot !== '' ? $plot . ' m²' : '-'; ?></span>
+            <span title="Built size"><i class="fa fa-building" style="color:var(--color-gold-dark);"></i> <?php echo $built !== '' ? $built . ' m²' : '-'; ?></span>
+            <span title="Terrace"><i class="fa fa-square" style="color:var(--color-gold-dark);"></i> <?php echo $terrace !== '' ? $terrace . ' m²' : '-'; ?></span>
           </div>
           <div style="font-size:1rem;color:#222;line-height:1.2;">
             <?php
