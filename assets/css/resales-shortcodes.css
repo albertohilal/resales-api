@@ -1,15 +1,70 @@
-/* Estilo dorado y hover coherente para selects y Select2 en .lusso-filters */
+
+/* Inputs blancos, borde sutil */
 .lusso-filters select,
-.lusso-filters .select2-container .select2-selection {
-  background-color: #d2ad3b;
-  border: 1px solid #d2ad3b;
-  color: #fff;
+.lusso-filters .select2-container .select2-selection--single,
+.lusso-filters .select2-container .select2-selection--multiple {
+  background-color: #fff !important;
+  border: 1px solid #d6d6d6 !important;
+  color: #222 !important;
+  border-radius: 4px;
+  box-shadow: none;
 }
 
-.lusso-filters select:hover,
-.lusso-filters .select2-container .select2-selection:hover {
-  background-color: #b8932d;
-  border-color: #b8932d;
+/* Estado focus con borde dorado (marca) */
+.lusso-filters select:focus,
+.lusso-filters .select2-container--default.select2-container--focus .select2-selection--single,
+.lusso-filters .select2-container--default.select2-container--focus .select2-selection--multiple {
+  border-color: #b8932d !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(184, 147, 45, 0.15);
+}
+
+/* Placeholder y texto renderizado */
+.lusso-filters .select2-selection__rendered {
+  color: #333 !important;
+}
+.lusso-filters .select2-selection__placeholder {
+  color: #777 !important;
+}
+
+/* Tags (chips) de Select2 múltiples */
+.lusso-filters .select2-selection__choice {
+  background-color: #f5f5f5 !important;
+  border: 1px solid #e6e6e6 !important;
+  color: #333 !important;
+  border-radius: 3px !important;
+  padding: 0 6px !important;
+}
+
+/* Botón de cerrar en cada chip */
+.lusso-filters .select2-selection__choice__remove {
+  color: #888 !important;
+  margin-right: 4px !important;
+}
+
+/* Flecha alineada */
+.lusso-filters .select2-selection__arrow {
+  height: 36px !important;
+}
+
+/* Asegurar igual altura en todos los controles */
+.lusso-filters select,
+.lusso-filters .select2-container .select2-selection--single {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 8px !important;
+  line-height: 26px !important;
+}
+.lusso-filters .select2-container .select2-selection--multiple {
+  /* en múltiples usar min-height (no height fija) para que los chips puedan crecer */
+  min-height: 38px !important;
+  padding: 4px 6px !important;
+}
+
+/* Anchos mínimos consistentes (opcional) */
+.lusso-filters select,
+.lusso-filters .select2-container {
+  min-width: 200px;
 }
 
 .lusso-filters select,
