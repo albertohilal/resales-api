@@ -1,3 +1,16 @@
+/* Estilo dorado y hover coherente para selects y Select2 en .lusso-filters */
+.lusso-filters select,
+.lusso-filters .select2-container .select2-selection {
+  background-color: #d2ad3b;
+  border: 1px solid #d2ad3b;
+  color: #fff;
+}
+
+.lusso-filters select:hover,
+.lusso-filters .select2-container .select2-selection:hover {
+  background-color: #b8932d;
+  border-color: #b8932d;
+}
 
 .lusso-filters select,
 .lusso-filters .select2-container .select2-selection--single,
