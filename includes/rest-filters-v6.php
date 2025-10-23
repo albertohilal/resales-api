@@ -78,11 +78,32 @@ class Resales_Filters_V6 {
         }
 
         // Filtros básicos
-        if (!empty($filters['location'])) {
-            $params['P_Location'] = sanitize_text_field($filters['location']);
+        // BEGIN multi-subarea literal support
+        if (!empty($_GET['sublocation_literal'])) {
+            $params['P_Location'] = trim($_GET['sublocation_literal']);
+        } else {
+            // fallback to old logic
+            if (!empty($_GET['subarea'])) {
+                $params['P_Location'] = trim($_GET['subarea']);
+            } elseif (!empty($_GET['location'])) {
+                $params['P_Location'] = trim($_GET['location']);
+            }
         }
+        // END multi-subarea literal support
         if (!empty($filters['type'])) {
             $params['P_PropertyType'] = sanitize_text_field($filters['type']);
+            // BEGIN multi-subarea literal support
+            if (!empty($_GET['sublocation_literal'])) {
+                $params['P_Location'] = trim($_GET['sublocation_literal']);
+            } else {
+                // fallback to old logic
+                if (!empty($_GET['subarea'])) {
+                    $params['P_Location'] = trim($_GET['subarea']);
+                } elseif (!empty($_GET['location'])) {
+                    $params['P_Location'] = trim($_GET['location']);
+                }
+            }
+            // END multi-subarea literal support
         }
         if (!empty($filters['bedrooms'])) {
             $params['P_Beds'] = intval($filters['bedrooms']) . 'x'; // "5x" para cinco o más dormitorios

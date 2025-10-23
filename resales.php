@@ -3,13 +3,96 @@
  * Plugin Name: Resales API
  * Description: Integración con Resales Online WebAPI V6 (shortcodes, ajustes, diagnóstico y cliente HTTP).
  * Version: 3.3.1
- * Author: Dev Team
- * Requires at least: 6.0
- * Requires PHP: 7.4
- */
+/* ===========================
+ *  Carga de estilos y scripts
+ * =========================== */
+add_action('wp_enqueue_scripts', function() {
 
-if (!defined('ABSPATH')) exit;
+    // --- Quitar cualquier Select2 previo (tema/otros plugins) ---
+    wp_dequeue_script('select2');
+    wp_deregister_script('select2');
+    wp_dequeue_script('select2-js');
+    wp_deregister_script('select2-js');
+    wp_dequeue_style('select2');
+    wp_deregister_style('select2');
+    wp_dequeue_style('select2-css');
+    wp_deregister_style('select2-css');
 
+    // --- Registrar y encolar Select2 LOCAL con handles propios ---
+    wp_register_style(
+        'lusso-select2-css',
+        plugins_url('assets/css/select2.min.css', __FILE__),
+        [],
+        '4.0.13' // versión estable publicada
+    );
+    wp_register_script(
+        'lusso-select2-js',
+        plugins_url('assets/js/select2.min.js', __FILE__),
+        ['jquery'],
+        '4.0.13',
+        true
+    );
+    wp_enqueue_style('lusso-select2-css');
+    wp_enqueue_script('lusso-select2-js');
+
+    // --- Filtros principales (depende de nuestro Select2 local) ---
+    wp_enqueue_script(
+        'resales-filters',
+        plugins_url('assets/js/filters.js', __FILE__),
+        ['jquery', 'lusso-select2-js'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/js/filters.js'),
+        true
+    );
+    wp_localize_script('resales-filters', 'lussoFiltersData', [
+        'jsonUrl' => plugins_url('includes/data/locations-custom.json', __FILE__),
+    ]);
+
+    // --- Estilos/JS de Swiper y tarjetas ---
+    wp_enqueue_style(
+        'swiper-css',
+        'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+        [],
+        '11.0.0'
+    );
+    wp_enqueue_style(
+        'lusso-swiper-gallery',
+        plugins_url('assets/css/swiper-gallery.css', __FILE__),
+        ['swiper-css'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/css/swiper-gallery.css')
+    );
+    wp_enqueue_style(
+        'resales-shortcodes',
+        plugins_url('assets/css/resales-shortcodes.css', __FILE__),
+        [],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/css/resales-shortcodes.css')
+    );
+    wp_enqueue_style(
+        'resales-single',
+        plugins_url('assets/css/resales-single.css', __FILE__),
+        [],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/css/resales-single.css')
+    );
+
+    wp_enqueue_script(
+        'swiper-js',
+        'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+        [],
+        '11.0.0',
+        true
+    );
+    wp_enqueue_script(
+        'lusso-swiper-init',
+        plugins_url('assets/js/swiper-init.js', __FILE__),
+        ['swiper-js'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/js/swiper-init.js'),
+        true
+    );
+
+    // Limpiar script antiguo si existiera
+    wp_dequeue_script('lusso-newdevs-filters');
+    wp_deregister_script('lusso-newdevs-filters');
+
+}, 20);
 /* ===========================
  *  Constantes globales
  * =========================== */
@@ -138,9 +221,17 @@ function lusso_search_properties_ajax() {
         $params['P_PropertyTypes'] = $type_map[$type];
     }
 
-    if (!empty($_REQUEST['location'])) {
-        $params['P_Location'] = sanitize_text_field($_REQUEST['location']);
-    }
+        // BEGIN multi-subarea literal support
+        if (!empty($_REQUEST['sublocation_literal'])) {
+            $params['P_Location'] = trim($_REQUEST['sublocation_literal']);
+        } else {
+            if (!empty($_REQUEST['subarea'])) {
+                $params['P_Location'] = trim($_REQUEST['subarea']);
+            } elseif (!empty($_REQUEST['location'])) {
+                $params['P_Location'] = sanitize_text_field($_REQUEST['location']);
+            }
+        }
+        // END multi-subarea literal support
 
     if (!empty($_REQUEST['bedrooms']) && is_numeric($_REQUEST['bedrooms'])) {
         $min_beds = intval($_REQUEST['bedrooms']);
@@ -164,6 +255,41 @@ function lusso_search_properties_ajax() {
  * =========================== */
 add_action('wp_enqueue_scripts', function() {
 
+    // === Select2 local ===
+    // Derribar cualquier Select2 previo
+    wp_dequeue_style('select2');
+    wp_deregister_style('select2');
+    wp_dequeue_script('select2');
+    wp_deregister_script('select2');
+
+    // Encolar Select2 local con handles únicos
+    wp_enqueue_style(
+        'lusso-select2-css',
+        plugins_url('assets/css/select2.min.css', __FILE__),
+        [],
+        '4.1.0'
+    );
+    wp_enqueue_script(
+        'lusso-select2-js',
+        plugins_url('assets/js/select2.min.js', __FILE__),
+        ['jquery'],
+        '4.1.0',
+        true
+    );
+
+    // === Filtros principales ===
+    wp_enqueue_script(
+        'resales-filters',
+        plugins_url('assets/js/filters.js', __FILE__),
+        ['jquery', 'lusso-select2-js'],
+        filemtime(plugin_dir_path(__FILE__) . 'assets/js/filters.js'),
+        true
+    );
+
+    wp_localize_script('resales-filters', 'lussoFiltersData', [
+        'jsonUrl' => plugins_url('includes/data/locations-custom.json', __FILE__),
+    ]);
+
     // === CSS ===
     wp_enqueue_style(
         'swiper-css',
@@ -171,21 +297,18 @@ add_action('wp_enqueue_scripts', function() {
         [],
         '11.0.0'
     );
-
     wp_enqueue_style(
         'lusso-swiper-gallery',
         plugins_url('assets/css/swiper-gallery.css', __FILE__),
         ['swiper-css'],
         filemtime(plugin_dir_path(__FILE__) . 'assets/css/swiper-gallery.css')
     );
-
     wp_enqueue_style(
         'resales-shortcodes',
         plugins_url('assets/css/resales-shortcodes.css', __FILE__),
         [],
         filemtime(plugin_dir_path(__FILE__) . 'assets/css/resales-shortcodes.css')
     );
-
     wp_enqueue_style(
         'resales-single',
         plugins_url('assets/css/resales-single.css', __FILE__),
@@ -201,7 +324,6 @@ add_action('wp_enqueue_scripts', function() {
         '11.0.0',
         true
     );
-
     wp_enqueue_script(
         'lusso-swiper-init',
         plugins_url('assets/js/swiper-init.js', __FILE__),
@@ -210,23 +332,9 @@ add_action('wp_enqueue_scripts', function() {
         true
     );
 
-    // Eliminar filtros antiguos
+    // Limpieza de scripts antiguos
     wp_dequeue_script('lusso-newdevs-filters');
     wp_deregister_script('lusso-newdevs-filters');
-
-    // Cargar filters.js siempre
-    wp_enqueue_script(
-        'lusso-filters',
-        plugins_url('assets/js/filters.js', __FILE__),
-        ['jquery'],
-        filemtime(plugin_dir_path(__FILE__) . 'assets/js/filters.js'),
-        true
-    );
-
-    // Pasar URL del JSON dinámico
-    wp_localize_script('lusso-filters', 'lussoFiltersData', [
-        'jsonUrl' => plugins_url('includes/data/locations-custom.json', __FILE__),
-    ]);
 
 }, 20);
 

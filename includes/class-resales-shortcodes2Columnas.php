@@ -92,7 +92,14 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       'p_new_devs'        => $newdevs,
     ];
 
-  if ($location !== '') $params['P_Location'] = $location;
+    // BEGIN multi-subarea literal support
+      if (!empty($_GET['sublocation_literal'])) {
+          $params['P_Location'] = trim($_GET['sublocation_literal']);
+      } else {
+          if ($subLocation !== '') $params['P_Location'] = $subLocation;
+          elseif ($location !== '') $params['P_Location'] = $location;
+      }
+    // END multi-subarea literal support
   if ($subLocation !== '') $params['P_SubLocation'] = $subLocation;
   if ($area !== '')     $params['P_Area']     = $area;
   if ($beds > 0)        $params['P_Beds']     = $beds;

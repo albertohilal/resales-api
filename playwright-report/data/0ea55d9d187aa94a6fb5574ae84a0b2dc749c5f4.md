@@ -1,0 +1,638 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#content"
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo Gris" [ref=e7]
+      - img "Blanco" [ref=e9]
+    - navigation "Menu" [ref=e12]:
+      - list [ref=e13]:
+        - listitem [ref=e14]:
+          - link "Home" [ref=e15] [cursor=pointer]:
+            - /url: https://lussogroup.es/
+        - listitem [ref=e16]:
+          - link "About" [ref=e17] [cursor=pointer]:
+            - /url: https://lussogroup.es/about/
+        - listitem [ref=e18]:
+          - link "Properties" [ref=e19] [cursor=pointer]:
+            - /url: https://lussogroup.es/properties/
+        - listitem [ref=e20]:
+          - link "Contact" [ref=e21] [cursor=pointer]:
+            - /url: https://lussogroup.es/contact/
+  - generic [ref=e23]:
+    - heading "Only New Developments" [level=2] [ref=e26]:
+      - link "Only New Developments" [ref=e27] [cursor=pointer]:
+        - /url: "#filtros"
+    - generic [ref=e29]:
+      - link [ref=e31] [cursor=pointer]:
+        - /url: https://api.whatsapp.com/send/?phone=34674021299&text&type=phone_number&app_absent=0
+        - img [ref=e34] [cursor=pointer]
+      - link [ref=e37] [cursor=pointer]:
+        - /url: "#elementor-action%3Aaction%3Dpopup%3Aopen%26settings%3DeyJpZCI6IjExNzUiLCJ0b2dnbGUiOmZhbHNlfQ%3D%3D"
+        - img [ref=e40] [cursor=pointer]
+      - generic [ref=e43]:
+        - generic [ref=e47]:
+          - combobox [ref=e49]:
+            - option "Location"
+            - option "Sotogrande"
+            - option "Manilva"
+            - option "Casares"
+            - option "Estepona & New Golden Mile"
+            - option "Benahavís"
+            - option "Marbella"
+            - option "Marbella Este"
+            - option "Golden Mile / Milla de Oro"
+            - option "Mijas"
+            - option "Fuengirola"
+            - option "Benalmadena" [selected]
+            - option "Torremolinos"
+            - option "Malaga Costa"
+          - combobox [ref=e51]:
+            - option "Subarea"
+            - option "Benalmadena" [selected]
+            - option "Benalmadena Pueblo"
+            - option "Arroyo de la Miel"
+            - option "Benalmadena Costa"
+            - option "Torremuelle"
+            - option "Torrequebrada"
+            - option "La Capellania"
+            - option "Torremar"
+          - combobox [ref=e53]:
+            - option "Bedrooms" [selected]
+            - option "1+"
+            - option "2+"
+            - option "3+"
+            - option "4+"
+            - option "5+"
+          - combobox [ref=e55]:
+            - option "Type" [selected]
+            - option "Apartamento Planta Baja"
+            - option "Apartamento Planta Media"
+            - option "Apartamento en Planta Última"
+            - option "Ático"
+            - option "Ático Dúplex"
+            - option "Dúplex"
+            - option "Villa - Chalet"
+            - option "Pareada"
+            - option "Adosada"
+            - option "Finca - Cortijo"
+            - option "Bungalow"
+            - option "Terreno"
+          - button "Search" [ref=e57] [cursor=pointer]
+        - generic [ref=e59]:
+          - article [ref=e60]:
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - group "1 / 5" [ref=e64]:
+                  - img "Los Pacos, Málaga" [ref=e65]
+                - group "2 / 5" [ref=e66]:
+                  - img "Los Pacos, Málaga" [ref=e67]
+                - group "3 / 5" [ref=e68]:
+                  - img "Los Pacos, Málaga" [ref=e69]
+                - group "4 / 5" [ref=e70]:
+                  - img "Los Pacos, Málaga" [ref=e71]
+                - group "5 / 5" [ref=e72]:
+                  - img "Los Pacos, Málaga" [ref=e73]
+              - button "Next slide" [ref=e74] [cursor=pointer]: next
+              - button "Previous slide" [ref=e75] [cursor=pointer]: prev
+              - generic [ref=e76]:
+                - button "Go to slide 1" [ref=e77] [cursor=pointer]
+                - button "Go to slide 2" [ref=e78] [cursor=pointer]
+                - button "Go to slide 3" [ref=e79] [cursor=pointer]
+                - button "Go to slide 4" [ref=e80] [cursor=pointer]
+                - button "Go to slide 5" [ref=e81] [cursor=pointer]
+            - link "Ver detalles de la propiedad R5011228" [ref=e83] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R5011228
+              - generic [ref=e84] [cursor=pointer]: Los Pacos, Málaga
+              - generic [ref=e85] [cursor=pointer]: Are you looking for a home in a modern residential complex with spacious communal areas and private parking in Fuengirola?
+              - generic [ref=e86] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e87] [cursor=pointer]:
+                  - generic [ref=e88] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Bathrooms" [ref=e89] [cursor=pointer]:
+                  - generic [ref=e90] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e91] [cursor=pointer]:
+                  - generic [ref=e92] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e93] [cursor=pointer]:
+                  - generic [ref=e94] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e95] [cursor=pointer]:
+                  - generic [ref=e96] [cursor=pointer]: 
+                  - text: 14 - 50 m²
+              - generic [ref=e97] [cursor=pointer]: From EUR 298.000 to EUR 446.000
+          - article [ref=e98]:
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - group "1 / 5" [ref=e102]:
+                  - img "La Cala Golf, Málaga" [ref=e103]
+                - group "2 / 5" [ref=e104]:
+                  - img "La Cala Golf, Málaga" [ref=e105]
+                - group "3 / 5" [ref=e106]:
+                  - img "La Cala Golf, Málaga" [ref=e107]
+                - group "4 / 5" [ref=e108]:
+                  - img "La Cala Golf, Málaga" [ref=e109]
+                - group "5 / 5" [ref=e110]:
+                  - img "La Cala Golf, Málaga" [ref=e111]
+              - button "Next slide" [ref=e112] [cursor=pointer]: next
+              - button "Previous slide" [ref=e113] [cursor=pointer]: prev
+              - generic [ref=e114]:
+                - button "Go to slide 1" [ref=e115] [cursor=pointer]
+                - button "Go to slide 2" [ref=e116] [cursor=pointer]
+                - button "Go to slide 3" [ref=e117] [cursor=pointer]
+                - button "Go to slide 4" [ref=e118] [cursor=pointer]
+                - button "Go to slide 5" [ref=e119] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4358173" [ref=e121] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4358173
+              - generic [ref=e122] [cursor=pointer]: La Cala Golf, Málaga
+              - generic [ref=e123] [cursor=pointer]: Exclusive Branded Residence comprising of 58 incredible 2 and 3 bedroom frontline golf homes to be built to the highest specification overlooking the renowned La Cala Resort Golf course.
+              - generic [ref=e124] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e125] [cursor=pointer]:
+                  - generic [ref=e126] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Bathrooms" [ref=e127] [cursor=pointer]:
+                  - generic [ref=e128] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e129] [cursor=pointer]:
+                  - generic [ref=e130] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e131] [cursor=pointer]:
+                  - generic [ref=e132] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e133] [cursor=pointer]:
+                  - generic [ref=e134] [cursor=pointer]: 
+                  - text: 16 - 28 m²
+              - generic [ref=e135] [cursor=pointer]: From EUR 585.000 to EUR 1.100.000
+          - article [ref=e136]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - group "1 / 5" [ref=e140]:
+                  - img "Mijas, Málaga" [ref=e141]
+                - group "2 / 5" [ref=e142]:
+                  - img "Mijas, Málaga" [ref=e143]
+                - group "3 / 5" [ref=e144]:
+                  - img "Mijas, Málaga" [ref=e145]
+                - group "4 / 5" [ref=e146]:
+                  - img "Mijas, Málaga" [ref=e147]
+                - group "5 / 5" [ref=e148]:
+                  - img "Mijas, Málaga" [ref=e149]
+              - button "Next slide" [ref=e150] [cursor=pointer]: next
+              - button "Previous slide" [ref=e151] [cursor=pointer]: prev
+              - generic [ref=e152]:
+                - button "Go to slide 1" [ref=e153] [cursor=pointer]
+                - button "Go to slide 2" [ref=e154] [cursor=pointer]
+                - button "Go to slide 3" [ref=e155] [cursor=pointer]
+                - button "Go to slide 4" [ref=e156] [cursor=pointer]
+                - button "Go to slide 5" [ref=e157] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4913956" [ref=e159] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4913956
+              - generic [ref=e160] [cursor=pointer]: Mijas, Málaga
+              - generic [ref=e161] [cursor=pointer]: Immerse yourself in a world of exclusivity in the charming village of Mijas, on the sunny coast of Malaga.
+              - generic [ref=e162] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e163] [cursor=pointer]:
+                  - generic [ref=e164] [cursor=pointer]: 
+                  - text: "3"
+                - generic "Bathrooms" [ref=e165] [cursor=pointer]:
+                  - generic [ref=e166] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e167] [cursor=pointer]:
+                  - generic [ref=e168] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e169] [cursor=pointer]:
+                  - generic [ref=e170] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e171] [cursor=pointer]:
+                  - generic [ref=e172] [cursor=pointer]: 
+                  - text: 18 - 50 m²
+              - generic [ref=e173] [cursor=pointer]: From EUR 515.000 to EUR 750.000
+          - article [ref=e174]:
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - group "1 / 5" [ref=e178]:
+                  - img "Fuengirola, Málaga" [ref=e179]
+                - group "2 / 5" [ref=e180]:
+                  - img "Fuengirola, Málaga" [ref=e181]
+                - group "3 / 5" [ref=e182]:
+                  - img "Fuengirola, Málaga" [ref=e183]
+                - group "4 / 5" [ref=e184]:
+                  - img "Fuengirola, Málaga" [ref=e185]
+                - group "5 / 5" [ref=e186]:
+                  - img "Fuengirola, Málaga" [ref=e187]
+              - button "Next slide" [ref=e188] [cursor=pointer]: next
+              - button "Previous slide" [ref=e189] [cursor=pointer]: prev
+              - generic [ref=e190]:
+                - button "Go to slide 1" [ref=e191] [cursor=pointer]
+                - button "Go to slide 2" [ref=e192] [cursor=pointer]
+                - button "Go to slide 3" [ref=e193] [cursor=pointer]
+                - button "Go to slide 4" [ref=e194] [cursor=pointer]
+                - button "Go to slide 5" [ref=e195] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4861456" [ref=e197] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4861456
+              - generic [ref=e198] [cursor=pointer]: Fuengirola, Málaga
+              - generic [ref=e199] [cursor=pointer]: In the heart of Fuengirola, the city of the Costa del Sol known for its wide beaches.
+              - generic [ref=e200] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e201] [cursor=pointer]:
+                  - generic [ref=e202] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Bathrooms" [ref=e203] [cursor=pointer]:
+                  - generic [ref=e204] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e205] [cursor=pointer]:
+                  - generic [ref=e206] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e207] [cursor=pointer]:
+                  - generic [ref=e208] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e209] [cursor=pointer]:
+                  - generic [ref=e210] [cursor=pointer]: 
+                  - text: 3 - 13 m²
+              - generic [ref=e211] [cursor=pointer]: From EUR 340.000 to EUR 995.000
+          - article [ref=e212]:
+            - generic [ref=e214]:
+              - generic [ref=e215]:
+                - group "1 / 5" [ref=e216]:
+                  - img "Calanova Golf, Málaga" [ref=e217]
+                - group "2 / 5" [ref=e218]:
+                  - img "Calanova Golf, Málaga" [ref=e219]
+                - group "3 / 5" [ref=e220]:
+                  - img "Calanova Golf, Málaga" [ref=e221]
+                - group "4 / 5" [ref=e222]:
+                  - img "Calanova Golf, Málaga" [ref=e223]
+                - group "5 / 5" [ref=e224]:
+                  - img "Calanova Golf, Málaga" [ref=e225]
+              - button "Next slide" [ref=e226] [cursor=pointer]: next
+              - button "Previous slide" [ref=e227] [cursor=pointer]: prev
+              - generic [ref=e228]:
+                - button "Go to slide 1" [ref=e229] [cursor=pointer]
+                - button "Go to slide 2" [ref=e230] [cursor=pointer]
+                - button "Go to slide 3" [ref=e231] [cursor=pointer]
+                - button "Go to slide 4" [ref=e232] [cursor=pointer]
+                - button "Go to slide 5" [ref=e233] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4862077" [ref=e235] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4862077
+              - generic [ref=e236] [cursor=pointer]: Calanova Golf, Málaga
+              - generic [ref=e237] [cursor=pointer]: The Villa.
+              - generic [ref=e238] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e239] [cursor=pointer]:
+                  - generic [ref=e240] [cursor=pointer]: 
+                  - text: "4"
+                - generic "Bathrooms" [ref=e241] [cursor=pointer]:
+                  - generic [ref=e242] [cursor=pointer]: 
+                  - text: "4"
+                - generic "Plot size" [ref=e243] [cursor=pointer]:
+                  - generic [ref=e244] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e245] [cursor=pointer]:
+                  - generic [ref=e246] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e247] [cursor=pointer]:
+                  - generic [ref=e248] [cursor=pointer]: 
+                  - text: 13 - 206 m²
+              - generic [ref=e249] [cursor=pointer]: From EUR 1.390.000 to EUR 2.100.000
+          - article [ref=e250]:
+            - generic [ref=e252]:
+              - generic [ref=e253]:
+                - group "1 / 5" [ref=e254]:
+                  - img "La Cala de Mijas, Málaga" [ref=e255]
+                - group "2 / 5" [ref=e256]:
+                  - img "La Cala de Mijas, Málaga" [ref=e257]
+                - group "3 / 5" [ref=e258]:
+                  - img "La Cala de Mijas, Málaga" [ref=e259]
+                - group "4 / 5" [ref=e260]:
+                  - img "La Cala de Mijas, Málaga" [ref=e261]
+                - group "5 / 5" [ref=e262]:
+                  - img "La Cala de Mijas, Málaga" [ref=e263]
+              - button "Next slide" [ref=e264] [cursor=pointer]: next
+              - button "Previous slide" [ref=e265] [cursor=pointer]: prev
+              - generic [ref=e266]:
+                - button "Go to slide 1" [ref=e267] [cursor=pointer]
+                - button "Go to slide 2" [ref=e268] [cursor=pointer]
+                - button "Go to slide 3" [ref=e269] [cursor=pointer]
+                - button "Go to slide 4" [ref=e270] [cursor=pointer]
+                - button "Go to slide 5" [ref=e271] [cursor=pointer]
+            - link "Ver detalles de la propiedad R5009092" [ref=e273] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R5009092
+              - generic [ref=e274] [cursor=pointer]: La Cala de Mijas, Málaga
+              - generic [ref=e275] [cursor=pointer]: Welcome to this development, an exciting new project of 27 contemporary new-build villas, all on one floor, featuring 4 bedrooms and 4.5 bathrooms, designed for modern living.
+              - generic [ref=e276] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e277] [cursor=pointer]:
+                  - generic [ref=e278] [cursor=pointer]: 
+                  - text: "4"
+                - generic "Bathrooms" [ref=e279] [cursor=pointer]:
+                  - generic [ref=e280] [cursor=pointer]: 
+                  - text: "4"
+                - generic "Plot size" [ref=e281] [cursor=pointer]:
+                  - generic [ref=e282] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e283] [cursor=pointer]:
+                  - generic [ref=e284] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e285] [cursor=pointer]:
+                  - generic [ref=e286] [cursor=pointer]: 
+                  - text: 91 m²
+              - generic [ref=e287] [cursor=pointer]: From EUR 1.200.000 to EUR 1.400.000
+          - article [ref=e288]:
+            - generic [ref=e290]:
+              - generic [ref=e291]:
+                - group "1 / 5" [ref=e292]:
+                  - img "Mijas, Málaga" [ref=e293]
+                - group "2 / 5" [ref=e294]:
+                  - img "Mijas, Málaga" [ref=e295]
+                - group "3 / 5" [ref=e296]:
+                  - img "Mijas, Málaga" [ref=e297]
+                - group "4 / 5" [ref=e298]:
+                  - img "Mijas, Málaga" [ref=e299]
+                - group "5 / 5" [ref=e300]:
+                  - img "Mijas, Málaga" [ref=e301]
+              - button "Next slide" [ref=e302] [cursor=pointer]: next
+              - button "Previous slide" [ref=e303] [cursor=pointer]: prev
+              - generic [ref=e304]:
+                - button "Go to slide 1" [ref=e305] [cursor=pointer]
+                - button "Go to slide 2" [ref=e306] [cursor=pointer]
+                - button "Go to slide 3" [ref=e307] [cursor=pointer]
+                - button "Go to slide 4" [ref=e308] [cursor=pointer]
+                - button "Go to slide 5" [ref=e309] [cursor=pointer]
+            - link "Ver detalles de la propiedad R5061388" [ref=e311] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R5061388
+              - generic [ref=e312] [cursor=pointer]: Mijas, Málaga
+              - generic [ref=e313] [cursor=pointer]: Next Real Estate Development in Riviera del Sol - Málaga
+              - generic [ref=e314] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e315] [cursor=pointer]:
+                  - generic [ref=e316] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Bathrooms" [ref=e317] [cursor=pointer]:
+                  - generic [ref=e318] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e319] [cursor=pointer]:
+                  - generic [ref=e320] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e321] [cursor=pointer]:
+                  - generic [ref=e322] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e323] [cursor=pointer]:
+                  - generic [ref=e324] [cursor=pointer]: 
+                  - text: 12 - 65 m²
+              - generic [ref=e325] [cursor=pointer]: From EUR 295.000 to EUR 340.000
+          - article [ref=e326]:
+            - generic [ref=e328]:
+              - generic [ref=e329]:
+                - group "1 / 5" [ref=e330]:
+                  - img "Fuengirola, Málaga" [ref=e331]
+                - group "2 / 5" [ref=e332]:
+                  - img "Fuengirola, Málaga" [ref=e333]
+                - group "3 / 5" [ref=e334]:
+                  - img "Fuengirola, Málaga" [ref=e335]
+                - group "4 / 5" [ref=e336]:
+                  - img "Fuengirola, Málaga" [ref=e337]
+                - group "5 / 5" [ref=e338]:
+                  - img "Fuengirola, Málaga" [ref=e339]
+              - button "Next slide" [ref=e340] [cursor=pointer]: next
+              - button "Previous slide" [ref=e341] [cursor=pointer]: prev
+              - generic [ref=e342]:
+                - button "Go to slide 1" [ref=e343] [cursor=pointer]
+                - button "Go to slide 2" [ref=e344] [cursor=pointer]
+                - button "Go to slide 3" [ref=e345] [cursor=pointer]
+                - button "Go to slide 4" [ref=e346] [cursor=pointer]
+                - button "Go to slide 5" [ref=e347] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4445149" [ref=e349] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4445149
+              - generic [ref=e350] [cursor=pointer]: Fuengirola, Málaga
+              - generic [ref=e351] [cursor=pointer]: This is a boutique residential development in Fuengirola, Málaga, one of the most sought-after and rapidly growing areas on the Costa del Sol.
+              - generic [ref=e352] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e353] [cursor=pointer]:
+                  - generic [ref=e354] [cursor=pointer]: 
+                  - text: "1"
+                - generic "Bathrooms" [ref=e355] [cursor=pointer]:
+                  - generic [ref=e356] [cursor=pointer]: 
+                  - text: "1"
+                - generic "Plot size" [ref=e357] [cursor=pointer]:
+                  - generic [ref=e358] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e359] [cursor=pointer]:
+                  - generic [ref=e360] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e361] [cursor=pointer]:
+                  - generic [ref=e362] [cursor=pointer]: 
+                  - text: 2 - 81 m²
+              - generic [ref=e363] [cursor=pointer]: From EUR 425.000 to EUR 1.100.000
+          - article [ref=e364]:
+            - generic [ref=e366]:
+              - generic [ref=e367]:
+                - group "1 / 5" [ref=e368]:
+                  - img "La Cala de Mijas, Málaga" [ref=e369]
+                - group "2 / 5" [ref=e370]:
+                  - img "La Cala de Mijas, Málaga" [ref=e371]
+                - group "3 / 5" [ref=e372]:
+                  - img "La Cala de Mijas, Málaga" [ref=e373]
+                - group "4 / 5" [ref=e374]:
+                  - img "La Cala de Mijas, Málaga" [ref=e375]
+                - group "5 / 5" [ref=e376]:
+                  - img "La Cala de Mijas, Málaga" [ref=e377]
+              - button "Next slide" [ref=e378] [cursor=pointer]: next
+              - button "Previous slide" [ref=e379] [cursor=pointer]: prev
+              - generic [ref=e380]:
+                - button "Go to slide 1" [ref=e381] [cursor=pointer]
+                - button "Go to slide 2" [ref=e382] [cursor=pointer]
+                - button "Go to slide 3" [ref=e383] [cursor=pointer]
+                - button "Go to slide 4" [ref=e384] [cursor=pointer]
+                - button "Go to slide 5" [ref=e385] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4423774" [ref=e387] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4423774
+              - generic [ref=e388] [cursor=pointer]: La Cala de Mijas, Málaga
+              - generic [ref=e389] [cursor=pointer]: CONSTRUCTION HAS STARTED!
+              - generic [ref=e390] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e391] [cursor=pointer]:
+                  - generic [ref=e392] [cursor=pointer]: 
+                  - text: "4"
+                - generic "Bathrooms" [ref=e393] [cursor=pointer]:
+                  - generic [ref=e394] [cursor=pointer]: 
+                  - text: "4"
+                - generic "Plot size" [ref=e395] [cursor=pointer]:
+                  - generic [ref=e396] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e397] [cursor=pointer]:
+                  - generic [ref=e398] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e399] [cursor=pointer]:
+                  - generic [ref=e400] [cursor=pointer]: 
+                  - text: 67 - 69 m²
+              - generic [ref=e401] [cursor=pointer]: From EUR 825.000 to EUR 882.000
+          - article [ref=e402]:
+            - generic [ref=e404]:
+              - generic [ref=e405]:
+                - group "1 / 5" [ref=e406]:
+                  - img "Valle Romano, Málaga" [ref=e407]
+                - group "2 / 5" [ref=e408]:
+                  - img "Valle Romano, Málaga" [ref=e409]
+                - group "3 / 5" [ref=e410]:
+                  - img "Valle Romano, Málaga" [ref=e411]
+                - group "4 / 5" [ref=e412]:
+                  - img "Valle Romano, Málaga" [ref=e413]
+                - group "5 / 5" [ref=e414]:
+                  - img "Valle Romano, Málaga" [ref=e415]
+              - button "Next slide" [ref=e416] [cursor=pointer]: next
+              - button "Previous slide" [ref=e417] [cursor=pointer]: prev
+              - generic [ref=e418]:
+                - button "Go to slide 1" [ref=e419] [cursor=pointer]
+                - button "Go to slide 2" [ref=e420] [cursor=pointer]
+                - button "Go to slide 3" [ref=e421] [cursor=pointer]
+                - button "Go to slide 4" [ref=e422] [cursor=pointer]
+                - button "Go to slide 5" [ref=e423] [cursor=pointer]
+            - link "Ver detalles de la propiedad R5017531" [ref=e425] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R5017531
+              - generic [ref=e426] [cursor=pointer]: Valle Romano, Málaga
+              - generic [ref=e427] [cursor=pointer]: Modern Luxury Villa with Infinity Pool & Panoramic Views
+              - generic [ref=e428] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e429] [cursor=pointer]:
+                  - generic [ref=e430] [cursor=pointer]: 
+                  - text: "5"
+                - generic "Bathrooms" [ref=e431] [cursor=pointer]:
+                  - generic [ref=e432] [cursor=pointer]: 
+                  - text: "5"
+                - generic "Plot size" [ref=e433] [cursor=pointer]:
+                  - generic [ref=e434] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e435] [cursor=pointer]:
+                  - generic [ref=e436] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e437] [cursor=pointer]:
+                  - generic [ref=e438] [cursor=pointer]: 
+                  - text: 148 m²
+              - generic [ref=e439] [cursor=pointer]: EUR 1.765.000
+          - article [ref=e440]:
+            - generic [ref=e442]:
+              - generic [ref=e443]:
+                - group "1 / 5" [ref=e444]:
+                  - img "Estepona, Málaga" [ref=e445]
+                - group "2 / 5" [ref=e446]:
+                  - img "Estepona, Málaga" [ref=e447]
+                - group "3 / 5" [ref=e448]:
+                  - img "Estepona, Málaga" [ref=e449]
+                - group "4 / 5" [ref=e450]:
+                  - img "Estepona, Málaga" [ref=e451]
+                - group "5 / 5" [ref=e452]:
+                  - img "Estepona, Málaga" [ref=e453]
+              - button "Next slide" [ref=e454] [cursor=pointer]: next
+              - button "Previous slide" [ref=e455] [cursor=pointer]: prev
+              - generic [ref=e456]:
+                - button "Go to slide 1" [ref=e457] [cursor=pointer]
+                - button "Go to slide 2" [ref=e458] [cursor=pointer]
+                - button "Go to slide 3" [ref=e459] [cursor=pointer]
+                - button "Go to slide 4" [ref=e460] [cursor=pointer]
+                - button "Go to slide 5" [ref=e461] [cursor=pointer]
+            - link "Ver detalles de la propiedad R5135146" [ref=e463] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R5135146
+              - generic [ref=e464] [cursor=pointer]: Estepona, Málaga
+              - generic [ref=e465] [cursor=pointer]: At this development, we have 1, 2 and 3 bedroom homes with large terraces, garages and storage.
+              - generic [ref=e466] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e467] [cursor=pointer]:
+                  - generic [ref=e468] [cursor=pointer]: 
+                  - text: "3"
+                - generic "Bathrooms" [ref=e469] [cursor=pointer]:
+                  - generic [ref=e470] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e471] [cursor=pointer]:
+                  - generic [ref=e472] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e473] [cursor=pointer]:
+                  - generic [ref=e474] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e475] [cursor=pointer]:
+                  - generic [ref=e476] [cursor=pointer]: 
+                  - text: 104 m²
+              - generic [ref=e477] [cursor=pointer]: EUR 680.000
+          - article [ref=e478]:
+            - generic [ref=e480]:
+              - generic [ref=e481]:
+                - group "1 / 5" [ref=e482]:
+                  - img "La Alcaidesa, Cádiz" [ref=e483]
+                - group "2 / 5" [ref=e484]:
+                  - img "La Alcaidesa, Cádiz" [ref=e485]
+                - group "3 / 5" [ref=e486]:
+                  - img "La Alcaidesa, Cádiz" [ref=e487]
+                - group "4 / 5" [ref=e488]:
+                  - img "La Alcaidesa, Cádiz" [ref=e489]
+                - group "5 / 5" [ref=e490]:
+                  - img "La Alcaidesa, Cádiz" [ref=e491]
+              - button "Next slide" [ref=e492] [cursor=pointer]: next
+              - button "Previous slide" [ref=e493] [cursor=pointer]: prev
+              - generic [ref=e494]:
+                - button "Go to slide 1" [ref=e495] [cursor=pointer]
+                - button "Go to slide 2" [ref=e496] [cursor=pointer]
+                - button "Go to slide 3" [ref=e497] [cursor=pointer]
+                - button "Go to slide 4" [ref=e498] [cursor=pointer]
+                - button "Go to slide 5" [ref=e499] [cursor=pointer]
+            - link "Ver detalles de la propiedad R4405957" [ref=e501] [cursor=pointer]:
+              - /url: https://lussogroup.es/property/?ref=R4405957
+              - generic [ref=e502] [cursor=pointer]: La Alcaidesa, Cádiz
+              - generic [ref=e503] [cursor=pointer]: With so many amenities to enjoy all year round, 300+ days of sunshine, and an outstanding quality build in a fabulous location, come and secure your dream home now before it&apos;s too late!
+              - generic [ref=e504] [cursor=pointer]:
+                - generic "Bedrooms" [ref=e505] [cursor=pointer]:
+                  - generic [ref=e506] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Bathrooms" [ref=e507] [cursor=pointer]:
+                  - generic [ref=e508] [cursor=pointer]: 
+                  - text: "2"
+                - generic "Plot size" [ref=e509] [cursor=pointer]:
+                  - generic [ref=e510] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Built size" [ref=e511] [cursor=pointer]:
+                  - generic [ref=e512] [cursor=pointer]: 
+                  - text: "-"
+                - generic "Terrace" [ref=e513] [cursor=pointer]:
+                  - generic [ref=e514] [cursor=pointer]: 
+                  - text: 29 - 193 m²
+              - generic [ref=e515] [cursor=pointer]: From EUR 549.000 to EUR 1.245.000
+        - navigation "Property results pagination" [ref=e516]:
+          - list [ref=e517]:
+            - listitem [ref=e518] [cursor=pointer]:
+              - generic [ref=e519] [cursor=pointer]: "1"
+            - listitem [ref=e520] [cursor=pointer]:
+              - link "2" [ref=e521] [cursor=pointer]:
+                - /url: https://lussogroup.es/properties/?pg=2&qid=d5631b80-0e62-4240-9ede-6920830f239b
+            - listitem [ref=e522] [cursor=pointer]:
+              - link "3" [ref=e523] [cursor=pointer]:
+                - /url: https://lussogroup.es/properties/?pg=3&qid=d5631b80-0e62-4240-9ede-6920830f239b
+            - listitem [ref=e524]: …
+            - listitem [ref=e525] [cursor=pointer]:
+              - link "32" [ref=e526] [cursor=pointer]:
+                - /url: https://lussogroup.es/properties/?pg=32&qid=d5631b80-0e62-4240-9ede-6920830f239b
+            - listitem [ref=e527] [cursor=pointer]:
+              - link "»" [ref=e528] [cursor=pointer]:
+                - /url: https://lussogroup.es/properties/?pg=2&qid=d5631b80-0e62-4240-9ede-6920830f239b
+  - generic [ref=e531]:
+    - img "Blanco" [ref=e533]
+    - heading "Menu" [level=2] [ref=e535]
+    - heading "Lorem ipsum" [level=2] [ref=e537]
+    - heading "Top Areas" [level=2] [ref=e539]
+    - heading "Discover the finest luxury properties in Marbella and along the Costa del Sol. Lusso Group offers an exclusive selection of villas, apartments, and penthouses for sale or rent — each chosen for its outstanding design, privileged location, and authentic Mediterranean lifestyle. 📞 +34 952 868 406 ✉️ info@lussogroup.es" [level=3] [ref=e541]:
+      - text: Discover the finest luxury properties in Marbella and along the Costa del Sol. Lusso Group offers an exclusive selection of villas, apartments, and penthouses for sale or rent — each chosen for its outstanding design, privileged location, and authentic Mediterranean lifestyle.
+      - text: 📞 +34 952 868 406
+      - text: ✉️ info@lussogroup.es
+    - heading "Invest Developments Properties" [level=3] [ref=e543]:
+      - text: Invest
+      - text: Developments
+      - text: Properties
+    - heading "Dolor sit amet Consectetur elit Sed do eiusmod" [level=3] [ref=e545]:
+      - text: Dolor sit amet
+      - text: Consectetur elit
+      - text: Sed do eiusmod
+    - heading "Benahavís Elviria Los Monteros La Zagaleta Puerto Banús Sierra Blanca" [level=3] [ref=e547]:
+      - link "Benahavís" [ref=e548] [cursor=pointer]:
+        - /url: https://lussogroup.es/properties/?location=Benahav%C3%ADs&newdevs=include
+      - link "Elviria" [ref=e549] [cursor=pointer]:
+        - /url: https://lussogroup.es/properties/?location=Elviria&newdevs=include
+      - link "Los Monteros" [ref=e550] [cursor=pointer]:
+        - /url: https://lussogroup.es/properties/?location=Los%20Monteros&newdevs=include
+      - link "La Zagaleta" [ref=e551] [cursor=pointer]:
+        - /url: https://lussogroup.es/properties/?location=La%20Zagaleta&newdevs=include
+      - link "Puerto Banús" [ref=e552] [cursor=pointer]:
+        - /url: https://lussogroup.es/properties/?location=Puerto%20Ban%C3%BAs&newdevs=include
+      - link "Sierra Blanca" [ref=e553] [cursor=pointer]:
+        - /url: https://lussogroup.es/properties/?location=Sierra%20Blanca&newdevs=include
+  - generic [ref=e554]: desktop
+```

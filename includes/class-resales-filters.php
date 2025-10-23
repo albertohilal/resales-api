@@ -14,7 +14,16 @@ class Resales_Filters {
      * Shortcode principal: [lusso_filters]
      */
     public function __construct() {
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_select2_assets']);
         add_shortcode('lusso_filters', [$this, 'render_shortcode']);
+    }
+
+    /**
+     * Enqueue Select2 assets from CDN
+     */
+    public function enqueue_select2_assets() {
+        wp_enqueue_style('select2-css', 'https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css');
+        wp_enqueue_script('select2-js', 'https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js', ['jquery'], null, true);
     }
 
     /**
@@ -23,7 +32,7 @@ class Resales_Filters {
      */
     public function render_shortcode($atts = []) {
 
-        ob_start();
+    ob_start();
 
         $current_location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
         $current_beds     = isset($_GET['bedrooms']) ? sanitize_text_field($_GET['bedrooms']) : '';
@@ -57,14 +66,14 @@ class Resales_Filters {
                         </div>
 
                         <!-- Subarea (relleno dinámicamente vía filters.js) -->
-                            <div>
-                                <!-- BEGIN multi-subarea support -->
-                                <div id="subarea-checkboxes">
-                                  <!-- Los checkboxes de sub-área se renderizan dinámicamente vía JS -->
-                                </div>
-                                <input type="hidden" name="sublocation_literal" id="sublocation_literal" value="">
-                                <!-- END multi-subarea support -->
-                            </div>
+                                                        <div>
+                                                                <!-- BEGIN multi-subarea support -->
+                                                                <select id="subarea-multiselect" name="sublocation_multi[]" multiple="multiple" style="min-width:220px;">
+                                                                    <!-- Las opciones se renderizan dinámicamente vía JS -->
+                                                                </select>
+                                                                <input type="hidden" name="sublocation_literal" id="sublocation_literal" value="">
+                                                                <!-- END multi-subarea support -->
+                                                        </div>
 
                         <!-- Bedrooms -->
                         <div>
@@ -188,3 +197,6 @@ class Resales_Filters {
 new Resales_Filters();
 
 endif;
+
+
+// Incluir Select2 solo cuando se renderiza el shortcode (dentro del output buffer)

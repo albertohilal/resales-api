@@ -45,8 +45,13 @@
       : '/wp-content/plugins/resales-api/includes/data/locations-custom.json';
 
     fetch(jsonUrl)
-      .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(res => {
+        console.log('[Lusso Filters] Fetching subareas JSON:', jsonUrl);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
       .then(rawData => {
+        console.log('[Lusso Filters] JSON loaded:', rawData);
         const DATA_IDX = {};
 
         // === PATCH: soporte para "&" y "and" ===
@@ -59,43 +64,105 @@
         function getAreaData(areaName) {
           if (!areaName) return null;
           const n = norm(areaName);
-          console.log('getAreaData:', { areaName, n, idx: DATA_IDX[n], idxAnd: DATA_IDX[n.replace(/&/g, 'and')] });
+          console.log('[Lusso Filters] getAreaData:', { areaName, n, idx: DATA_IDX[n], idxAnd: DATA_IDX[n.replace(/&/g, 'and')] });
           return DATA_IDX[n] || DATA_IDX[n.replace(/&/g, 'and')] || null;
         }
 
         // === PATCH: fuerza la subárea por defecto ===
         // BEGIN multi-subarea support
-        function renderSubareaCheckboxes(subareas) {
-          const container = $('#subarea-checkboxes');
-          container.empty();
+        function renderSubareaMultiselect(subareas) {
+          const $select = $('#subarea-multiselect');
+          $select.empty();
+          console.log('[Lusso Filters] Render subarea multiselect:', subareas);
           if (!subareas || subareas.length === 0) {
-            container.append('<div>No sub-areas available.</div>');
+            $select.append('<option disabled>No sub-areas available</option>');
             return;
           }
           subareas.forEach(function(label) {
-            const literal = label;
-            const checkbox = $('<input>')
-              .attr('type', 'checkbox')
-              .attr('name', 'sublocation[]')
-              .attr('value', literal)
-              .addClass('subarea-checkbox');
-            const labelEl = $('<label>').text(literal);
-            container.append($('<div>').append(checkbox).append(labelEl));
+            $select.append($('<option>').val(label).text(label));
+          });
+          // Activar Select2 si está disponible
+          if ($select.length) {
+            if ($select.hasClass('select2-hidden-accessible')) {
+              $select.select2('destroy');
+            }
+            if (window.jQuery && $select.select2) {
+              $select.select2({
+                placeholder: 'Select subareas',
+                allowClear: true,
+                width: '100%',
+                closeOnSelect: false,
+                templateResult: function (data) {
+                  if (!data.id) return data.text;
+                  const selected = $select.val() || [];
+                  const checked = selected.includes(data.id) ? 'checked="checked"' : '';
+                  // Renderizamos el checkbox junto al texto
+                  return $(
+                    '<span style="display:flex;align-items:center;">' +
+                      '<input type="checkbox" ' + checked + ' style="margin-right:8px;">' +
+                      '<span>' + data.text + '</span>' +
+                    '</span>'
+                  );
+                },
+                templateSelection: function (data) {
+                  return data.text;
+                }
+              });
+
+              // ✅ Mantiene sincronizados los checkboxes
+              $select.on('select2:select select2:unselect', function() {
+                setTimeout(() => {
+                  $('.select2-results__option[role="treeitem"]').each(function() {
+                    const optionId = $(this).attr('aria-selected');
+                    const val = $(this).text().trim();
+                    const selected = $select.val() || [];
+                    $(this).find('input[type="checkbox"]').prop('checked', selected.includes(val));
+                  });
+                }, 0);
+              });
+            }
+          }
+          // Estilo compacto y scroll
+          $('.select2-subarea-dropdown').css({
+            'max-height': '220px',
+            'overflow-y': 'auto',
+            'font-size': '15px',
+            'padding': '4px 0',
+            'background': '#fff',
+            'border-radius': '4px',
+            'box-shadow': '0 2px 8px rgba(0,0,0,0.08)'
+          });
+          $('.select2-subarea-selection').css({
+            'min-height': '38px',
+            'font-size': '15px',
+            'padding': '2px 6px',
+            'background': '#fff',
+            'border-radius': '4px',
+            'border': '1px solid #ccc'
+          });
+          $select.css({
+            'width': '220px',
+            'max-width': '100%',
+            'font-size': '15px',
+            'background': '#fff',
+            'border-radius': '4px',
+            'border': '1px solid #ccc'
           });
         }
 
-        function updateSubareaOptionsMulti(areaName) {
+  function updateSubareaOptionsMulti(areaName) {
+          console.log('[Lusso Filters] updateSubareaOptionsMulti called with:', areaName);
           const areaData = getAreaData(areaName);
           if (areaData && areaData.subareas && areaData.subareas.length) {
             const list = normalizeArray(areaData.subareas);
-            renderSubareaCheckboxes(list);
+            renderSubareaMultiselect(list);
           } else {
-            renderSubareaCheckboxes([]);
+            renderSubareaMultiselect([]);
           }
         }
         // END multi-subarea support
 
-        const initialLoc = qs('location') || dom.$location.val() || '';
+  const initialLoc = qs('location') || dom.$location.val() || '';
         if (initialLoc) {
           dom.$location.val(initialLoc);
           updateSubareaOptions(initialLoc);
@@ -118,19 +185,14 @@
 
         // BEGIN multi-subarea support
         dom.$form.on('submit', function(e) {
-          const checked = $('.subarea-checkbox:checked').map(function() {
-            return $(this).val();
-          }).get();
-
-          if (checked.length === 0) {
+          const selected = $('#subarea-multiselect').val() || [];
+          if (selected.length === 0) {
             e.preventDefault();
             alert('Please select at least one sub-area.');
             return false;
           }
-
-          const literalString = checked.join(',');
+          const literalString = selected.join(',');
           $('#sublocation_literal').val(literalString);
-
           // Los demás filtros se envían como siempre
         });
         // END multi-subarea support
