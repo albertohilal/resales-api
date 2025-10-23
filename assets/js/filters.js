@@ -64,23 +64,36 @@
         }
 
         // === PATCH: fuerza la subárea por defecto ===
-        function updateSubareaOptions(areaName) {
+        // BEGIN multi-subarea support
+        function renderSubareaCheckboxes(subareas) {
+          const container = $('#subarea-checkboxes');
+          container.empty();
+          if (!subareas || subareas.length === 0) {
+            container.append('<div>No sub-areas available.</div>');
+            return;
+          }
+          subareas.forEach(function(label) {
+            const literal = label;
+            const checkbox = $('<input>')
+              .attr('type', 'checkbox')
+              .attr('name', 'sublocation[]')
+              .attr('value', literal)
+              .addClass('subarea-checkbox');
+            const labelEl = $('<label>').text(literal);
+            container.append($('<div>').append(checkbox).append(labelEl));
+          });
+        }
+
+        function updateSubareaOptionsMulti(areaName) {
           const areaData = getAreaData(areaName);
-          dom.$subarea.empty().append('<option value="">Subarea</option>');
           if (areaData && areaData.subareas && areaData.subareas.length) {
             const list = normalizeArray(areaData.subareas);
-            list.forEach(label => {
-              dom.$subarea.append('<option value="' + label + '">' + label + '</option>');
-            });
-            dom.$subarea.prop('disabled', false);
-            if (areaData.defaultSubarea) {
-              dom.$subarea.val(areaData.defaultSubarea);
-              dom.$subarea.trigger('change');
-            }
+            renderSubareaCheckboxes(list);
           } else {
-            dom.$subarea.prop('disabled', false);
+            renderSubareaCheckboxes([]);
           }
         }
+        // END multi-subarea support
 
         const initialLoc = qs('location') || dom.$location.val() || '';
         if (initialLoc) {
@@ -96,35 +109,31 @@
           }
         }
 
+        // BEGIN multi-subarea support
         dom.$location.on('change', e => {
           e.preventDefault();
-          updateSubareaOptions(dom.$location.val());
+          updateSubareaOptionsMulti(dom.$location.val());
         });
+        // END multi-subarea support
 
-        dom.$form.on('submit', e => {
-          e.preventDefault();
-          let subareaVal = dom.$subarea.val();
-          const locationVal = dom.$location.val();
-          if (!subareaVal && locationVal) {
-            const areaData = getAreaData(locationVal);
-            if (areaData && areaData.defaultSubarea) {
-              subareaVal = areaData.defaultSubarea;
-              dom.$subarea.val(subareaVal);
-            }
+        // BEGIN multi-subarea support
+        dom.$form.on('submit', function(e) {
+          const checked = $('.subarea-checkbox:checked').map(function() {
+            return $(this).val();
+          }).get();
+
+          if (checked.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one sub-area.');
+            return false;
           }
-          if (!subareaVal) {
-            alert('Please select a Subarea before searching.');
-            return;
-          }
-          const params = ['location=' + encodeURIComponent(subareaVal)];
-          dom.$form.find('select, input').each(function () {
-            const name = $(this).attr('name'), value = $(this).val();
-            if (name && value && !['location','zona','subarea','area'].includes(name))
-              params.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
-          });
-          const baseUrl = window.location.pathname;
-          window.location.href = baseUrl + (params.length ? '?' + params.join('&') : '');
+
+          const literalString = checked.join(',');
+          $('#sublocation_literal').val(literalString);
+
+          // Los demás filtros se envían como siempre
         });
+        // END multi-subarea support
       })
       .catch(err => {
         console.error('[Lusso Filters] Error al cargar JSON:', err);

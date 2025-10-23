@@ -57,11 +57,14 @@ class Resales_Filters {
                         </div>
 
                         <!-- Subarea (relleno dinámicamente vía filters.js) -->
-                        <div>
-                            <select id="resales-filter-zona" name="zona" style="min-width:220px;padding:6px 8px;">
-                                <option value="">Subarea</option>
-                            </select>
-                        </div>
+                            <div>
+                                <!-- BEGIN multi-subarea support -->
+                                <div id="subarea-checkboxes">
+                                  <!-- Los checkboxes de sub-área se renderizan dinámicamente vía JS -->
+                                </div>
+                                <input type="hidden" name="sublocation_literal" id="sublocation_literal" value="">
+                                <!-- END multi-subarea support -->
+                            </div>
 
                         <!-- Bedrooms -->
                         <div>
