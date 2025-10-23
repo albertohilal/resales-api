@@ -74,6 +74,8 @@
           const $select = $('#subarea-multiselect');
           $select.empty();
           console.log('[Lusso Filters] Render subarea multiselect:', subareas);
+          // Insertar opción "All" como primer elemento
+          $select.append($('<option>').val('All').text('All'));
           if (!subareas || subareas.length === 0) {
             $select.append('<option disabled>No sub-areas available</option>');
             return;
@@ -96,7 +98,6 @@
                   if (!data.id) return data.text;
                   const selected = $select.val() || [];
                   const checked = selected.includes(data.id) ? 'checked="checked"' : '';
-                  // Renderizamos el checkbox junto al texto
                   return $(
                     '<span style="display:flex;align-items:center;">' +
                       '<input type="checkbox" ' + checked + ' style="margin-right:8px;">' +
@@ -109,16 +110,19 @@
                 }
               });
 
-              // ✅ Mantiene sincronizados los checkboxes
-              $select.on('select2:select select2:unselect', function() {
-                setTimeout(() => {
-                  $('.select2-results__option[role="treeitem"]').each(function() {
-                    const optionId = $(this).attr('aria-selected');
-                    const val = $(this).text().trim();
-                    const selected = $select.val() || [];
-                    $(this).find('input[type="checkbox"]').prop('checked', selected.includes(val));
-                  });
-                }, 0);
+              // Lógica de selección exclusiva para "All"
+              $select.on('change', function() {
+                const selected = $select.val() || [];
+                // Si se selecciona "All", desmarcar el resto
+                if (selected && selected.includes('All')) {
+                  $select.val(['All']).trigger('change.select2');
+                } else {
+                  // Si se selecciona cualquier otra, desmarcar "All"
+                  const filtered = selected.filter(v => v !== 'All');
+                  if (filtered.length !== selected.length) {
+                    $select.val(filtered).trigger('change.select2');
+                  }
+                }
               });
             }
           }
@@ -186,12 +190,13 @@
         // BEGIN multi-subarea support
         dom.$form.on('submit', function(e) {
           const selected = $('#subarea-multiselect').val() || [];
-          if (selected.length === 0) {
-            e.preventDefault();
-            alert('Please select at least one sub-area.');
-            return false;
+          let literalString = '';
+          if (selected.length === 0 || selected.includes('All')) {
+            // Si no hay selección o se selecciona "All", enviar vacío (todas las subáreas)
+            literalString = '';
+          } else {
+            literalString = selected.join(',');
           }
-          const literalString = selected.join(',');
           $('#sublocation_literal').val(literalString);
           // Los demás filtros se envían como siempre
         });
