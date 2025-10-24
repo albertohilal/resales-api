@@ -117,19 +117,11 @@
                   }
               });
 
-                // Listener to update label dynamically
-                $select.on('change.select2', function () {
-                  const selected = $select.val() || [];
-                  const container = $(this).siblings('.select2').find('.select2-selection__rendered');
-                  if (selected.length === 0 || selected.includes('All')) {
-                    container.text('Select subareas');
-                  } else {
-                    container.text(`${selected.length} Selected`);
-                  }
+                // Fix: evita placeholder duplicado en el campo de búsqueda interno de Select2
+                $select.on('select2:open', function() {
+                  $('.select2-search__field[placeholder]').attr('placeholder', '');
                 });
-
-                // Initial update to sync label
-                $select.trigger('change.select2');
+            
               // Lógica de selección exclusiva para "All"
               $select.on('change', function() {
                 const selected = $select.val() || [];
