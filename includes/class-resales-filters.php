@@ -66,14 +66,15 @@ class Resales_Filters {
                         </div>
 
                         <!-- Subarea (relleno dinámicamente vía filters.js) -->
-                                                        <div>
-                                                                <!-- BEGIN multi-subarea support -->
-                                                                <select id="subarea-multiselect" name="sublocation_multi[]" multiple="multiple" style="min-width:220px;">
-                                                                    <!-- Las opciones se renderizan dinámicamente vía JS -->
-                                                                </select>
-                                                                <input type="hidden" name="sublocation_literal" id="sublocation_literal" value="">
-                                                                <!-- END multi-subarea support -->
-                                                        </div>
+                        <div>
+                            <!-- BEGIN multi-subarea support -->
+                            <select id="subarea-multiselect" name="sublocation_multi[]" multiple="multiple" style="min-width:220px;">
+                                <option value="" disabled selected>Subarea</option>
+                                <!-- Las opciones se renderizan dinámicamente vía JS -->
+                            </select>
+                            <input type="hidden" name="sublocation_literal" id="sublocation_literal" value="">
+                            <!-- END multi-subarea support -->
+                        </div>
 
                         <!-- Bedrooms -->
                         <div>
