@@ -117,12 +117,17 @@
                   }
               });
 
+                // Fix: evita placeholder duplicado en el campo de búsqueda interno de Select2
+                $select.on('select2:open', function() {
+                  // Solo borra el placeholder del campo de búsqueda, no afecta el conteo ni el label principal
+                  $('.select2-search__field[placeholder]').attr('placeholder', '');
+                });
                 // Listener to update label dynamically
                 $select.on('change.select2', function () {
                   const selected = $select.val() || [];
                   const container = $(this).siblings('.select2').find('.select2-selection__rendered');
                   if (selected.length === 0 || selected.includes('All')) {
-                    container.text('Select subareas');
+                    container.text('');
                   } else {
                     container.text(`${selected.length} Selected`);
                   }
