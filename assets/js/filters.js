@@ -1,4 +1,4 @@
-/*! Lusso Filters – JSON version v2.5 (auto defaultSubarea + & fix) */
+/*! Lusso Filters – JSON version v2.6 (multi-subarea persistente + fix recarga) */
 (function ($) {
   'use strict';
 
@@ -64,18 +64,15 @@
         function getAreaData(areaName) {
           if (!areaName) return null;
           const n = norm(areaName);
-          console.log('[Lusso Filters] getAreaData:', { areaName, n, idx: DATA_IDX[n], idxAnd: DATA_IDX[n.replace(/&/g, 'and')] });
           return DATA_IDX[n] || DATA_IDX[n.replace(/&/g, 'and')] || null;
         }
 
-        // === PATCH: fuerza la subárea por defecto ===
-        // BEGIN multi-subarea support
+        // === PATCH: multi-subarea con Select2 ===
         function renderSubareaMultiselect(subareas) {
           const $select = $('#subarea-multiselect');
           $select.empty();
-          console.log('[Lusso Filters] Render subarea multiselect:', subareas);
-          // Insertar opción "All" como primer elemento
           $select.append($('<option>').val('All').text('All'));
+
           if (!subareas || subareas.length === 0) {
             $select.append('<option disabled>No sub-areas available</option>');
             return;
@@ -83,7 +80,8 @@
           subareas.forEach(function(label) {
             $select.append($('<option>').val(label).text(label));
           });
-          // Activar Select2 si está disponible
+
+          // Inicializa Select2
           if ($select.length) {
             if ($select.hasClass('select2-hidden-accessible')) {
               $select.select2('destroy');
@@ -105,44 +103,37 @@
                     '</span>'
                   );
                 },
-                  templateSelection: function (data, container) {
-                    const selected = $select.val() || [];
-                    // If no selection or "All" selected → placeholder
-                    if (selected.length === 0 || selected.includes('All')) {
-                      return 'Select subareas';
-                    }
-                    // Show number of selected items
-                    const count = selected.length;
-                    return `${count} Selected`;
+                templateSelection: function (data, container) {
+                  const selected = $select.val() || [];
+                  if (selected.length === 0 || selected.includes('All')) {
+                    return 'Select subareas';
                   }
+                  return `${selected.length} Selected`;
+                }
               });
 
-                // Fix: evita placeholder duplicado en el campo de búsqueda interno de Select2
-                $select.on('select2:open', function() {
-                  // Solo borra el placeholder del campo de búsqueda, no afecta el conteo ni el label principal
-                  $('.select2-search__field[placeholder]').attr('placeholder', '');
-                });
-                // Listener to update label dynamically
-                $select.on('change.select2', function () {
-                  const selected = $select.val() || [];
-                  const container = $(this).siblings('.select2').find('.select2-selection__rendered');
-                  if (selected.length === 0 || selected.includes('All')) {
-                    container.text('');
-                  } else {
-                    container.text(`${selected.length} Selected`);
-                  }
-                });
+              // Limpia placeholder del buscador interno
+              $select.on('select2:open', function() {
+                $('.select2-search__field[placeholder]').attr('placeholder', '');
+              });
 
-                // Initial update to sync label
-                $select.trigger('change.select2');
-              // Lógica de selección exclusiva para "All"
+              // Actualiza etiqueta dinámicamente
+              $select.on('change.select2', function () {
+                const selected = $select.val() || [];
+                const container = $(this).siblings('.select2').find('.select2-selection__rendered');
+                if (selected.length === 0 || selected.includes('All')) {
+                  container.text('Select subareas');
+                } else {
+                  container.text(`${selected.length} Selected`);
+                }
+              });
+
+              // Lógica exclusiva para "All"
               $select.on('change', function() {
                 const selected = $select.val() || [];
-                // Si se selecciona "All", desmarcar el resto
                 if (selected && selected.includes('All')) {
                   $select.val(['All']).trigger('change.select2');
                 } else {
-                  // Si se selecciona cualquier otra, desmarcar "All"
                   const filtered = selected.filter(v => v !== 'All');
                   if (filtered.length !== selected.length) {
                     $select.val(filtered).trigger('change.select2');
@@ -151,7 +142,8 @@
               });
             }
           }
-          // Estilo compacto y scroll
+
+          // Estilo visual
           $('.select2-subarea-dropdown').css({
             'max-height': '220px',
             'overflow-y': 'auto',
@@ -179,8 +171,7 @@
           });
         }
 
-  function updateSubareaOptionsMulti(areaName) {
-          console.log('[Lusso Filters] updateSubareaOptionsMulti called with:', areaName);
+        function updateSubareaOptionsMulti(areaName) {
           const areaData = getAreaData(areaName);
           if (areaData && areaData.subareas && areaData.subareas.length) {
             const list = normalizeArray(areaData.subareas);
@@ -189,43 +180,39 @@
             renderSubareaMultiselect([]);
           }
         }
-        // END multi-subarea support
 
-  const initialLoc = qs('location') || dom.$location.val() || '';
+        // === Rehidratación de filtros tras búsqueda ===
+        const initialLoc = qs('location') || dom.$location.val() || '';
+        const initialSubs = qs('sublocation_literal') || '';
+
         if (initialLoc) {
           dom.$location.val(initialLoc);
-          updateSubareaOptions(initialLoc);
-          const subQS = qs('zona') || qs('area') || qs('subarea') || '';
-          if (subQS) {
-            setTimeout(() => {
-              dom.$subarea.find('option').each(function () {
-                if (norm($(this).val()) === norm(subQS)) dom.$subarea.val($(this).val());
-              });
-            }, 150);
-          }
+          updateSubareaOptionsMulti(initialLoc);
+          setTimeout(() => {
+            if (initialSubs) {
+              const selected = initialSubs.split(',').map(s => s.trim()).filter(Boolean);
+              const $sub = $('#subarea-multiselect');
+              $sub.val(selected).trigger('change.select2');
+            }
+          }, 300);
         }
 
-        // BEGIN multi-subarea support
         dom.$location.on('change', e => {
           e.preventDefault();
           updateSubareaOptionsMulti(dom.$location.val());
         });
-        // END multi-subarea support
 
-        // BEGIN multi-subarea support
+        // --- Envío del formulario ---
         dom.$form.on('submit', function(e) {
           const selected = $('#subarea-multiselect').val() || [];
           let literalString = '';
           if (selected.length === 0 || selected.includes('All')) {
-            // Si no hay selección o se selecciona "All", enviar vacío (todas las subáreas)
             literalString = '';
           } else {
             literalString = selected.join(',');
           }
           $('#sublocation_literal').val(literalString);
-          // Los demás filtros se envían como siempre
         });
-        // END multi-subarea support
       })
       .catch(err => {
         console.error('[Lusso Filters] Error al cargar JSON:', err);
