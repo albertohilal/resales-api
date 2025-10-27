@@ -578,8 +578,14 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       if ($sublocation_literal !== '') {
         // Resales API V6 acepta varias subáreas separadas por comas
         $search_params['P_Location'] = $sublocation_literal;
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+          error_log('[Resales API][DEBUG] P_Location=' . $sublocation_literal . ' (multi-subarea)');
+        }
       } elseif ($location !== '') {
         $search_params['P_Location'] = $location;
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+          error_log('[Resales API][DEBUG] P_Location=' . $location . ' (single location)');
+        }
       }
       if ($bedrooms !== '') {
         $search_params['P_Beds'] = (int)$bedrooms;
