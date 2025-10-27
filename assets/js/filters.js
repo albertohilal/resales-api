@@ -87,6 +87,7 @@
               $select.select2('destroy');
             }
             if (window.jQuery && $select.select2) {
+              console.log('Inicializando Select2 en', $select.length, $select);
               $select.select2({
                 placeholder: 'Select subareas',
                 allowClear: true,
