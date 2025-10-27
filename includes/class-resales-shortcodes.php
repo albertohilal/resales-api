@@ -530,6 +530,9 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
     public function shortcode_properties($atts) {
       // Leer filtros desde $_GET
       $location = isset($_GET['location']) ? sanitize_text_field($_GET['location']) : '';
+      $sublocation_literal = isset($_GET['sublocation_literal'])
+        ? sanitize_text_field($_GET['sublocation_literal'])
+        : '';
       $bedrooms = isset($_GET['bedrooms']) ? sanitize_text_field($_GET['bedrooms']) : '';
       $type     = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
       $newdevs  = isset($_GET['newdevs']) ? sanitize_text_field($_GET['newdevs']) : '';
@@ -571,7 +574,11 @@ if (!class_exists('Lusso_Resales_Shortcodes')) {
       }
 
       // Filtros opcionales
-      if ($location !== '') {
+      // --- Soporte para selección múltiple de subáreas ---
+      if ($sublocation_literal !== '') {
+        // Resales API V6 acepta varias subáreas separadas por comas
+        $search_params['P_Location'] = $sublocation_literal;
+      } elseif ($location !== '') {
         $search_params['P_Location'] = $location;
       }
       if ($bedrooms !== '') {
