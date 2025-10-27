@@ -141,6 +141,10 @@
                     .filter(v => v && v !== 'All');
                   // Selecciona todas las subáreas
                   $select.val(allOptions).trigger('change.select2');
+                  // Fuerza refresco visual del dropdown para mostrar los tildes
+                  setTimeout(function() {
+                    $select.select2('open');
+                  }, 0);
                 }
                 // Si desmarca "All", se limpia la selección
                 else if (values.length === 0) {
