@@ -22,10 +22,8 @@
 ```
 
 ## Notas de seguridad
-- La API Key (P2) nunca se expone en el frontend, solo se usa server-side.
-- Evita cachés agresivas en la página del shortcode para asegurar datos frescos y evitar errores de autenticación.
 
 ## Soporte y contribuciones
 Para reportar bugs o sugerir mejoras, abre un issue en este repositorio.
-
+zip -r builds/resales-api.zip functions.php package.json playwright.config.ts README.md resales.php single-property.php test-gallery-root.php test-gallery-standalone.php test-gallery.php test-resales-api.php TESTS.md assets/ docs/ includes/ languages/ templates/ tests/ -x "*.zip" -x "Mis Test/*"
 ---
