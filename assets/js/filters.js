@@ -129,16 +129,22 @@
                 }
               });
 
-              // Lógica exclusiva para "All"
-              $select.on('change', function() {
-                const selected = $select.val() || [];
-                if (selected && selected.includes('All')) {
-                  $select.val(['All']).trigger('change.select2');
-                } else {
-                  const filtered = selected.filter(v => v !== 'All');
-                  if (filtered.length !== selected.length) {
-                    $select.val(filtered).trigger('change.select2');
-                  }
+              // Listener para seleccionar/desmarcar todas las subáreas con "All"
+              $select.on('change', function (e) {
+                const values = $select.val() || [];
+                // Si el usuario selecciona "All"
+                if (values.includes('All')) {
+                  // Obtiene todos los valores de las opciones, excepto "All"
+                  const allOptions = $select.find('option')
+                    .map(function () { return this.value; })
+                    .get()
+                    .filter(v => v && v !== 'All');
+                  // Selecciona todas las subáreas
+                  $select.val(allOptions).trigger('change.select2');
+                }
+                // Si desmarca "All", se limpia la selección
+                else if (values.length === 0) {
+                  $select.val(null).trigger('change.select2');
                 }
               });
             }
