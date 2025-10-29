@@ -1,76 +1,84 @@
 <?php
 /**
- * Renderiza una galería Swiper con todas las imágenes disponibles.
- * @param array $images Array de URLs de imágenes
- * @param string $context 'card' o 'detail' para adaptar el tamaño
+ * gallery-helper.php
+ * Helper para renderizar la galería de imágenes en el plugin Resales API.
  */
-function render_gallery($images, $context = 'card') {
-    if (empty($images)) {
-        echo '<div class="gallery-placeholder" style="height:220px;background:#f2f2f2;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#888;">Imagen no disponible</div>';
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+/**
+ * Renderiza la galería a partir de un array de URLs de imágenes.
+ *
+ * @param array  $imgs  Array de URLs de imágenes (strings).
+ * @param string $mode  Modo de presentación: 'listing' (tarjetas) o 'detail' (vista individual), etc.
+ */
+function render_gallery( array $imgs, $mode = 'listing' ) {
+    // Si no hay imágenes, no renderizar nada.
+    if ( empty( $imgs ) ) {
         return;
     }
-    
-    if ($context === 'detail') {
-        // Para detalle: sin estilos inline, CSS maneja todo
-        ?>
-        <div class="swiper gallery-swiper">
-            <div class="swiper-wrapper">
-                <?php foreach($images as $index => $img): ?>
-                    <div class="swiper-slide">
-                        <img src="<?php echo esc_url($img); ?>" 
-                             alt="Imagen propiedad <?php echo $index + 1; ?>"
-                             loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-                             decoding="async">
-                    </div>
-                <?php endforeach; ?>
-            </div>
-            <?php if(count($images) > 1): ?>
-                <div class="swiper-pagination"></div>
-                <div class="swiper-button-next"></div>
-                <div class="swiper-button-prev"></div>
-            <?php endif; ?>
-        </div>
-        <?php
-    } else {
-        // Para card: estilos inline para compatibilidad
-        $height = '220px';
-        $radius = '8px';
-        ?>
-        <div class="swiper gallery-swiper" style="width:100%;height:<?php echo $height; ?>;border-radius:<?php echo $radius; ?>;overflow:hidden;">
-            <div class="swiper-wrapper">
-                <?php foreach($images as $img): ?>
-                    <div class="swiper-slide">
-                        <img src="<?php echo esc_url($img); ?>" alt="Imagen propiedad" style="width:100%;height:<?php echo $height; ?>;object-fit:cover;border-radius:<?php echo $radius; ?>;">
-                    </div>
-                <?php endforeach; ?>
-            </div>
-            <?php if(count($images) > 1): ?>
-                <div class="swiper-pagination"></div>
-                <div class="swiper-button-next"></div>
-                <div class="swiper-button-prev"></div>
-            <?php endif; ?>
-        </div>
-        <?php
+
+    // Limpieza o validación si fuera necesaria
+    $imgs = array_filter( $imgs, function( $url ) {
+        return is_string( $url ) && $url !== '';
+    } );
+
+    // Si tras el filtro sólo queda una imagen, podríamos optar por renderizarla sin slider:
+    if ( count( $imgs ) === 1 ) {
+        echo '<div class="property-gallery ' . esc_attr( $mode ) . '">';
+        echo '<img src="' . esc_url( $imgs[0] ) . '" alt="" />';
+        echo '</div>';
+        return;
     }
-    ?>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var swipers = document.querySelectorAll('.gallery-swiper');
-        swipers.forEach(function(swiperEl){
-            var slides = swiperEl.querySelectorAll('.swiper-slide');
-            var loopMode = slides.length > 1;
-            new Swiper(swiperEl, {
-                loop: loopMode,
-                pagination: { el: swiperEl.querySelector('.swiper-pagination'), clickable: true },
-                navigation: {
-                    nextEl: swiperEl.querySelector('.swiper-button-next'),
-                    prevEl: swiperEl.querySelector('.swiper-button-prev')
-                },
-                slidesPerView: 1,
-                spaceBetween: 0
-            });
+
+    if ( $mode === 'detail' ) {
+        // *** Detalle: slider con Swiper y navegación visible ***
+        echo '<!-- Detail mode slider – ensure navigation arrows visible -->';
+        echo '<div class="property-gallery detail">';
+        echo '  <div class="swiper gallery-swiper detail-swiper">';
+        echo '    <div class="swiper-wrapper">';
+        foreach ( $imgs as $url ) {
+            echo '      <div class="swiper-slide"><img src="' . esc_url( $url ) . '" alt="" /></div>';
+        }
+        echo '    </div>'; // .swiper-wrapper
+        echo '    <div class="swiper-button-prev"></div>';
+        echo '    <div class="swiper-button-next"></div>';
+        echo '    <div class="swiper-pagination"></div>';
+        echo '  </div>'; // .swiper.gallery-swiper.detail-swiper
+        echo '</div>';   // .property-gallery.detail
+
+        // Inicialización de Swiper para el slider de detalle
+        echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+          const sliderDetail = new Swiper(".detail-swiper", {
+            loop: true,
+            slidesPerView: 1,
+            navigation: {
+              nextEl: ".detail-swiper .swiper-button-next",
+              prevEl: ".detail-swiper .swiper-button-prev",
+            },
+            pagination: {
+              el: ".detail-swiper .swiper-pagination",
+              clickable: true,
+            },
+            observer: true,
+            observeParents: true
+          });
         });
-    });
-    </script>
-    <?php
+        </script>';
+
+    } else {
+        // Modo listado/tarjetas u otro: conservar el comportamiento actual sin afectarlo
+        echo '<div class="property-gallery ' . esc_attr( $mode ) . '">';
+        echo '  <div class="swiper gallery-swiper">';
+        echo '    <div class="swiper-wrapper">';
+        foreach ( $imgs as $url ) {
+            echo '      <div class="swiper-slide"><img src="' . esc_url( $url ) . '" alt="" /></div>';
+        }
+        echo '    </div>'; // .swiper-wrapper
+        echo '</div>';   // .swiper.gallery-swiper
+        echo '</div>';   // .property-gallery
+    }
 }
